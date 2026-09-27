@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Trichome App</string>
+    <string name="app_description">Gestión y diagnóstico de cultivos de cannabis</string>
+
+    <!-- General -->
+    <string name="save">Guardar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="edit">Editar</string>
+    <string name="delete">Eliminar</string>
+    <string name="confirm">Confirmar</string>
+    <string name="yes">Sí</string>
+    <string name="no">No</string>
+    <string name="loading">Cargando…</string>
+    <string name="error">Error</string>
+    <string name="success">Éxito</string>
+    <string name="search">Buscar</string>
+    <string name="favorites">Favoritos</string>
+    <string name="add">Añadir</string>
+    <string name="back">Volver</string>
+    <string name="close">Cerrar</string>
+    <string name="none">Ninguno</string>
+    <string name="days">días</string>
+    <string name="hours">horas</string>
+    <string name="minutes">min</string>
+    <string name="required_field">Este campo es obligatorio</string>
+    <string name="name_cannot_be_blank">El nombre no puede estar vacío</string>
+    <string name="active">Activo</string>
+    <string name="inactive">Inactivo</string>
+
+    <!-- Navigation -->
+    <string name="home">Inicio</string>
+    <string name="tents">Carpas</string>
+    <string name="plants">Plantas</string>
+    <string name="plant">Planta</string>
+    <string name="tent">Carpa</string>
+    <string name="journal">Bitácora</string>
+    <string name="calendar">Calendario</string>
+    <string name="terpenes">Terpenos</string>
+    <string name="breeding">Breeding</string>
+    <string name="diagnosis">Diagnóstico</string>
+    <string name="settings">Ajustes</string>
+    <string name="charts">Gráficas</string>
+    <string name="achievements">Logros</string>
+
+    <!-- Appearance settings -->
+    <string name="settings_appearance">Ajustes de Apariencia</string>
+    <string name="glass_opacity">Opacidad del Vidrio</string>
+    <string name="blur_intensity">Intensidad de Desenfoque</string>
+    <string name="theme">Tema</string>
+    <string name="font_scale">Escala de Fuente</string>
+    <string name="accent_color">Color de Acento</string>
+    <string name="theme_green">🌿 Brote Verde</string>
+    <string name="theme_autumn">🍂 Cosecha de Otoño</string>
+    <string name="theme_night">🌙 Cuidado Nocturno</string>
+    <string name="theme_sunny">☀️ Invernadero Soleado</string>
+    <string name="about">Acerca de</string>
+    <string name="version_label">Versión 1.0.0</string>
+
+    <!-- Tents -->
+    <string name="grow_tents">Carpas de Cultivo</string>
+    <string name="add_tent">Añadir Carpa</string>
+    <string name="edit_tent">Editar Carpa</string>
+    <string name="tent_name">Nombre de la Carpa</string>
+    <string name="tent_location">Ubicación</string>
+    <string name="tent_capacity">Capacidad (plantas)</string>
+    <string name="light_type">Tipo de Luz</string>
+    <string name="light_power">Potencia (W)</string>
+    <string name="no_tents">No hay carpas registradas</string>
+    <string name="plants_in_tent">Plantas en esta carpa</string>
+    <string name="reorder">Reordenar</string>
+    <string name="move_up">Subir</string>
+    <string name="move_down">Bajar</string>
+
+    <!-- Plants -->
+    <string name="add_plant">Añadir Planta</string>
+    <string name="edit_plant">Editar Planta</string>
+    <string name="plant_name">Nombre de la Planta</string>
+    <string name="strain">Cepa</string>
+    <string name="grow_stage">Etapa de Crecimiento</string>
+    <string name="seedling">Plántula</string>
+    <string name="vegetative">Vegetativa</string>
+    <string name="flowering">Floración</string>
+    <string name="harvest">Cosecha</string>
+    <string name="dry_cure">Secado/Curado</string>
+    <string name="grow_start_date">Fecha de Inicio</string>
+    <string name="notes">Notas</string>
+    <string name="no_plants">No hay plantas registradas</string>
+    <string name="day_of_grow">Día de Crecimiento</string>
+    <string name="plant_detail">Detalle de Planta</string>
+    <string name="per_plant">Por Planta</string>
+    <string name="all_plants">Todas las Plantas</string>
+    <string name="no_tent">Sin carpa</string>
+
+    <!-- Photoperiod / SuperCycle -->
+    <string name="light_cycle">Ciclo de Luz</string>
+    <string name="dark_cycle">Ciclo de Oscuridad</string>
+    <string name="light_hours">Horas de Luz</string>
+    <string name="dark_hours">Horas de Oscuridad</string>
+    <string name="light">Luz</string>
+    <string name="dark">Oscuridad</string>
+    <string name="supercycle">SuperCycle Engine</string>
+    <string name="photoperiod_config">Configuración de Fotoperiodo</string>
+    <string name="preset_18_6">18/6</string>
+    <string name="preset_12_12">12/12</string>
+    <string name="preset_24_0">24/0</string>
+    <string name="preset_custom">Personalizado</string>
+    <string name="superday">Superday</string>
+    <string name="phase_current">Fase Actual</string>
+    <string name="phase_remaining">restante</string>
+    <string name="hours_remaining">h restantes</string>
+    <string name="calendar_days">Días Calendario</string>
+    <string name="total_cycle">Ciclo Total</string>
+    <string name="save_config">Guardar Configuración</string>
+    <string name="cycle_start">Inicio del Ciclo</string>
+    <string name="cycle_duration">Duración del Ciclo</string>
+    <string name="cycle_progress">Progreso del Ciclo</string>
+
+    <!-- Protocols -->
+    <string name="protocol">Protocolo</string>
+    <string name="protocols">Protocolos</string>
+    <string name="protocol_editor">Editor de Protocolo</string>
+    <string name="add_protocol">Añadir Protocolo</string>
+    <string name="edit_protocol">Editar Protocolo</string>
+    <string name="protocol_name">Nombre del Protocolo</string>
+    <string name="stage_name">Nombre de Etapa</string>
+    <string name="stage_duration">Duración (días)</string>
+    <string name="stage_blocks">Bloques de Etapa</string>
+    <string name="recurrence">Recurrencia</string>
+    <string name="recurrence_interval">Intervalo de Recurrencia (días)</string>
+    <string name="no_protocols">No hay protocolos registrados</string>
+    <string name="days_in_stage">Días en etapa</string>
+    <string name="days_remaining">Días restantes</string>
+    <string name="protocol_active">Protocolo Activo</string>
+    <string name="weekly">Semanal</string>
+    <string name="biweekly">Quincenal</string>
+    <string name="custom">Personalizado</string>
+    <string name="edit_block">Editar Bloque</string>
+    <string name="add_block">Añadir Bloque</string>
+
+    <!-- Journal / Events (16 types) -->
+    <string name="add_event">Añadir Evento</string>
+    <string name="event_log">Registro de Eventos</string>
+    <string name="no_events">Sin eventos registrados</string>
+    <string name="irrigation">Riego</string>
+    <string name="fertilization">Fertilización</string>
+    <string name="pruning">Poda</string>
+    <string name="transplant">Trasplante</string>
+    <string name="training">Entrenamiento</string>
+    <string name="pest_control">Control de Plagas</string>
+    <string name="height">Altura</string>
+    <string name="lamp_distance">Distancia de Lámpara</string>
+    <string name="flushing">Flush</string>
+    <string name="defoliation">Defoliación</string>
+    <string name="vpd">VPD</string>
+    <string name="trichome_check">Revisión de Tricomas</string>
+    <string name="temperature_humidity">Temp/Humedad</string>
+    <string name="harvest_event">Cosecha</string>
+    <string name="breeding_event">Cría</string>
+    <string name="diagnosis_event">Diagnóstico</string>
+    <string name="amount_ml">Cantidad (ml/L)</string>
+    <string name="temperature">Temperatura (°C)</string>
+    <string name="humidity">Humedad (%)</string>
+    <string name="ph">pH</string>
+    <string name="ec">EC (mS/cm)</string>
+    <string name="height_cm">Altura (cm)</string>
+    <string name="lamp_distance_cm">Distancia de Lámpara (cm)</string>
+    <string name="vpd_kpa">VPD (kPa)</string>
+    <string name="trichome_maturity">Madurez (transparente/lechoso/ámbar)</string>
+    <string name="weight_g">Cantidad (g)</string>
+    <string name="parent_plants">Padre/Madre</string>
+    <string name="training_type">Tipo de Entrenamiento</string>
+    <string name="details">Detalles</string>
+    <string name="select_plant">Seleccionar Planta</string>
+    <string name="select_plants">Seleccionar Plantas</string>
+    <string name="multiple_selection">Selección Múltiple</string>
+    <string name="group_id">ID de Grupo</string>
+
+    <!-- Calendar -->
+    <string name="calendar_title">Calendario de Cultivo</string>
+    <string name="event_count">eventos</string>
+    <string name="task_count">tareas</string>
+    <string name="stage_transitions">Transiciones de etapa</string>
+    <string name="filter_tent">Filtrar por carpa</string>
+    <string name="filter_plant">Filtrar por planta</string>
+
+    <!-- Terpenes -->
+    <string name="terpenes_title">Biblia de Terpenos</string>
+    <string name="boiling_point">Punto de Ebullición</string>
+    <string name="aroma">Aroma</string>
+    <string name="effects">Efectos</string>
+    <string name="strains">Cepas asociadas</string>
+    <string name="no_terpenes">No se encontraron terpenos</string>
+
+    <!-- Breeding -->
+    <string name="breeding_title">Biblia de Breeding</string>
+    <string name="breeding_theory">Guía Teórica</string>
+    <string name="breeding_projects">Proyectos de Cría</string>
+    <string name="breeding_crosses">Cruces</string>
+    <string name="add_project">Nuevo Proyecto</string>
+    <string name="project_name">Nombre del Proyecto</string>
+    <string name="mother">Planta Madre</string>
+    <string name="father">Planta Padre</string>
+    <string name="generation">Generación</string>
+    <string name="f1">F1</string>
+    <string name="f2">F2</string>
+    <string name="f3">F3</string>
+    <string name="f4">F4</string>
+    <string name="f5">F5</string>
+    <string name="ibl">IBL</string>
+    <string name="feminized">Feminizada</string>
+    <string name="backcross">Retrocruz</string>
+    <string name="techniques">Técnicas</string>
+    <string name="glossary">Glosario</string>
+
+    <!-- Diagnosis -->
+    <string name="diagnosis_title">Diagnóstico Inteligente</string>
+    <string name="capture_or_select">Capturar o seleccionar foto</string>
+    <string name="camera">Cámara</string>
+    <string name="gallery">Galería</string>
+    <string name="analyze">Analizar</string>
+    <string name="report">Reporte</string>
+    <string name="select_symptoms">Selecciona los síntomas visibles</string>
+    <string name="diagnose">Diagnosticar</string>
+    <string name="certainty">Certeza</string>
+    <string name="action_plan">Plan de Acción</string>
+    <string name="prevention">Prevención</string>
+    <string name="cause">Causa probable</string>
+    <string name="regexp_register">Registrar en Bitácora</string>
+    <string name="register">Registrar</string>
+    <string name="register_in_journal">Registrar en Bitácora</string>
+    <string name="no_diagnosis_yet">Captura una foto y selecciona síntomas para obtener un diagnóstico.</string>
+    <string name="deficiency">Deficiencia</string>
+    <string name="excess">Exceso / Estrés</string>
+    <string name="pest">Plaga</string>
+    <string name="fungus">Hongos</string>
+    <string name="healthy">Planta Saludable</string>
+    <string name="nutrient_burn">Quemadura por Nutrientes</string>
+    <string name="ph_lockout">Bloqueo por pH</string>
+    <string name="thermal_stress">Estrés Térmico</string>
+    <string name="light_stress">Estrés Lumínico</string>
+    <string name="powdery_mildew">Oídio</string>
+    <string name="botrytis">Botrytis (Moho Gris)</string>
+    <string name="spider_mite">Araña Roja</string>
+    <string name="thrips">Trips</string>
+    <string name="fungus_gnat">Mosca del Sustrato</string>
+    <string name="nitrogen_deficiency">Deficiencia de Nitrógeno</string>
+    <string name="phosphorus_deficiency">Deficiencia de Fósforo</string>
+    <string name="potassium_deficiency">Deficiencia de Potasio</string>
+    <string name="calcium_deficiency">Deficiencia de Calcio</string>
+    <string name="magnesium_deficiency">Deficiencia de Magnesio</string>
+    <string name="iron_deficiency">Deficiencia de Hierro</string>
+
+    <!-- Charts / Gamification -->
+    <string name="charts_title">Diario de Indicadores</string>
+    <string name="xp">XP</string>
+    <string name="streak">Racha</string>
+    <string name="level">Nivel</string>
+    <string name="no_data">Sin datos suficientes</string>
+
+    <!-- Reminders -->
+    <string name="reminder">Recordatorio</string>
+    <string name="reminders">Recordatorios</string>
+    <string name="add_reminder">Nuevo Recordatorio</string>
+    <string name="reminder_title">Título</string>
+    <string name="reminder_message">Mensaje</string>
+    <string name="reminder_time">Hora (HH:MM)</string>
+    <string name="interval_days">Intervalo (días)</string>
+</resources>
