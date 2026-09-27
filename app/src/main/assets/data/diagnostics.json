@@ -1,0 +1,290 @@
+{
+  "version": 1,
+  "symptoms": [
+    { "id": "yellowing_lower_leaves", "label_es": "Amarillamiento en hojas inferiores", "icon": "🟡" },
+    { "id": "stunted_growth", "label_es": "Crecimiento atrofiado", "icon": "📉" },
+    { "id": "leaf_tip_burn", "label_es": "Puntas de hojas quemadas", "icon": "🔥" },
+    { "id": "purple_stems", "label_es": "Tallos y pecíolos morados", "icon": "🟣" },
+    { "id": "dark_green_leaves", "label_es": "Hojas verde oscuro azulado", "icon": "🟢" },
+    { "id": "stunted_root", "label_es": "Raíces poco desarrolladas", "icon": "🌱" },
+    { "id": "brown_leaf_edges", "label_es": "Bordes de hojas marrones", "icon": "🟤" },
+    { "id": "weak_stems", "label_es": "Tallos débiles y doblados", "icon": "🥀" },
+    { "id": "chlorosis", "label_es": "Clorosis general", "icon": "🟨" },
+    { "id": "new_growth_distorted", "label_es": "Nuevo crecimiento deformado", "icon": "🌀" },
+    { "id": "tip_burn", "label_es": "Quemadura de brotes jóvenes", "icon": "🌰" },
+    { "id": "young_leaves_curled", "label_es": "Hojas jóvenes enrolladas", "icon": "🍃" },
+    { "id": "interveinal_chlorosis", "label_es": "Clorosis entre nervaduras", "icon": "🟨" },
+    { "id": "yellowing_between_veins", "label_es": "Amarillamiento entre venas", "icon": "🟡" },
+    { "id": "young_leaves_yellow", "label_es": "Hojas jóvenes amarillas", "icon": "🌼" },
+    { "id": "interveinal_chlorosis_young", "label_es": "Clorosis intervenal en crecimiento nuevo", "icon": "🟨" },
+    { "id": "brown_tips", "label_es": "Puntas marrones secas", "icon": "🤎" },
+    { "id": "crooked_growing", "label_es": "Crecimiento torcido", "icon": "🌀" },
+    { "id": "ph_out_of_range", "label_es": "pH fuera de rango 5.5–6.5", "icon": "⚗️" },
+    { "id": "locked_nutrients", "label_es": "Nutrientes bloqueados", "icon": "🔒" },
+    { "id": "wilting", "label_es": "Marchitamiento", "icon": "🥀" },
+    { "id": "leaf_curl_heat", "label_es": "Hojas enrolladas por calor", "icon": "🌡️" },
+    { "id": "hot_spots", "label_es": "Zonas calientes en la copa", "icon": "🔥" },
+    { "id": "bleached_leaves", "label_es": "Hojas blanqueadas", "icon": "⚪" },
+    { "id": "light_burn", "label_es": "Quemadura lumínica", "icon": "💡" },
+    { "id": "white_powdery_residue", "label_es": "Residuo blanco en polvo", "icon": "🤍" },
+    { "id": "fuzzy_white_mold", "label_es": "Moho blanco algodonoso", "icon": "☁️" },
+    { "id": "gray_mold", "label_es": "Moho gris", "icon": "🌫️" },
+    { "id": "rotting_buds", "label_es": "Cogollos podridos", "icon": "🧟" },
+    { "id": "tiny_spiders", "label_es": "Ácaros diminutos (araña roja)", "icon": "🕷️" },
+    { "id": "webbing", "label_es": "Telarañas finas", "icon": "🕸️" },
+    { "id": "stippled_leaves", "label_es": "Hojas punteadas", "icon": "🔴" },
+    { "id": "silvering", "label_es": "Plateado en hojas", "icon": "🥈" },
+    { "id": "black_dots", "label_es": "Puntos negros (excrementos)", "icon": "⚫" },
+    { "id": "tiny_black_flies", "label_es": "Moscas negras diminutas", "icon": "🪰" },
+    { "id": "larvae_in_soil", "label_es": "Larvas en el sustrato", "icon": "🐛" }
+  ],
+  "conditions": [
+    {
+      "id": "nitrogen_deficiency",
+      "category": "deficiency",
+      "label_es": "Deficiencia de Nitrógeno",
+      "symptomWeights": { "yellowing_lower_leaves": 3, "stunted_growth": 2, "leaf_tip_burn": 1 },
+      "cause_es": "Niveles bajos de nitrógeno asimilable; pH extremo o lavado excesivo del sustrato.",
+      "actionPlan_es": [
+        "Fertiliza con fuente de nitrógeno (orgánica o mineral) a dosis media.",
+        "Ajusta el pH del riego entre 5.8 y 6.5.",
+        "Revisa que el sustrato drene sin lavar nutrientes."
+      ],
+      "prevention_es": [
+        "Mantén un calendario de fertilización equilibrado en fase vegetativa.",
+        "Monitorea el EC de salida semanalmente."
+      ]
+    },
+    {
+      "id": "phosphorus_deficiency",
+      "category": "deficiency",
+      "label_es": "Deficiencia de Fósforo",
+      "symptomWeights": { "purple_stems": 3, "dark_green_leaves": 2, "stunted_root": 2 },
+      "cause_es": "Baja disponibilidad de fósforo, sustrato frío o pH demasiado alto.",
+      "actionPlan_es": [
+        "Aplica fertilizante rico en fósforo (PK) en floración.",
+        "Mantén la temperatura de raíces sobre 18 °C.",
+        "Ajusta el pH de riego a 6.0–6.5."
+      ],
+      "prevention_es": [
+        "Usa microorganismos (micorrizas) que solubilizan fósforo.",
+        "Evita encharcamientos prolongados."
+      ]
+    },
+    {
+      "id": "potassium_deficiency",
+      "category": "deficiency",
+      "label_es": "Deficiencia de Potasio",
+      "symptomWeights": { "brown_leaf_edges": 3, "weak_stems": 2, "chlorosis": 1 },
+      "cause_es": "Insuficiente potasio; exceso de calcio o magnesio que antagoniza su absorción.",
+      "actionPlan_es": [
+        "Fertiliza con potasio (ej. sulfato de potasa).",
+        "Revisa el balance Ca/Mg/K del programa.",
+        "Asegura buen drenaje para evitar acumulación de sales."
+      ],
+      "prevention_es": [
+        "Incluye potasio desde la pre-floración.",
+        "Mide EC de salida para detectar bloqueos tempranos."
+      ]
+    },
+    {
+      "id": "calcium_deficiency",
+      "category": "deficiency",
+      "label_es": "Deficiencia de Calcio",
+      "symptomWeights": { "new_growth_distorted": 3, "tip_burn": 2, "young_leaves_curled": 2 },
+      "cause_es": "Calcio insuficiente o transpiración baja que limita su transporte a los brotes.",
+      "actionPlan_es": [
+        "Aplica calcio quelado o carbonato de calcio en riego.",
+        "Mejora la ventilación y humedad para favorecer transpiración.",
+        "No mezcles calcio con fosfatos en el mismo tanque."
+      ],
+      "prevention_es": [
+        "Mantén humedad relativa 55–65% en vegetativa.",
+        "Usa agua con dureza adecuada o suplementa calcio."
+      ]
+    },
+    {
+      "id": "magnesium_deficiency",
+      "category": "deficiency",
+      "label_es": "Deficiencia de Magnesio",
+      "symptomWeights": { "interveinal_chlorosis": 3, "yellowing_between_veins": 2 },
+      "cause_es": "Magnesio insuficiente o pH bajo que bloquea su absorción.",
+      "actionPlan_es": [
+        "Aplica sulfato de magnesio (sales de Epsom) disuelto en riego.",
+        "Sube el pH de riego a 6.0–6.5.",
+        "Verifica el balance Ca/Mg."
+      ],
+      "prevention_es": [
+        "Suplementa magnesio en riego cada 2–3 semanas.",
+        "Mide el pH y EC del agua de entrada y salida."
+      ]
+    },
+    {
+      "id": "iron_deficiency",
+      "category": "deficiency",
+      "label_es": "Deficiencia de Hierro",
+      "symptomWeights": { "young_leaves_yellow": 3, "interveinal_chlorosis_young": 2 },
+      "cause_es": "Hierro bloqueado por pH alto o exceso de fósforo; aparece primero en brotes nuevos.",
+      "actionPlan_es": [
+        "Aplica hierro quelado (EDDHA) foliar o en raíz.",
+        "Baja el pH del sustrato a 6.0–6.3.",
+        "Evita sobre-fertilización con fósforo."
+      ],
+      "prevention_es": [
+        "Usa quelatos estables en el rango de pH de tu sustrato.",
+        "Controla la EC para evitar antagonismos."
+      ]
+    },
+    {
+      "id": "nutrient_burn",
+      "category": "excess",
+      "label_es": "Quemadura por Nutrientes",
+      "symptomWeights": { "brown_tips": 3, "leaf_tip_burn": 2, "crooked_growing": 1 },
+      "cause_es": "Concentración de sales demasiado alta (EC elevada) o fertilización excesiva.",
+      "actionPlan_es": [
+        "Lava el sustrato con agua a pH 6.0 (3× volumen de maceta).",
+        "Reduce la dosis de fertilizante un 50% durante 1–2 semanas.",
+        "Mide la EC de salida hasta que baje a valores normales."
+      ],
+      "prevention_es": [
+        "Sube la EC gradualmente, no en saltos.",
+        "Riega con al menos 15–20% de drenaje."
+      ]
+    },
+    {
+      "id": "ph_lockout",
+      "category": "excess",
+      "label_es": "Bloqueo por pH",
+      "symptomWeights": { "ph_out_of_range": 3, "locked_nutrients": 2 },
+      "cause_es": "pH de riego o sustrato fuera del rango de absorción (5.5–6.5), impidiendo la asimilación de nutrientes.",
+      "actionPlan_es": [
+        "Ajusta el pH de entrada con ácido/base a 6.0 para sustrato.",
+        "Lava con agua tamponada y vuelve a medir el pH de salida.",
+        "Aplica riego con pH correcto durante 3–4 días antes de re-fertilizar."
+      ],
+      "prevention_es": [
+        "Calibra tu medidor de pH cada semana.",
+        "Mide pH y EC del drenaje en cada riego."
+      ]
+    },
+    {
+      "id": "thermal_stress",
+      "category": "excess",
+      "label_es": "Estrés Térmico",
+      "symptomWeights": { "wilting": 2, "leaf_curl_heat": 2, "hot_spots": 1 },
+      "cause_es": "Temperaturas por encima de 28–30 °C o picos de calor con baja ventilación.",
+      "actionPlan_es": [
+        "Ventila e introduce aire fresco (intake/extraction).",
+        "Baja la intensidad de la lámpara o súbela de altura.",
+        "Riega en horas frescas y mantén humedad 60% para mitigar el golpe de calor."
+      ],
+      "prevention_es": [
+        "Controla la temperatura de copa, no solo la ambiental.",
+        "Programa el encendido de luces en horas nocturnas durante el verano."
+      ]
+    },
+    {
+      "id": "light_stress",
+      "category": "excess",
+      "label_es": "Estrés Lumínico",
+      "symptomWeights": { "bleached_leaves": 3, "light_burn": 2 },
+      "cause_es": "PPFD demasiado alto o distancia de lámpara demasiado corta, blanqueando la clorofila.",
+      "actionPlan_es": [
+        "Sube la lámpara 15–30 cm o baja la potencia (dimmer).",
+        "Reduce el fotoperiodo temporalmente si es posible.",
+        "Aumenta la ventilación en la copa."
+      ],
+      "prevention_es": [
+        "Mide PPFD con aplicación o luxómetro (objetivo según etapa).",
+        "Acostumbra a las plantas gradualmente a luz intensa."
+      ]
+    },
+    {
+      "id": "powdery_mildew",
+      "category": "fungus",
+      "label_es": "Oídio",
+      "symptomWeights": { "white_powdery_residue": 3, "fuzzy_white_mold": 3 },
+      "cause_es": "Hongo Erysiphe cichoracearum: humedad alta, poca ventilación y cambios bruscos de temperatura.",
+      "actionPlan_es": [
+        "Elimina hojas afectadas y aísla la zona.",
+        "Aplica fungicida aprobado (azufre en vegetativa, bicarbonato en floración con precaución).",
+        "Mejora extracción y reduce humedad bajo 55%.",
+        "NO lave los cogollos en floración tardía con azufre."
+      ],
+      "prevention_es": [
+        "Mantén ventilación constante y flujo de aire bajo la copa.",
+        "Inspecciona el envés de las hojas semanalmente.",
+        "Controla los picos de humedad en el encendido/apagado."
+      ]
+    },
+    {
+      "id": "botrytis",
+      "category": "fungus",
+      "label_es": "Botrytis (Moho Gris)",
+      "symptomWeights": { "gray_mold": 3, "rotting_buds": 3 },
+      "cause_es": "Botrytis cinerea en cogollos densos con humedad >60%, poca ventilación o flores húmedas.",
+      "actionPlan_es": [
+        "Retira con guantes los cogollos afectados sin esparcir esporas.",
+        "Reduce humedad al 45–50% en floración tardía.",
+        "Mejora la extracción y el flujo de aire entre cogollos.",
+        "Aplica tratamiento preventivo a base de Bacillus subtilis o cobre."
+      ],
+      "prevention_es": [
+        "Deshoja el interior de la copa para evitar bolsas de humedad.",
+        "Evita que las flores toquen agua o condensación.",
+        "Chequea los cogollos más densos cada dos días en floración."
+      ]
+    },
+    {
+      "id": "spider_mite",
+      "category": "pest",
+      "label_es": "Araña Roja",
+      "symptomWeights": { "tiny_spiders": 3, "webbing": 3, "stippled_leaves": 2 },
+      "cause_es": "Tetranychus urticae prolifera en ambientes cálidos y secos; coloniza rápidamente el envés.",
+      "actionPlan_es": [
+        "Aplica acaricida específico rotando principios activos.",
+        "Usa depredadores naturales (Phytoseiulus persimilis).",
+        "Sube la humedad al 65% para frenar su reproducción.",
+        "Limpia carpa y herramientas para evitar reinfestación."
+      ],
+      "prevention_es": [
+        "Introduce plantas de cuarentena antes de entrar a la sala.",
+        "Revisa el envés con lupa 10–20× semanalmente.",
+        "Mantén polvo y polen fuera de la zona de cultivo."
+      ]
+    },
+    {
+      "id": "thrips",
+      "category": "pest",
+      "label_es": "Trips",
+      "symptomWeights": { "silvering": 3, "black_dots": 2 },
+      "cause_es": "Insectos Frankliniella occidentalis que raspan la superficie foliar y dejan puntos negros fecales.",
+      "actionPlan_es": [
+        "Aplica insecticida sistémico o jabón potásico en ciclos de 5–7 días.",
+        "Coloca trampas cromáticas azules.",
+        "Introduce depredadores (Orius laevigatus)."
+      ],
+      "prevention_es": [
+        "Controla malas hierbas cerca del invernadero.",
+        "Inspecciona flores y hojas nuevas al recibir esquejes."
+      ]
+    },
+    {
+      "id": "fungus_gnat",
+      "category": "pest",
+      "label_es": "Mosca del Sustrato",
+      "symptomWeights": { "tiny_black_flies": 3, "larvae_in_soil": 2 },
+      "cause_es": "Sciaridae: sustrato constantemente húmedo y materia orgánica en descomposición.",
+      "actionPlan_es": [
+        "Deja secar la capa superior del sustrato entre riegos.",
+        "Aplica Bacillus thuringiensis israelensis al agua de riego.",
+        "Coloca trampas amarillas adhesivas.",
+        "Cubre el sustrato con arena o perlita para bloquear la puesta."
+      ],
+      "prevention_es": [
+        "Evita el exceso de riego y acumulación de agua en bandejas.",
+        "Usa sustratos compostados correctamente."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,163 @@
+{
+  "version": 1,
+  "generations": [
+    {
+      "id": "f1",
+      "label": "F1",
+      "title_es": "Primera generación filial",
+      "description_es": "Cruce directo entre dos parentales estables (líneas puras o variedades distintas). Resultado: máxima heterosis o vigor híbrido, plantas uniformes y predecibles.",
+      "steps_es": [
+        "Selecciona dos parentales estables y sanos.",
+        "Poliniza la madre con el polen del padre en la ventana de floración.",
+        "Cosecha semillas F1 y establécelas en la siguiente ronda."
+      ],
+      "pros_es": ["Vigor híbrido", "Uniformidad fenotípica", "Rapidez para obtener resultados"],
+      "cons_es": ["Menos variación para seleccionar", "No fija los rasgos aún"]
+    },
+    {
+      "id": "f2",
+      "label": "F2",
+      "title_es": "Segunda generación filial",
+      "description_es": "Cruce entre hermanos F1 (usando el macho y hembra de la misma camada F1). Desvela la segregación genética: es aquí donde aparecen todas las combinaciones de rasgos.",
+      "steps_es": [
+        "Cruza dos F1 entre sí (hermanos).",
+        "Cultiva un número alto de F2 para observar la variación.",
+        "Selecciona los fenotipos que destaquen para estabilizar."
+      ],
+      "pros_es": ["Máxima variación genética", "Ideal para fenohunting", "Permite descubrir gemas recesivas"],
+      "cons_es": ["Muchas plantas intermedias", "Requiere espacio y paciencia"]
+    },
+    {
+      "id": "f3",
+      "label": "F3",
+      "title_es": "Tercera generación filial",
+      "description_es": "Cruce entre F2 seleccionados que comparten el fenotipo deseado. Comienza la estabilización: la población se fija hacia los rasgos elegidos.",
+      "steps_es": [
+        "Selecciona las mejores F2 (macho y hembra).",
+        "Cruce tío/sobrina o hermanos cercanos con el fenotipo objetivo.",
+        "Evalúa la descendencia F3 y descarta los fuera de tipo."
+      ],
+      "pros_es": ["Mayor consistencia", "Fija rasgos de calidad", "Selección direccional efectiva"],
+      "cons_es": ["Riesgo de perder vigor si se cruza en exceso", "Requiere criterio de selección claro"]
+    },
+    {
+      "id": "f4",
+      "label": "F4",
+      "title_es": "Cuarta generación filial",
+      "description_es": "Continúa la estabilización con selección por pedigrí. La población se vuelve altamente uniforme y reproducible para rasgos específicos.",
+      "steps_es": [
+        "Cruce entre F3 del fenotipo deseado.",
+        "Mantén 2–3 líneas paralelas para comparar.",
+        "Evalúa estabilidad en terpenos, tiempo de floración y resistencia."
+      ],
+      "pros_es": ["Alta uniformidad", "Pedigrí trazable", "Base para una futura IBL"],
+      "cons_es": ["Disminuye el vigor híbrido", "Más tiempo de trabajo"]
+    },
+    {
+      "id": "f5",
+      "label": "F5",
+      "title_es": "Quinta generación filial",
+      "description_es": "Población prácticamente estabilizada: los hijos se parecen mucho a los padres. Es el punto donde muchos breeders liberan una variedad como propia.",
+      "steps_es": [
+        "Selección final de los ejemplares más representativos.",
+        "Cruce de las líneas estabilizadas.",
+        "Prueba de uniformidad en varios entornos antes de liberar."
+      ],
+      "pros_es": ["Estabilidad casi total", "Resultados repetibles", "Lista para liberación"],
+      "cons_es": ["La diversidad genética se reduce", "Puede requerir regeneración del vigor"]
+    },
+    {
+      "id": "ibl",
+      "label": "IBL",
+      "title_es": "Línea consanguínea estabilizada",
+      "description_es": "Población que se ha autofecundado o cruzado consanguíneamente durante muchas generaciones hasta ser genéticamente muy homogénea.",
+      "steps_es": [
+        "Endogamia controlada durante F5–F8 o más.",
+        "Selección estricta contra rasgos no deseados.",
+        "Mantenimiento de un banco de plantas madres."
+      ],
+      "pros_es": ["Reproductibilidad genética", "Base ideal para cruces F1", "Herramienta de trabajo para el breeder"],
+      "cons_es": ["Pérdida de vigor", "Vulnerable a problemas de consanguinidad"]
+    },
+    {
+      "id": "feminized",
+      "label": "Feminizadas",
+      "title_es": "Semillas feminizadas",
+      "description_es": "Semillas que producen solo plantas hembra. Se obtienen induciendo hermafroditismo con plata coloidal o STS (tiosulfato de plata) en una hembra para generar polen 'XX'.",
+      "steps_es": [
+        "Selecciona una hembra estable y fenotípicamente excelente.",
+        "Induce hermafroditismo con STS o plata coloidal.",
+        "Recoge el polen XX y poliniza otra hembra seleccionada."
+      ],
+      "pros_es": ["Sin machos en el cultivo", "Aprovechamiento total del espacio", "Ideal para producción de flores"],
+      "cons_es": ["Menor diversidad genética", "Riesgo de predisposición hermafrodita si la madre es inestable"]
+    },
+    {
+      "id": "backcross",
+      "label": "BC",
+      "title_es": "Retrocruce (Backcross)",
+      "description_es": "Técnica para recuperar los rasgos de un parental elite cruzando su descendencia de vuelta con él, mientras se intenta mover una característica puntual (ej. resistencia).",
+      "steps_es": [
+        "Cruce F1 entre parental A (recurrente) y B (donante).",
+        "Cruza el F1 seleccionado de vuelta con A.",
+        "Repite el retrocruce durante 4–6 generaciones seleccionando el rasgo del donante.",
+        "Evalúa la fidelidad fenotípica a A."
+      ],
+      "pros_es": ["Recupera el fenotipo del parental elite", "Mantiene un rasgo específico del donante"],
+      "cons_es": ["Proceso largo", "El rasgo transferido puede perderse sin análisis molecular"]
+    }
+  ],
+  "techniques": [
+    {
+      "id": "regular_selection",
+      "label_es": "Selección regular (fenohunting)",
+      "description_es": "Cultivar muchas semillas de la misma población y seleccionar por fenotipo: aroma, vigor, estructura, resistencia y tiempos de floración. La base de cualquier programa de breeding.",
+      "methods_es": [
+        { "name": "Fenohunting", "detail_es": "Cultivar 20–200 plantas y descartar progresivamente hasta quedarse con las mejores." },
+        { "name": "Línea madre", "detail_es": "Conservar los fenotipos ganadores como esquejes madre." }
+      ]
+    },
+    {
+      "id": "reversal",
+      "label_es": "Reversión de sexo",
+      "description_es": "Obligar a una planta hembra a producir polen para usarla como padre, manteniendo su genética sin cruces externos.",
+      "methods_es": [
+        { "name": "STS (tiosulfato de plata)", "detail_es": "Aplicación foliar en pre-floración para inducir flores masculinas en hembras." },
+        { "name": "Plata coloidal", "detail_es": "Rociado diario en las primeras 2–3 semanas de floración." },
+        { "name": "Rodelización (rodelization)", "detail_es": "Forzar hermafroditismo por estrés prolongado (método orgánico, menos fiable)." }
+      ]
+    },
+    {
+      "id": "pollen_storage",
+      "label_es": "Almacenamiento de polen",
+      "description_es": "Guardar polen viable durante semanas o meses para cruces futuros.",
+      "methods_es": [
+        { "name": "Congelación", "detail_es": "Polen seco en tubo hermético con desecante a −18 °C aguanta 6–12 meses." },
+        { "name": "Mezcla con harina", "detail_es": "Proporción 1:4 polen:harina para facilitar la aplicación manual." }
+      ]
+    },
+    {
+      "id": "phenotype_stabilization",
+      "label_es": "Estabilización fenotípica",
+      "description_es": "Proceso de generaciones de selección hasta que la descendencia replica de forma consistente el fenotipo elegido.",
+      "methods_es": [
+        { "name": "Pedigrí", "detail_es": "Documentar cada cruce y descendencia para trazar rasgos." },
+        { "name": "Endogamia controlada", "detail_es": "Cruces entre hermanos o reversiones de la misma línea para fijar rasgos." }
+      ]
+    }
+  ],
+  "glossary": [
+    { "term": "Heterosis", "definition_es": "Vigor híbrido: superioridad de las F1 frente a sus parentales." },
+    { "term": "Phenotype", "definition_es": "Expresión visible de los genes: aroma, estructura, color, tricomas." },
+    { "term": "Genotype", "definition_es": "Conjunto de genes heredados, aunque no todos se expresen." },
+    { "term": "Fenohunt", "definition_es": "Búsqueda sistemática del mejor fenotipo dentro de una población." },
+    { "term": "Stabilization", "definition_es": "Proceso de fijar rasgos mediante selección generacional." },
+    { "term": "Parental elite", "definition_es": "Planta de calidad sobresaliente usada como base de cruces." },
+    { "term": "Stamen", "definition_es": "Órgano masculino de la flor que produce el polen." },
+    { "term": "Pistil", "definition_es": "Órgano femenino (pelos blancos) que recibe el polen y forma la semilla." },
+    { "term": "Polyhybrid", "definition_es": "Variedad resultado de múltiples cruces sin pedigrí claro." },
+    { "term": "Cubing", "definition_es": "Varias generaciones de retrocruce contra la madre para reproducir un fenotipo élite." },
+    { "term": "S1", "definition_es": "Auto-fecundación de una planta: semillas de una hembra consigo misma." },
+    { "term": "Storage of genetics", "definition_es": "Mantener la genética viva mediante esquejes madre, semillas y polen congelado." }
+  ]
+}

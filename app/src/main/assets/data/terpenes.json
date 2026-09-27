@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "terpenes": [
+    {
+      "id": "myrcene",
+      "name": "Mirceno",
+      "aroma": "Terroso, afrutado, clavo, notas de mango",
+      "effects": ["Sedante", "Relajante muscular", "Analgésico", "Potencia el efecto couch-lock"],
+      "strains": ["OG Kush", "Blue Dream", "Granddaddy Purple", "Mango"],
+      "boilingPoint": "167 °C",
+      "isFavorite": false
+    },
+    {
+      "id": "limonene",
+      "name": "Limonen",
+      "aroma": "Cítrico, limón, naranja, pomelo",
+      "effects": ["Euforia", "Eleva el ánimo", "Anti-ansiedad", "Ayuda a la absorción de otros terpenos"],
+      "strains": ["Super Lemon Haze", "Durban Poison", "Wedding Cake", "Jack Herer"],
+      "boilingPoint": "176 °C",
+      "isFavorite": false
+    },
+    {
+      "id": "caryophyllene",
+      "name": "Cariofileno",
+      "aroma": "Picante, pimienta negra, clavo, madera",
+      "effects": ["Antiinflamatorio", "Analgésico", "Relajación corporal", "Actúa sobre receptores CB2"],
+      "strains": ["Candyland", "GSC", "Bubba Kush", "Chemdawg"],
+      "boilingPoint": "130 °C",
+      "isFavorite": false
+    },
+    {
+      "id": "linalool",
+      "name": "Linalol",
+      "aroma": "Floral, lavanda, toques de especias",
+      "effects": ["Calmante", "Sedante suave", "Anti-ansiedad", "Propiedades anti-convulsivas"],
+      "strains": ["Amnesia Haze", "LA Confidential", "Lavender", "Zkittlez"],
+      "boilingPoint": "198 °C",
+      "isFavorite": false
+    },
+    {
+      "id": "pinene",
+      "name": "Pineno",
+      "aroma": "Pino fresco, resina, bosque",
+      "effects": ["Atención y memoria", "Broncodilatador", "Antiinflamatorio", "Contrarresta la somnolencia del THC"],
+      "strains": ["Jack Herer", "Blue Dream", "Dutch Treat", "Strawberry Cough"],
+      "boilingPoint": "155 °C",
+      "isFavorite": false
+    },
+    {
+      "id": "humulene",
+      "name": "Humuleno",
+      "aroma": "Lúpulo, terroso, amaderado, especiado",
+      "effects": ["Supresor del apetito", "Antiinflamatorio", "Analgésico", "Antibacteriano"],
+      "strains": ["Girl Scout Cookies", "White Widow", "Headband", "Sour Diesel"],
+      "boilingPoint": "198 °C",
+      "isFavorite": false
+    },
+    {
+      "id": "terpinolene",
+      "name": "Terpinoleno",
+      "aroma": "Pino, hierbas, cítricos, floral ligero",
+      "effects": ["Energizante", "Antioxidante", "Sedante leve a dosis altas", "Antibacteriano"],
+      "strains": ["Ghost Train Haze", "Jack Herer", "Golden Pineapple", "Dutch Treat"],
+      "boilingPoint": "186 °C",
+      "isFavorite": false
+    },
+    {
+      "id": "ocimene",
+      "name": "Ocimeno",
+      "aroma": "Dulce, herbal, mango, albahaca",
+      "effects": ["Antiinflamatorio", "Antifúngico", "Decongestionante", "Efecto energizante"],
+      "strains": ["Golden Goat", "Strawberry Banana", "Clementine", "Dutch Hawaiian"],
+      "boilingPoint": "100 °C",
+      "isFavorite": false
+    },
+    {
+      "id": "bisabolol",
+      "name": "Bisabolol",
+      "aroma": "Manzanilla, floral, dulce y suave",
+      "effects": ["Antiinflamatorio", "Antimicrobiano", "Calmante cutáneo", "Efecto relajante suave"],
+      "strains": ["Harlequin", "Blue Dream", "Headband", "Chemdawg"],
+      "boilingPoint": "153 °C",
+      "isFavorite": false
+    },
+    {
+      "id": "terpineol",
+      "name": "Terpineol",
+      "aroma": "Lilas, flores, pino, notas cítricas",
+      "effects": ["Sedante", "Relajante", "Antibacteriano", "Antioxidante"],
+      "strains": ["Girl Scout Cookies", "Jack Herer", "White Widow", "OG Kush"],
+      "boilingPoint": "217 °C",
+      "isFavorite": false
+    }
+  ]
+}
