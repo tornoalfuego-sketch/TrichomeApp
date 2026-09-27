@@ -36,3 +36,7 @@
 # WorkManager / Lifecycle
 -dontwarn androidx.work.**
 -keep class androidx.work.** { *; }
+# WorkManager resolves workers from the class name stored in WorkSpec, so the
+# worker class names must survive obfuscation or TrichomeWorkerFactory cannot
+# match them and no reminder is ever scheduled.
+-keep class com.trichome.app.worker.** { *; }
