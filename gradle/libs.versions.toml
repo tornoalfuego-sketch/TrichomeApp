@@ -1,0 +1,72 @@
+[versions]
+agp = "8.7.0"
+kotlin = "2.0.0"
+composeBom = "2024.08.00"
+composeUi = "1.6.8"
+room = "2.6.1"
+lifecycle = "2.8.0"
+workmanager = "2.9.1"
+datastore = "1.1.1"
+coil = "2.6.0"
+ksp = "2.0.0-1.0.24"
+navigation = "2.7.7"
+coroutines = "1.8.1"
+
+[libraries]
+androidx-core = { module = "androidx.core:core-ktx", version = "1.13.1" }
+androidx-appcompat = { module = "androidx.appcompat:appcompat", version = "1.7.0" }
+material3 = { module = "com.google.android.material:material", version = "1.12.0" }
+
+# Compose (version-less artifacts are managed by the Compose BOM platform)
+compose-bom = { module = "androidx.compose:compose-bom", version = "2024.08.00" }
+compose-ui = { module = "androidx.compose.ui:ui" }
+compose-ui-graphics = { module = "androidx.compose.ui:ui-graphics" }
+compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
+compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+compose-material3 = { module = "androidx.compose.material3:material3" }
+compose-material-icons = { module = "androidx.compose.material:material-icons-extended" }
+compose-activity = { module = "androidx.activity:activity-compose" }
+compose-navigation = { module = "androidx.navigation:navigation-compose", version = "2.7.7" }
+compose-viewmodel = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version = "2.8.0" }
+compose-runtime = { module = "androidx.lifecycle:lifecycle-runtime-compose", version = "2.8.0" }
+compose-runtime-livedata = { module = "androidx.lifecycle:lifecycle-livedata-ktx", version = "2.8.0" }
+
+# Room
+room-runtime = { module = "androidx.room:room-runtime", version = "2.6.1" }
+room-compiler = { module = "androidx.room:room-compiler", version = "2.6.1" }
+room-ktx = { module = "androidx.room:room-ktx", version = "2.6.1" }
+
+# WorkManager
+work-runtime = { module = "androidx.work:work-runtime-ktx", version = "2.9.1" }
+
+# DataStore
+datastore-preferences = { module = "androidx.datastore:datastore-preferences", version = "1.1.1" }
+
+# Coil
+coil-compose = { module = "io.coil-kt:coil-compose", version = "2.6.0" }
+
+# CameraX / MLKit / TFLite
+camera-core = { module = "androidx.camera:camera-core", version = "1.4.0" }
+camera-camera2 = { module = "androidx.camera:camera-camera2", version = "1.4.0" }
+camera-lifecycle = { module = "androidx.camera:camera-lifecycle", version = "1.4.0" }
+camera-view = { module = "androidx.camera:camera-view", version = "1.4.0" }
+mlkit-vision = { module = "com.google.mlkit:vision-common", version = "17.3.0" }
+tensorflow-lite = { module = "org.tensorflow:tensorflow-lite-task-vision", version = "0.4.4" }
+
+# Serialization
+kotlin-serialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version = "1.7.3" }
+
+# Testing
+junit = { module = "junit:junit", version = "4.13.2" }
+coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version = "1.8.1" }
+androidx-test-ext-junit = { module = "androidx.test.ext:junit", version = "1.2.0" }
+androidx-test-espresso-core = { module = "androidx.test.espresso:espresso-core", version = "3.6.1" }
+androidx-test-compose-ui = { module = "androidx.compose.ui:ui-test-junit4", version = "1.6.8" }
+androidx-test-compose-ui-manifest = { module = "androidx.compose.ui:ui-test-manifest", version = "1.6.8" }
+
+[plugins]
+android-application = { id = "com.android.application", version = "8.7.0" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version = "2.0.0" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version = "2.0.0" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version = "2.0.0" }
+ksp = { id = "com.google.devtools.ksp", version = "2.0.0-1.0.24" }
