@@ -33,13 +33,20 @@ Gestión y diagnóstico inteligente de cultivos de cannabis — Android nativo e
 ## 📦 Construcción
 
 ```powershell
-$env:JAVA_HOME = "C:\Program Files\Java\jdk-17.0.20.101-hotspot"
-.\gradlew.bat :app:assembleDebug
-.\gradlew.bat :app:assembleRelease
-.\gradlew.bat :app:testDebugUnitTest
+$env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-17.0.20.101-hotspot"
+.\gradlew.bat :app:testDebugUnitTest :app:assembleDebug :app:assembleRelease --console=plain
 ```
 
-APKs de salida: `app/build/outputs/apk/debug/` y `app/build/outputs/apk/release/`.
+> Ejecuta los tasks de Gradle de uno en uno: dos builds simultáneos sobre el
+> mismo proyecto fallan con `Cannot access output property 'destinationDirectory'`.
+
+APKs de salida: `app/build/outputs/apk/debug/app-debug.apk` y
+`app/build/outputs/apk/release/app-release.apk`.
+
+El release se firma con el `signingConfig` que lee `keystore.properties` (no
+versionado, ver [docs/PUBLISHING.md](docs/PUBLISHING.md)). Sin ese archivo el
+release sigue compilando pero produce un APK **sin firmar**, que Android rechaza
+instalar.
 
 ## 📚 Documentación
 
