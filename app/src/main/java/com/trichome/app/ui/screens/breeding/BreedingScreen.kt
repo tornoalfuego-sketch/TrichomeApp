@@ -23,6 +23,7 @@ import com.trichome.app.data.repository.BreedingTechnique
 import com.trichome.app.data.repository.BreedingTerm
 import com.trichome.app.ui.components.FloatingOrbBackground
 import com.trichome.app.ui.components.GlassCard
+import com.trichome.app.ui.components.rememberDestructiveConfirmation
 import com.trichome.app.ui.theme.TrichomeThemeState
 import com.trichome.app.viewmodel.BreedingViewModel
 import com.trichome.app.viewmodel.appViewModel
@@ -59,6 +60,27 @@ fun BreedingScreen(
 
     var showProjectDialog by remember { mutableStateOf(false) }
     var crossTarget by remember { mutableStateOf<BreedingProject?>(null) }
+
+    // A tap only arms the dialog; the project and its crosses go once the user
+    // confirms, naming the row they picked.
+    val deleteProjectConfirmation = rememberDestructiveConfirmation<BreedingProject>(
+        title = { "Eliminar proyecto" },
+        message = { project ->
+            "Se eliminará el proyecto de cría «${project.name}» y todos sus cruces. " +
+                "Esta acción no se puede deshacer."
+        },
+        confirmLabel = { "Eliminar" },
+        onConfirmed = { project -> scope.launch { vm.deleteProject(project) } }
+    )
+    val deleteCrossConfirmation = rememberDestructiveConfirmation<BreedingCross>(
+        title = { "Eliminar cruce" },
+        message = { cross ->
+            "Se eliminará el cruce «${cross.parent1.ifBlank { "?" }} × ${cross.parent2.ifBlank { "?" }}». " +
+                "Esta acción no se puede deshacer."
+        },
+        confirmLabel = { "Eliminar" },
+        onConfirmed = { cross -> scope.launch { vm.deleteCross(cross) } }
+    )
 
     Box {
         FloatingOrbBackground(accentColor1 = accent, accentColor2 = themeState.accentColor)
@@ -108,9 +130,9 @@ fun BreedingScreen(
                         crosses = vm.crosses.groupBy { it.projectId },
                         accent = accent,
                         glassOpacity = themeState.glassTokens.glassOpacity,
-                        onDeleteProject = { scope.launch { vm.deleteProject(it) } },
+                        onDeleteProject = { deleteProjectConfirmation.request(it) },
                         onAddCross = { crossTarget = it },
-                        onDeleteCross = { scope.launch { vm.deleteCross(it) } }
+                        onDeleteCross = { deleteCrossConfirmation.request(it) }
                     )
                 }
             }

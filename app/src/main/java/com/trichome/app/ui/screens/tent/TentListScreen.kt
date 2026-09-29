@@ -21,6 +21,7 @@ import com.trichome.app.data.entity.Plant
 import com.trichome.app.ui.components.FloatingOrbBackground
 import com.trichome.app.ui.components.GlassCard
 import com.trichome.app.ui.components.GlassmorphicBottomBar
+import com.trichome.app.ui.components.rememberDestructiveConfirmation
 import com.trichome.app.ui.theme.TrichomeThemeState
 import com.trichome.app.viewmodel.TentViewModel
 import com.trichome.app.viewmodel.appViewModel
@@ -38,6 +39,27 @@ fun TentListScreen(
     val plants by vm.plants.collectAsState()
     var showAddTent by remember { mutableStateOf(false) }
     var editingTent by remember { mutableStateOf<GrowTent?>(null) }
+
+    // Both deletes here used to fire on a single tap. The dialog names the row
+    // so the user can see which tent or plant they are about to lose.
+    val deleteTentConfirmation = rememberDestructiveConfirmation<GrowTent>(
+        title = { "Eliminar carpa" },
+        message = { tent ->
+            "Se eliminará la carpa «${tent.name}». Sus plantas no se borrarán: quedarán sin " +
+                "asignar a ninguna carpa. Esta acción no se puede deshacer."
+        },
+        confirmLabel = { "Eliminar" },
+        onConfirmed = { tent -> vm.deleteTent(tent) }
+    )
+    val deletePlantConfirmation = rememberDestructiveConfirmation<Plant>(
+        title = { "Eliminar planta" },
+        message = { plant ->
+            "Se eliminará la planta «${plant.name}» y todo su historial de la bitácora. " +
+                "Esta acción no se puede deshacer."
+        },
+        confirmLabel = { "Eliminar" },
+        onConfirmed = { plant -> vm.deletePlant(plant) }
+    )
 
     Box {
         FloatingOrbBackground(accentColor1 = accent, accentColor2 = themeState.accentColor)
@@ -102,10 +124,10 @@ fun TentListScreen(
                                     }
                                 },
                                 onEdit = { editingTent = tent },
-                                onDelete = { vm.deleteTent(tent) },
+                                onDelete = { deleteTentConfirmation.request(tent) },
                                 onMoveUp = { p -> vm.moveUp(p) },
                                 onMoveDown = { p -> vm.moveDown(p) },
-                                onDeletePlant = { p -> vm.deletePlant(p) },
+                                onDeletePlant = { p -> deletePlantConfirmation.request(p) },
                                 onAddPlant = { name ->
                                     vm.addPlant(name, tent.id, "", "seedling", System.currentTimeMillis())
                                 }

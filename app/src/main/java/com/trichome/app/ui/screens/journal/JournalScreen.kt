@@ -24,6 +24,7 @@ import com.trichome.app.ui.components.FloatingOrbBackground
 import com.trichome.app.ui.components.GlassCard
 import com.trichome.app.ui.components.GlassChip
 import com.trichome.app.ui.components.GlassmorphicBottomBar
+import com.trichome.app.ui.components.rememberDestructiveConfirmation
 import com.trichome.app.ui.theme.TrichomeThemeState
 import com.trichome.app.viewmodel.JournalViewModel
 import com.trichome.app.viewmodel.appViewModel
@@ -57,6 +58,19 @@ fun JournalScreen(
     // Multi-plant selection (enabled in global mode)
     var multiSelection by remember { mutableStateOf(plantId == null) }
     var selectedPlantIds by remember { mutableStateOf(setOf<Long>()) }
+
+    // A tap only arms the dialog; the event row is deleted once the user
+    // confirms, naming the event they picked.
+    val deleteConfirmation = rememberDestructiveConfirmation<GrowEvent>(
+        title = { "Eliminar evento" },
+        message = { event ->
+            "Se eliminará el evento ${EventTypeUi.labelResolved(event.eventType)} " +
+                "del ${com.trichome.app.ui.screens.plant.dateShort(event.timestamp)}. " +
+                "Esta acción no se puede deshacer."
+        },
+        confirmLabel = { "Eliminar" },
+        onConfirmed = { event -> scope.launch { vm.deleteEvent(event) } }
+    )
 
     Box {
         FloatingOrbBackground(accentColor1 = accent, accentColor2 = themeState.accentColor)
@@ -201,7 +215,7 @@ fun JournalScreen(
                     }
                 } else {
                     vm.events.forEach { e ->
-                        EventRow(e, onDelete = { scope.launch { vm.deleteEvent(e) } })
+                        EventRow(e, onDeleteRequest = { deleteConfirmation.request(e) })
                     }
                 }
             }
@@ -260,7 +274,7 @@ private fun resolveTargets(
 }
 
 @Composable
-private fun EventRow(event: GrowEvent, onDelete: () -> Unit) {
+private fun EventRow(event: GrowEvent, onDeleteRequest: () -> Unit) {
     GlassCard(
         accentColor = MaterialTheme.colorScheme.primary,
         cornerRadius = 14
@@ -283,7 +297,7 @@ private fun EventRow(event: GrowEvent, onDelete: () -> Unit) {
                     style = MaterialTheme.typography.bodySmall
                 )
             }
-            IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, "Eliminar", tint = MaterialTheme.colorScheme.error) }
+            IconButton(onClick = onDeleteRequest) { Icon(Icons.Default.Delete, "Eliminar", tint = MaterialTheme.colorScheme.error) }
         }
     }
 }
