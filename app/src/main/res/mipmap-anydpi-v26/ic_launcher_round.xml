@@ -2,5 +2,11 @@
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@color/ic_launcher_background" />
     <foreground android:drawable="@drawable/ic_launcher_foreground" />
-    <monochrome android:drawable="@drawable/ic_launcher_foreground" />
+    <!--
+      The themed icon, not the coloured foreground. Same reason as ic_launcher.xml:
+      only alpha survives a themed render, so the coloured vector renders as one
+      filled shape. ic_launcher_monochrome is a single-colour silhouette whose veins
+      are cut out as negative space.
+    -->
+    <monochrome android:drawable="@drawable/ic_launcher_monochrome" />
 </adaptive-icon>

@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.trichome.app.ui.theme.AccentPalette
 import com.trichome.app.ui.theme.GlassConfig
 import com.trichome.app.ui.theme.LocalGlassConfig
 import kotlin.math.sin
@@ -190,8 +191,9 @@ private fun lerpColor(from: Color, to: Color, fraction: Float): Color {
 @Composable
 fun FloatingOrbBackground(
     modifier: Modifier = Modifier,
-    accentColor1: Color = Color(0xFF66BB6A),
-    accentColor2: Color = Color(0xFFFFC107),
+    /** Defaults to the shipped accent green, so the two orb hues have one home. */
+    accentColor1: Color = AccentPalette.DEFAULT_ACCENT,
+    accentColor2: Color = Color(AccentPalette.ORB_SECONDARY_ARG),
     orbCount: Int = 6
 ) {
     val infinite = rememberInfiniteTransition(label = "orb")

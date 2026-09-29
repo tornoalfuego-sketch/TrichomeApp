@@ -2,5 +2,14 @@
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@color/ic_launcher_background" />
     <foreground android:drawable="@drawable/ic_launcher_foreground" />
-    <monochrome android:drawable="@drawable/ic_launcher_foreground" />
+    <!--
+      The themed icon, not the coloured foreground.
+
+      A themed icon keeps only the alpha channel and tints it with the user's
+      wallpaper palette, so pointing it at ic_launcher_foreground produced a solid
+      green blob: that drawable's leaf is a filled white shape whose alpha covers
+      its whole silhouette, with the veins drawn in a colour that has the same
+      alpha and therefore nothing to contribute.
+    -->
+    <monochrome android:drawable="@drawable/ic_launcher_monochrome" />
 </adaptive-icon>

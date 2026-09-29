@@ -6,12 +6,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -22,6 +22,10 @@ import com.trichome.app.data.entity.BreedingProject
 import com.trichome.app.data.repository.BreedingGeneration
 import com.trichome.app.data.repository.BreedingTechnique
 import com.trichome.app.data.repository.BreedingTerm
+import com.trichome.app.data.prefs.BreedingProgressRepository
+import com.trichome.app.model.BreedingChapter
+import com.trichome.app.model.BreedingProgress
+import com.trichome.app.ui.components.AppTopBar
 import com.trichome.app.ui.components.FloatingOrbBackground
 import com.trichome.app.ui.components.GlassCard
 import com.trichome.app.ui.components.rememberDestructiveConfirmation
@@ -59,6 +63,13 @@ fun BreedingScreen(
         glossary = container.breedingContentRepository.getGlossary()
     }
 
+    // Chapters and medals. Collected rather than sampled, so a medal earned in
+    // this session shows up without leaving the tab.
+    val theory = rememberTheoryChapters(
+        contentRepository = container.breedingContentRepository,
+        progressRepository = container.breedingProgress
+    )
+
     // One slot per dialog, each carrying the row it was opened on. A null row
     // means "new"; a non-null one means the form is seeded from it and the save
     // updates it. `BreedingDao` had no `@Update` before, so every save here was
@@ -94,13 +105,9 @@ fun BreedingScreen(
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
-                TopAppBar(
-                    title = { Text("🧬 Biblia de Breeding") },
-                    navigationIcon = {
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
-                        }
-                    }
+                AppTopBar(
+                    title = "🧬 Biblia de Breeding",
+                    onNavigateBack = { navController.popBackStack() }
                 )
             },
             floatingActionButton = {
@@ -130,7 +137,20 @@ fun BreedingScreen(
                 Spacer(Modifier.height(12.dp))
 
                 when (tab) {
-                    0 -> TheoryTab(generations, techniques, glossary, accent, themeState.glassTokens.glassOpacity)
+                    // Theory is three surfaces now: the chapters with their
+                    // quizzes, the Punnett square, and the raw library. The
+                    // chapter list replaces the old flat generation/technique
+                    // dump, and the library stays as the unedited reference.
+                    0 -> TheoryTab(
+                        chapters = theory.chapters,
+                        progress = theory.progress,
+                        accent = accent,
+                        glassOpacity = themeState.glassTokens.glassOpacity,
+                        generations = generations,
+                        techniques = techniques,
+                        glossary = glossary,
+                        breedingProgressRepository = container.breedingProgress
+                    )
                     else -> ProjectsTab(
                         projects = projects,
                         crosses = vm.crosses.groupBy { it.projectId },
@@ -188,6 +208,60 @@ fun BreedingScreen(
 
 @Composable
 private fun TheoryTab(
+    chapters: List<BreedingChapter>,
+    progress: BreedingProgress,
+    accent: Color,
+    glassOpacity: Float,
+    generations: List<BreedingGeneration>,
+    techniques: List<BreedingTechnique>,
+    glossary: List<BreedingTerm>,
+    breedingProgressRepository: BreedingProgressRepository
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // 0 = capítulos con cuestionario, 1 = simulador, 2 = biblioteca en bruto.
+        var section by rememberSaveable { mutableIntStateOf(0) }
+
+        TabRow(selectedTabIndex = section, containerColor = Color.Black.copy(alpha = 0.2f)) {
+            Tab(selected = section == 0, onClick = { section = 0 }, text = { Text("Capítulos") })
+            Tab(selected = section == 1, onClick = { section = 1 }, text = { Text("Simulador") })
+            Tab(selected = section == 2, onClick = { section = 2 }, text = { Text("Biblioteca") })
+        }
+        Spacer(Modifier.height(8.dp))
+
+        when (section) {
+            0 -> TheoryChaptersTab(
+                chapters = chapters,
+                progress = progress,
+                repository = breedingProgressRepository,
+                accent = accent,
+                glassOpacity = glassOpacity
+            )
+            1 -> PunnettSquarePanel(accent = accent, glassOpacity = glassOpacity)
+            else -> LibraryReference(
+                generations = generations,
+                techniques = techniques,
+                glossary = glossary,
+                accent = accent,
+                glassOpacity = glassOpacity
+            )
+        }
+    }
+}
+
+/**
+ * The asset as it ships, unedited.
+ *
+ * Kept alongside the chapters on purpose: the chapters organise and (where the
+ * asset has gaps) extend the library, and a reader who wants the source text has
+ * to be able to find it without trusting the rewrite.
+ */
+@Composable
+private fun LibraryReference(
     generations: List<BreedingGeneration>,
     techniques: List<BreedingTechnique>,
     glossary: List<BreedingTerm>,
@@ -195,9 +269,7 @@ private fun TheoryTab(
     glassOpacity: Float
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
+        modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text("Generaciones", style = MaterialTheme.typography.titleMedium)

@@ -5,7 +5,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -19,6 +18,7 @@ import androidx.navigation.NavHostController
 import com.trichome.app.data.entity.Protocol
 import com.trichome.app.data.entity.ProtocolStage
 import com.trichome.app.model.SuperCycleEngine
+import com.trichome.app.ui.components.AppTopBar
 import com.trichome.app.ui.components.FloatingOrbBackground
 import com.trichome.app.ui.components.GlassCard
 import com.trichome.app.ui.components.formatTime
@@ -67,13 +67,9 @@ fun ProtocolScreen(
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
-                TopAppBar(
-                    title = { Text("📋 Protocolos de Cultivo") },
-                    navigationIcon = {
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
-                        }
-                    }
+                AppTopBar(
+                    title = "📋 Protocolos de Cultivo",
+                    onNavigateBack = { navController.popBackStack() }
                 )
             },
             floatingActionButton = {

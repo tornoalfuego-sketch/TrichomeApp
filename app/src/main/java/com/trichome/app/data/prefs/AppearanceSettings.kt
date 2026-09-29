@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.trichome.app.ui.theme.AccentPalette
 import com.trichome.app.ui.theme.GlassRanges
 import com.trichome.app.ui.theme.ThemeIndex
 import kotlinx.coroutines.flow.Flow
@@ -36,7 +37,11 @@ data class AppearanceSettings(
     val blurRadius: Float = GlassRanges.BLUR_DEFAULT,
     val themeIndex: Int = ThemeIndex.GREEN,
     val fontScale: Float = 1.0f,
-    val accentArgb: Int = 0xFF2E7D32.toInt(),
+    /**
+     * Reads [AccentPalette.DEFAULT_ACCENT_ARG], which is the value every existing
+     * install already has stored.
+     */
+    val accentArgb: Int = AccentPalette.DEFAULT_ACCENT_ARG,
     val fontFamilyIndex: Int = 0,
     val fontWeightIndex: Int = 1
 )
@@ -64,7 +69,7 @@ fun appearanceSettingsOf(
     blurRadius = GlassRanges.clampBlur(blurRadius ?: GlassRanges.BLUR_DEFAULT),
     themeIndex = themeIndex ?: ThemeIndex.GREEN,
     fontScale = fontScale ?: 1.0f,
-    accentArgb = accentArgb ?: 0xFF2E7D32.toInt(),
+    accentArgb = accentArgb ?: AccentPalette.DEFAULT_ACCENT_ARG,
     fontFamilyIndex = fontFamilyIndex ?: 0,
     fontWeightIndex = fontWeightIndex ?: 1
 )

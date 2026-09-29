@@ -475,6 +475,61 @@ fun schemeColorsOf(scheme: ColorScheme): Map<String, Color> = mapOf(
     "surfaceContainerLowest" to scheme.surfaceContainerLowest
 )
 
+/* ─────────────────────────── Accent constants ──────────────────────────── */
+
+/**
+ * The single source of truth for the accent greens.
+ *
+ * The app used to ship three different "default accent" literals and nothing
+ * asserted they agreed:
+ *
+ * - `0xFF2E7D32` in `AppearanceSettings`, which is the one that wins on a fresh
+ *   install because `TrichomeThemeState.collectFromRepository()` reads it;
+ * - `0xFF4CAF50` in `TrichomeThemeState` and `GlassConfig`;
+ * - `0xFF66BB6A` in `GlassTokens` and in the orb background's first colour.
+ *
+ * The latter two were effectively dead — every real path overwrote them from the
+ * preference — which is exactly why they were free to rot, and why any new call
+ * site reading `GlassTokens()` got a different green from every other surface.
+ *
+ * `DEFAULT_ACCENT_ARG` is `0xFF2E7D32` because that is what users already have.
+ * Changing it would silently repaint everyone's app on upgrade with no
+ * migration, no data change, and no way to notice it was a default rather than a
+ * choice. The remaining constants exist so a new surface has something to read
+ * instead of writing a fourth literal.
+ */
+object AccentPalette {
+    /**
+     * The green every existing install already has. Do not change silently.
+     *
+     * Written as an explicit signed Int rather than `const`: `0xFF2E7D32` is
+     * above `Int.MAX_VALUE`, so Kotlin types the literal as a Long and a
+     * `const val ... = 0xFF2E7D32.toInt()` is not a compile-time constant.
+     */
+    val DEFAULT_ACCENT_ARG: Int = 0xFF2E7D32.toInt()
+
+    /** The same green as a Compose [Color]. */
+    val DEFAULT_ACCENT: Color get() = Color(DEFAULT_ACCENT_ARG)
+
+    /**
+     * Warmer green used by the theme catalogue's own accents.
+     *
+     * A second user-selectable swatch, not a default. It is named here so the
+     * settings palette and any future surface read the same value.
+     */
+    val LIME_ACCENT_ARG: Int = 0xFF7CB342.toInt()
+
+    /** Amber, the secondary hue of the floating orb background. */
+    val ORB_SECONDARY_ARG: Int = 0xFFFFC107.toInt()
+
+    /** Every accent the settings screen offers, so the palette has one list. */
+    val SELECTABLE_ARGB: List<Int> = listOf(
+        DEFAULT_ACCENT_ARG, LIME_ACCENT_ARG, ORB_SECONDARY_ARG,
+        0xFFE65100.toInt(), 0xFF00ACC1.toInt(), 0xFF7C4DFF.toInt(),
+        0xFFEC407A.toInt(), 0xFFE53935.toInt()
+    )
+}
+
 /* ─────────────────────────── Glass control ranges ──────────────────────── */
 
 /**
@@ -507,7 +562,11 @@ object GlassRanges {
 data class GlassTokens(
     val glassOpacity: Float = GlassRanges.OPACITY_DEFAULT,
     val blurRadius: Float = GlassRanges.BLUR_DEFAULT,
-    val accentColor: Color = Color(0xFF66BB6A)
+    /**
+     * Reads [AccentPalette.DEFAULT_ACCENT_ARG], which is what the persisted
+     * default in `AppearanceSettings` is.
+     */
+    val accentColor: Color = AccentPalette.DEFAULT_ACCENT
 )
 
 /**
@@ -523,7 +582,8 @@ data class GlassConfig(
     val enabled: Boolean = false,
     val glassOpacity: Float = GlassRanges.OPACITY_DEFAULT,
     val blurRadius: Float = GlassRanges.BLUR_DEFAULT,
-    val accentColor: Color = Color(0xFF4CAF50)
+    /** Reads [AccentPalette.DEFAULT_ACCENT_ARG], like every other accent default. */
+    val accentColor: Color = AccentPalette.DEFAULT_ACCENT
 ) {
     /**
      * Applies the per-call-site overrides, if any.
@@ -647,7 +707,14 @@ class TrichomeThemeState(
     var selectedColorIndex by mutableStateOf(ThemeIndex.GREEN)
         private set
 
-    var accentColor by mutableStateOf(Color(0xFF4CAF50))
+    /**
+     * The user's accent, before the repository has been collected.
+     *
+     * [AccentPalette.DEFAULT_ACCENT_ARG] rather than a literal of its own: the
+     * first frame of a launch used to be `0xFF4CAF50` and the second the
+     * persisted `0xFF2E7D32`, so the app visibly repainted itself on startup.
+     */
+    var accentColor by mutableStateOf(AccentPalette.DEFAULT_ACCENT)
         private set
 
     var fontFamilyIndex by mutableStateOf(0)

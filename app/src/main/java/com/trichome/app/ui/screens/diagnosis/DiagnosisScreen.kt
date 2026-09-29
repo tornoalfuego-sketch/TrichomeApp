@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,6 +25,7 @@ import com.trichome.app.data.repository.DiagnosisCondition
 import com.trichome.app.domain.vision.PhotoAnalyzer
 import com.trichome.app.data.repository.DiagnosisResult
 import com.trichome.app.data.repository.DiagnosisSymptom
+import com.trichome.app.ui.components.AppTopBar
 import com.trichome.app.ui.components.FloatingOrbBackground
 import com.trichome.app.ui.components.GlassCard
 import com.trichome.app.ui.components.GlassmorphicBottomBar
@@ -133,13 +133,9 @@ var currentImageError by remember { mutableStateOf<String?>(null) }
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
-                TopAppBar(
-                    title = { Text("🩺 Diagnóstico Inteligente") },
-                    navigationIcon = {
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
-                        }
-                    }
+                AppTopBar(
+                    title = "🩺 Diagnóstico Inteligente",
+                    onNavigateBack = { navController.popBackStack() }
                 )
             },
             bottomBar = {

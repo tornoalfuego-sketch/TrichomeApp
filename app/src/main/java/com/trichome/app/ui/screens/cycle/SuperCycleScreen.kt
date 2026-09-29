@@ -3,7 +3,6 @@ package com.trichome.app.ui.screens.cycle
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,6 +13,7 @@ import androidx.navigation.NavHostController
 import com.trichome.app.model.Phase
 import com.trichome.app.model.SuperCycleEngine
 import com.trichome.app.model.SuperCycleResult
+import com.trichome.app.ui.components.AppTopBar
 import com.trichome.app.ui.components.FloatingOrbBackground
 import com.trichome.app.ui.components.GlassCard
 import com.trichome.app.ui.components.GlassProgressIndicator
@@ -74,13 +74,9 @@ fun SuperCycleScreen(
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
-                TopAppBar(
-                    title = { Text("☀️ SuperCycle Engine") },
-                    navigationIcon = {
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
-                        }
-                    }
+                AppTopBar(
+                    title = "☀️ SuperCycle Engine",
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
         ) { padding ->

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Themed (monochrome) launcher icon.
+
+  Android's themed icons keep only the ALPHA channel of this drawable and tint it
+  with the user's wallpaper palette. The adaptive foreground could not be reused
+  for that: its leaf is an opaque white shape carrying dark veins and green
+  glands, so its alpha is one solid filled blob and the silhouette is lost.
+
+  Two rules make this one work, and both are violated by a naive copy of the
+  coloured vector:
+
+  1. ONE colour, fully opaque. A second colour brings its own alpha, and the
+     foreground's 0.96 leaf fill against its 1.0 glands is invisible to the eye
+     but becomes a hole once only alpha survives.
+  2. Detail as NEGATIVE space, never as lighter paint. The veins are cut out of
+     the leaf with evenOdd rather than stroked in a paler colour, which would be
+     tinted exactly like the leaf and vanish.
+
+  The outline is the same leaf as the adaptive foreground, so the two icons stay
+  recognisably the same mark. The leaf body and the veins live in one even-odd
+  path: covered once it paints, covered twice it does not. Every vein is strictly
+  inside the outline, so nothing depends on a subpath touching the boundary, and
+  the whole thing degrades to a plain solid leaf if a renderer ever ignores the
+  fill type.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Leaf body, then the veins cut out of it. -->
+    <path
+        android:fillType="evenOdd"
+        android:fillColor="#FF000000"
+        android:pathData="M54,34 C61,29 70,36 71,47 C72,58 66.5,69.5 58,76.5 C55,78.8 53,83.5 54,88 C55,83.5 53,78.8 50,76.5 C41.5,69.5 36,58 37,47 C38,36 47,29 54,34 Z
+            M54,80 L56,66 L56,50 L54,42 L52,50 L52,66 Z
+            M54.33,58.13 L44.83,49.13 L43.17,50.87 L52.67,59.87 Z
+            M53.67,58.13 L63.17,49.13 L64.83,50.87 L55.33,59.87 Z
+            M54.38,69.18 L47.88,62.18 L46.12,63.82 L52.62,70.82 Z
+            M53.62,69.18 L60.12,62.18 L61.88,63.82 L55.38,70.82 Z" />
+</vector>

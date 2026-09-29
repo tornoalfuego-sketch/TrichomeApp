@@ -7,7 +7,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -20,6 +19,7 @@ import com.trichome.app.data.entity.GrowEvent
 import com.trichome.app.data.entity.Plant
 import com.trichome.app.data.entity.Reminder
 import com.trichome.app.model.EventType
+import com.trichome.app.ui.components.AppTopBar
 import com.trichome.app.ui.components.FloatingOrbBackground
 import com.trichome.app.ui.components.GlassCard
 import com.trichome.app.ui.components.GlassChip
@@ -97,14 +97,14 @@ fun JournalScreen(
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
-                TopAppBar(
-                    title = { Text(if (plantId != null) "Bitácora de planta" else "📒 Bitácora") },
-                    navigationIcon = {
-                        if (plantId != null) {
-                            IconButton(onClick = { navController.popBackStack() }) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
-                            }
-                        }
+                // The arrow was already conditional: the global journal is a
+                // bottom-bar destination, so there is nothing to go back to.
+                AppTopBar(
+                    title = if (plantId != null) "Bitácora de planta" else "📒 Bitácora",
+                    onNavigateBack = if (plantId != null) {
+                        { navController.popBackStack() }
+                    } else {
+                        null
                     }
                 )
             },

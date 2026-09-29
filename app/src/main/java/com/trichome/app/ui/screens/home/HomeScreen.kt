@@ -73,9 +73,24 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    StatCard("🌱", "$activePlants", "Plantas", Modifier.weight(1f))
-                    StatCard("🏕️", "$activeTents", "Carpas", Modifier.weight(1f))
-                    StatCard("📒", "$todayCount", "Hoy", Modifier.weight(1f))
+                    StatTile(
+                        tile = HomeStatTile.PLANTS,
+                        value = "$activePlants",
+                        modifier = Modifier.weight(1f),
+                        onClick = { HomeStatTile.PLANTS.route?.let(navController::navigate) }
+                    )
+                    StatTile(
+                        tile = HomeStatTile.TENTS,
+                        value = "$activeTents",
+                        modifier = Modifier.weight(1f),
+                        onClick = { HomeStatTile.TENTS.route?.let(navController::navigate) }
+                    )
+                    StatTile(
+                        tile = HomeStatTile.TODAY,
+                        value = "$todayCount",
+                        modifier = Modifier.weight(1f),
+                        onClick = { HomeStatTile.TODAY.route?.let(navController::navigate) }
+                    )
                 }
 
                 if (vm.streak > 0) {
@@ -128,10 +143,24 @@ fun HomeScreen(
     }
 }
 
+/**
+ * A stat card, now with a destination.
+ *
+ * [tile] carries the route; the click is applied through [Modifier.clickable]
+ * only when there is somewhere to go, so a tile without a destination renders as
+ * a label rather than as a card that swallows taps. The routes are read from
+ * [HomeStatTile], which is asserted against the `NavHost` in
+ * `HomeStatTileTest` — a typo there would otherwise throw at the tap.
+ */
 @Composable
-private fun StatCard(emoji: String, value: String, label: String, modifier: Modifier = Modifier) {
+private fun StatTile(
+    tile: HomeStatTile,
+    value: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
     GlassCard(
-        modifier = modifier,
+        modifier = modifier.clickable(onClick = onClick),
         accentColor = MaterialTheme.colorScheme.primary,
         cornerRadius = 20
     ) {
@@ -141,9 +170,9 @@ private fun StatCard(emoji: String, value: String, label: String, modifier: Modi
                 .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(emoji, fontSize = 24.sp)
+            Text(tile.icon, fontSize = 24.sp)
             Text(value, style = MaterialTheme.typography.headlineSmall)
-            Text(label, style = MaterialTheme.typography.bodySmall)
+            Text(tile.labelEs, style = MaterialTheme.typography.bodySmall)
         }
     }
 }
