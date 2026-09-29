@@ -1,14 +1,19 @@
 # Features
 
-V1.0.1 — menu completo de funcionalidades, agrupado por fase de desarrollo.
+V1.1.0 — menu completo de funcionalidades, agrupado por fase de desarrollo.
 
 ## Fase 1 — Base y apariencia
 
-- Tema Compose propia con 4 paletas: **Brote Verde** (default), **Cosecha de Otoño**, **Cuidado Nocturno**, **Invernadero Soleado**.
-- **Tipografía configurable**: familia (systema / serif / monoespaciada), peso y escala, aplicadas en vivo y persistidas en DataStore.
-- **Contraste dinámico**: color de texto, fondo y borde del vidrio configurables de forma independiente, con cálculo de legibilidad (`readableOn`) para que el texto nunca se pierda sobre un panel claro u opaco.
+- **Dos modos de appearance**, con interruptor en Ajustes → Apariencia:
+  - **Translúcido** (4 paletas): **Brote Verde**, **Cosecha de Otoño**, **Cuidado Nocturno**, **Invernadero Soleado**.
+  - **Opaco de alto contraste** (4 paletas): **Brote Verde Sólido**, **Cosecha Otoñal Sólida**, **Oscuro Extremo Sólido**, **Claro Solar Sólido**. Con el cristal desactivado cada panel se dibuja como superficie opaca con elevación y borde sólido, al mismo padding para que nada salte al cambiar.
+  - El modo por defecto es el **opaco**: quien nunca eligió un aspecto obtiene el más legible.
+- Los componentes de cristal **leen la configuración del tema** por `CompositionLocal`, con overrides anulables. Antes unas doce pantallas pasaban opacidades fijas que ignoraban la preferencia del usuario.
+- **Tipografía configurable**: familia (systema / serif / monoespaciada / script), peso y escala, aplicadas en vivo y persistidas en DataStore.
+- **Contraste verificado, no estimado**: las tintas se resuelven con `readableOnStrict`, que elige entre negro y blanco el que realmente contrasta más y garantiza ≥4.58:1 con cualquier color de acento. Los **bordos** tienen su propio listón de 3:1 (WCAG 1.4.11) porque no llevan texto, y los tests lo comprueban.
 - **Barra inferior glassmorphic fija, flotante y traslúcida**, presente en las 7 pestañas.
-- El desenfoque (`Modifier.blur`) se aplica al fondo, **nunca** al contenedor de la tarjeta: difuminar el propio contenedor difuminaba su subárbol entero y por eso temas y fuentes no se veían.
+- **Sin desenfoque en el contenido**: hay cero llamadas a `Modifier.blur()`. El cristal se produce con superficie tintada y borde de gradiente, porque difuminar el contenedor de una tarjeta difumina su propio subárbol — el bug que hizo que en v1.0.0 "no se vieran los temas ni las fuentes".
+- Los límites de opacidad y profundidad viven en `GlassRanges`, el único sitio que los define.
 
 ## Fase 2 — Carpas y plantas
 
@@ -16,10 +21,14 @@ V1.0.1 — menu completo de funcionalidades, agrupado por fase de desarrollo.
 - CRUD de plantas dentro de una carpa (cepa, etapa, fecha de inicio, activa).
 - Reordenamiento manual dentro de la carpa y validación de nombres en blanco (no se pueden guardar nombres vacíos).
 - `daysInGrow` corregido: **hoy = Día 1** (off-by-one resuelto y cubierto por tests).
+- **Tocar una planta abre esa planta.** Antes el `onOpen` de la tarjeta de carpa resolvía siempre la *primera* planta de la carpa, así que tocar la fila 2 abría la 1, y una carpa vacía navegaba a `plant_detail/-1`.
+- **El detalle de planta tiene estados terminales** (`Loading` / `Success` / `Error`): búsqueda acotada, mensaje en español y botón de vuelta. Antes un id inexistente dejaba la pantalla en "Cargando planta…" **para siempre**.
+- El progreso del protocolo se resuelve **después** de que la planta exista, no leyendo el campo desde otra corrutina: en frío nunca se veía la tarjeta de etapa.
 
 ## Fase 3 — Protocolos por bloques
 
 - Editor de protocolos definidos como **bloques de etapas ordenados** (nombre + días por bloque), con presets de fotoperiodo 18/6 · 12/12 · 24/0 · custom.
+- **Editar un protocolo ya no borra sus etapas.** El editor sembraba siempre un bloque por defecto de tres etapas y nunca leía las filas reales, así que guardar una edición sobrescribía el calendario completo.
 - Registro de transiciones de etapa (bitácora de `stage_entries`).
 - Progreso de etapa calculado por `StageProgressEngine` (días en etapa, % de avance global, días restantes).
 
@@ -83,3 +92,21 @@ V1.0.1 — menu completo de funcionalidades, agrupado por fase de desarrollo.
 - Notificaciones con icono `ic_stat_leaf` propio.
 - Manual DI con `AppContainer` + `viewModelFactory` (sin Hilt/Koin).
 - **Estado reactivo real**: las pantallas recogen sus `StateFlow` con `collectAsState()`. Leer `.value` durante la composición congelaba la lista en su primer valor y la UI nunca se actualizaba al cambiar la base de datos.
+
+## Seguridad — acciones irreversibles
+
+- **Toda eliminación pide confirmación.** Carpas, plantas, eventos de bitácora,
+  protocolos, proyectos de cría y cruces se borraban con un solo toque. No
+  existía ningún patrón de confirmación: los ocho `AlertDialog` anteriores eran
+  formularios de alta o edición.
+- `ConfirmDestructiveDialog` es compartido y `DestructiveConfirmation` es el
+  estado detrás de él. `request()` solo arma; `confirm()` es el único que
+  escribe, así que el borrado solo es alcanzable desde el botón de confirmar.
+  Una segunda pulsación **reemplaza** a la primera en vez de apilarse, para que
+  el diálogo nunca nombre una fila que no sea la última tocada.
+- Cada mensaje nombra la entidad y explica qué pasa con sus hijos, porque **no es
+  uniforme**: borrar una carpa deja sus plantas (`Plant.tentId` es `SET_NULL`),
+  mientras borrar una planta se lleva su historial de bitácora
+  (`GrowEvent.plantId` es `CASCADE`).
+- El botón de confirmar usa `colorScheme.error`, para que nunca parezca tan
+  seguro como "Cancelar".

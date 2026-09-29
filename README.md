@@ -17,7 +17,7 @@ Gestión y diagnóstico inteligente de cultivos de cannabis — Android nativo e
 - **Diagnóstico inteligente (49 condiciones)**: captura con CameraX o galería, análisis de imagen determinista que muestra las mediciones tomadas, motor de reglas local, selección de síntomas, **ficha de la enfermedad con causa, plan de acción y prevención**, y registro directo en la bitácora.
 - **Gráficas nativas en Canvas**: pH, EC, temperatura, humedad y altura a lo largo del cultivo.
 - **Gamificación de cultivo**: XP por evento, niveles, racha de registro diario y logros.
-- **Apariencia Glassmorphism**: 4 temas, paneles translúcidos con blur en el fondo (nunca sobre el texto), bordes de gradiente, orbes flotantes animados, tipografía configurable (familia, peso, escala), color de texto / fondo / borde y acento personalizables, todo persistido con DataStore.
+- **Apariencia con dos modos**: 4 temas **translúcidos** y sus 4 equivalentes **opacos de alto contraste** (Brote Verde Sólido, Cosecha Otoñal Sólida, Oscuro Extremo Sólido, Claro Solar Sólido), con un interruptor para elegir. Bordes de gradiente, orbes flotantes animados, tipografía configurable (familia, peso, escala), color de texto / fondo / borde y acento personalizables, todo persistido con DataStore. Sin desenfoque sobre el texto: el cristal se produce con superficie tintada y borde, porque difuminar el panel difumina su propio contenido.
 - **Onboarding** que desaparece a la tercera apertura.
 - **7 pestañas** en la barra inferior: Inicio, Carpas, Bitácora, Terpenos, Calendario, Diagnóstico, Ajustes.
 
@@ -49,7 +49,7 @@ $env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-17.0.20.101-hotspot"
 > Ejecuta los tasks de Gradle de uno en uno: dos builds simultáneos sobre el
 > mismo proyecto fallan con `Cannot access output property 'destinationDirectory'`.
 
-Los cuatro tasks deben pasar antes de cerrar una entrega: **75 tests JVM**,
+Los cuatro tasks deben pasar antes de cerrar una entrega: **137 tests JVM**,
 **0 errores de lint**, y ambos APKs generados.
 
 APKs de salida: `app/build/outputs/apk/debug/app-debug.apk` y
@@ -75,13 +75,19 @@ que la app deserializa, en vez de reportar éxito sobre un archivo roto.
 
 ## 🧪 Tests
 
-75 tests JVM, todos ejecutables sin dispositivo:
+137 tests JVM, todos ejecutables sin dispositivo:
 
-`SuperCycleEngineTest` · `StageProgressEngineTest` · `DiagnosisEngineTest` · `EventTypeTest` · `GamificationTest` · `WorkManagerInitTest` · `PhotoAnalyzerTest` · `PhotoDiagnosisEngineTest` · `ReminderAlarmSchedulerTest` · `TerpeneProgressionTest` · `AssetCatalogTest`
+`SuperCycleEngineTest` · `StageProgressEngineTest` · `DiagnosisEngineTest` · `EventTypeTest` · `GamificationTest` · `WorkManagerInitTest` · `PhotoAnalyzerTest` · `PhotoDiagnosisEngineTest` · `ReminderAlarmSchedulerTest` · `TerpeneProgressionTest` · `AssetCatalogTest` · `PlantDetailStateTest` · `TentNavigationTest` · `GlassConfigTest` · `DestructiveConfirmationTest` · `ProtocolBlocksTest` · `AboutInfoTest`
 
 `AssetCatalogTest` deserializa ambos catálogos **con las mismas clases
 `@Serializable` que usa la app**, de modo que un campo renombrado rompe el
 build en lugar de publicar una enciclopedia que se renderiza vacía en silencio.
+
+`GlassConfigTest` calcula la luminancia relativa desde los componentes ARGB en
+vez de usar `Color.luminance()`, que bajo `isReturnDefaultValues = true` llegaría
+a un método `android.graphics` sin mockear y compararía ceros: el test pasaría
+sin comprobar nada. Los bordes tienen su propio listón de 3:1 (WCAG 1.4.11)
+porque no llevan texto.
 
 ## 📚 Documentación
 
