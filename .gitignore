@@ -24,3 +24,6 @@ Thumbs.db
 # Logs / temp
 *.log
 *.hprof
+
+# Agent tooling caches
+.atl/
