@@ -18,9 +18,18 @@
                                          "Euforia",
                                          "Sedacion",
                                          "Aromatico",
+                                         "Afrodisiaco",
+                                         "Relajacion",
+                                         "Euforia",
+                                         "Sedacion",
+                                         "Aromatico",
                                          "Afrodisiaco"
                                      ],
                          "medicalProperties":  [
+                                                   "Antiseptico",
+                                                   "Antiinflamatorio",
+                                                   "Digestivo",
+                                                   "Anestesico suave",
                                                    "Antiseptico",
                                                    "Antiinflamatorio",
                                                    "Digestivo",
@@ -33,6 +42,10 @@
                                            "limonene",
                                            "pinene",
                                            "terpinolene",
+                                           "humulene",
+                                           "limonene",
+                                           "pinene",
+                                           "terpinolene",
                                            "humulene"
                                        ],
                          "strains":  [
@@ -40,12 +53,18 @@
                                          "Blue Dream",
                                          "Granddaddy Purple",
                                          "Mango",
+                                         "Amnesia Haze",
+                                         "Sour Kush",
                                          "OG Kush",
                                          "Blue Dream",
                                          "Amnesia Haze",
                                          "Sour Kush"
                                      ],
                          "foundIn":  [
+                                         "Lupulo",
+                                         "Pino",
+                                         "Zanahoria",
+                                         "Cebollino",
                                          "Lupulo",
                                          "Pino",
                                          "Zanahoria",
@@ -57,7 +76,7 @@
                      },
                      {
                          "id":  "limonene",
-                         "name":  "Limonen",
+                         "name":  "Limoneno",
                          "formula":  "C10H16",
                          "molarMass":  "136.23",
                          "family":  "Monoterpeno",
@@ -71,9 +90,17 @@
                                          "Antiespasmodico",
                                          "Digestivo",
                                          "Antiinflamatorio",
+                                         "Elevador de animo",
+                                         "Antiespasmodico",
+                                         "Digestivo",
+                                         "Antiinflamatorio",
                                          "Elevador de animo"
                                      ],
                          "medicalProperties":  [
+                                                   "Antiseptico",
+                                                   "Digestivo",
+                                                   "Aromaterapia",
+                                                   "Balsamico",
                                                    "Antiseptico",
                                                    "Digestivo",
                                                    "Aromaterapia",
@@ -86,6 +113,10 @@
                                            "pinene",
                                            "myrcene",
                                            "linalool",
+                                           "ocimene",
+                                           "pinene",
+                                           "myrcene",
+                                           "linalool",
                                            "ocimene"
                                        ],
                          "strains":  [
@@ -94,10 +125,16 @@
                                          "Wedding Cake",
                                          "Jack Herer",
                                          "Amnesia Haze",
+                                         "Zkittlez",
+                                         "Amnesia Haze",
                                          "Super Lemon Haze",
                                          "Zkittlez"
                                      ],
                          "foundIn":  [
+                                         "Naranja",
+                                         "Limon",
+                                         "Bergamota",
+                                         "Romero",
                                          "Naranja",
                                          "Limon",
                                          "Bergamota",
@@ -121,11 +158,18 @@
                                          "Relajación corporal",
                                          "Actúa sobre receptores CB2",
                                          "Analgesico",
+                                         "Ansiolitico",
+                                         "Fungistatico",
+                                         "Analgesico",
                                          "Antiinflamatorio",
                                          "Ansiolitico",
                                          "Fungistatico"
                                      ],
                          "medicalProperties":  [
+                                                   "Antibacteriano",
+                                                   "Antiinflamatorio",
+                                                   "Antimicotico",
+                                                   "Cicatrizante",
                                                    "Antibacteriano",
                                                    "Antiinflamatorio",
                                                    "Antimicotico",
@@ -135,6 +179,10 @@
                          "biosynthesis":  "Resulta de la condensacion de dos unidades de farnesil pirofosfato",
                          "toxicity":  "Poco toxico; irritante leve en piel sensible; no recomendable en exceso",
                          "pairsWith":  [
+                                           "linalool",
+                                           "humulene",
+                                           "myrcene",
+                                           "bisabolol",
                                            "linalool",
                                            "humulene",
                                            "myrcene",
@@ -148,9 +196,17 @@
                                          "Gorilla Glue #4",
                                          "OG Kush",
                                          "Chemdog",
+                                         "White Widow",
+                                         "Gorilla Glue #4",
+                                         "OG Kush",
+                                         "Chemdog",
                                          "White Widow"
                                      ],
                          "foundIn":  [
+                                         "Pimienta negra",
+                                         "Cravo",
+                                         "Canela",
+                                         "Pimienta de Cayena",
                                          "Pimienta negra",
                                          "Cravo",
                                          "Canela",
@@ -176,9 +232,17 @@
                                          "Ansiolitico",
                                          "Sedante",
                                          "Aromatico",
+                                         "Antimicrobiano",
+                                         "Ansiolitico",
+                                         "Sedante",
+                                         "Aromatico",
                                          "Antimicrobiano"
                                      ],
                          "medicalProperties":  [
+                                                   "Antiespasmodico",
+                                                   "Antiseptico",
+                                                   "Antiinflamatorio",
+                                                   "Neuroprotector",
                                                    "Antiespasmodico",
                                                    "Antiseptico",
                                                    "Antiinflamatorio",
@@ -191,6 +255,10 @@
                                            "limonene",
                                            "myrcene",
                                            "ocimene",
+                                           "terpineol",
+                                           "limonene",
+                                           "myrcene",
+                                           "ocimene",
                                            "terpineol"
                                        ],
                          "strains":  [
@@ -198,11 +266,17 @@
                                          "LA Confidential",
                                          "Lavender",
                                          "Zkittlez",
+                                         "Lavender Kush",
+                                         "Mimosa Evo",
                                          "Amnesia Haze",
                                          "Lavender Kush",
                                          "Mimosa Evo"
                                      ],
                          "foundIn":  [
+                                         "Lavanda",
+                                         "Bergamota",
+                                         "Coriaza",
+                                         "Jazmin",
                                          "Lavanda",
                                          "Bergamota",
                                          "Coriaza",
@@ -226,11 +300,17 @@
                                          "Antiinflamatorio",
                                          "Contrarresta la somnolencia del THC",
                                          "Expectorante",
+                                         "Antiseptico",
+                                         "Expectorante",
                                          "Antiinflamatorio",
                                          "Broncodilatador",
                                          "Antiseptico"
                                      ],
                          "medicalProperties":  [
+                                                   "Antiseptico",
+                                                   "Expectorante",
+                                                   "Aromaterapia",
+                                                   "Balsamico",
                                                    "Antiseptico",
                                                    "Expectorante",
                                                    "Aromaterapia",
@@ -243,6 +323,10 @@
                                            "alpha_pinene",
                                            "beta_pinene",
                                            "myrcene",
+                                           "camphor",
+                                           "alpha_pinene",
+                                           "beta_pinene",
+                                           "myrcene",
                                            "camphor"
                                        ],
                          "strains":  [
@@ -252,9 +336,16 @@
                                          "Strawberry Cough",
                                          "OG Kush",
                                          "Super Silver Haze",
+                                         "Pinene Rich",
+                                         "OG Kush",
+                                         "Super Silver Haze",
                                          "Pinene Rich"
                                      ],
                          "foundIn":  [
+                                         "Pino",
+                                         "Abeto",
+                                         "Junipero",
+                                         "Salvia",
                                          "Pino",
                                          "Abeto",
                                          "Junipero",
@@ -278,11 +369,17 @@
                                          "Analgésico",
                                          "Antibacteriano",
                                          "Antiespasmodico",
+                                         "Aperitivo",
+                                         "Fungistatico",
+                                         "Antiespasmodico",
                                          "Antiinflamatorio",
                                          "Aperitivo",
                                          "Fungistatico"
                                      ],
                          "medicalProperties":  [
+                                                   "Antibacteriano",
+                                                   "Antiinflamatorio",
+                                                   "Antimicotico",
                                                    "Antibacteriano",
                                                    "Antiinflamatorio",
                                                    "Antimicotico"
@@ -291,6 +388,10 @@
                          "biosynthesis":  "Se biosintetiza a partir del farnesil pirofosfato junto al cariofileno",
                          "toxicity":  "Poco toxico; consumo moderado recomendado",
                          "pairsWith":  [
+                                           "beta_caryophyllene",
+                                           "caryophyllene",
+                                           "linalool",
+                                           "myrcene",
                                            "beta_caryophyllene",
                                            "caryophyllene",
                                            "linalool",
@@ -303,9 +404,15 @@
                                          "Sour Diesel",
                                          "Sweet Dreams",
                                          "Cake",
+                                         "Sticky Wreck",
+                                         "Sweet Dreams",
+                                         "Cake",
                                          "Sticky Wreck"
                                      ],
                          "foundIn":  [
+                                         "Lupulo",
+                                         "Citrica",
+                                         "Hierba de San Juan",
                                          "Lupulo",
                                          "Citrica",
                                          "Hierba de San Juan"
@@ -329,10 +436,16 @@
                                          "Antibacteriano",
                                          "Sedante",
                                          "Relajacion",
+                                         "Antiseptico",
+                                         "Sedante",
+                                         "Relajacion",
                                          "Energizante",
                                          "Antiseptico"
                                      ],
                          "medicalProperties":  [
+                                                   "Antiseptico",
+                                                   "Bactericida",
+                                                   "Aromaterapia",
                                                    "Antiseptico",
                                                    "Bactericida",
                                                    "Aromaterapia"
@@ -344,6 +457,10 @@
                                            "limonene",
                                            "myrcene",
                                            "terpineol",
+                                           "ocimene",
+                                           "limonene",
+                                           "myrcene",
+                                           "terpineol",
                                            "ocimene"
                                        ],
                          "strains":  [
@@ -352,10 +469,15 @@
                                          "Golden Pineapple",
                                          "Dutch Treat",
                                          "Mango Kush",
+                                         "Lemon Kush",
+                                         "Mango Kush",
                                          "Jack Herer",
                                          "Lemon Kush"
                                      ],
                          "foundIn":  [
+                                         "Cipres",
+                                         "Pino",
+                                         "Abeto",
                                          "Cipres",
                                          "Pino",
                                          "Abeto"
@@ -380,9 +502,16 @@
                                          "Relajacion",
                                          "Sedacion",
                                          "Antimicrobiano",
+                                         "Estimulante",
+                                         "Relajacion",
+                                         "Sedacion",
+                                         "Antimicrobiano",
                                          "Estimulante"
                                      ],
                          "medicalProperties":  [
+                                                   "Antiseptico",
+                                                   "Fungistatico",
+                                                   "Aromaterapia",
                                                    "Antiseptico",
                                                    "Fungistatico",
                                                    "Aromaterapia"
@@ -391,6 +520,10 @@
                          "biosynthesis":  "Se forma por desaminacion del ocimenol en la ruta de los monoterpenos",
                          "toxicity":  "Poco toxico; bien tolerado",
                          "pairsWith":  [
+                                           "myrcene",
+                                           "limonene",
+                                           "linalool",
+                                           "terpinolene",
                                            "myrcene",
                                            "limonene",
                                            "linalool",
@@ -403,9 +536,16 @@
                                          "Dutch Hawaiian",
                                          "OG Kush",
                                          "Amnesia Haze",
+                                         "Cinderella 99",
+                                         "OG Kush",
+                                         "Amnesia Haze",
                                          "Cinderella 99"
                                      ],
                          "foundIn":  [
+                                         "Citrico",
+                                         "Menta",
+                                         "Ocote",
+                                         "Arbol de la Plata",
                                          "Citrico",
                                          "Menta",
                                          "Ocote",
@@ -428,12 +568,18 @@
                                          "Antimicrobiano",
                                          "Calmante cutáneo",
                                          "Efecto relajante suave",
+                                         "Analgesico",
+                                         "Cicatrizante",
                                          "Antiinflamatorio",
                                          "Analgesico",
                                          "Antimicrobiano",
                                          "Cicatrizante"
                                      ],
                          "medicalProperties":  [
+                                                   "Antiinflamatorio",
+                                                   "Antibacteriano",
+                                                   "Suavizante",
+                                                   "Cicatrizante",
                                                    "Antiinflamatorio",
                                                    "Antibacteriano",
                                                    "Suavizante",
@@ -446,6 +592,10 @@
                                            "beta_caryophyllene",
                                            "caryophyllene",
                                            "linalool",
+                                           "alpha_humulene",
+                                           "beta_caryophyllene",
+                                           "caryophyllene",
+                                           "linalool",
                                            "alpha_humulene"
                                        ],
                          "strains":  [
@@ -455,9 +605,15 @@
                                          "Chemdawg",
                                          "Amnesia Haze",
                                          "OG Kush",
+                                         "Super Lemon Haze",
+                                         "Amnesia Haze",
+                                         "OG Kush",
                                          "Super Lemon Haze"
                                      ],
                          "foundIn":  [
+                                         "Chamomile",
+                                         "Jengibre",
+                                         "Albahaca",
                                          "Chamomile",
                                          "Jengibre",
                                          "Albahaca"
@@ -482,9 +638,16 @@
                                          "Relajacion",
                                          "Antiseptico",
                                          "Antimicrobiano",
+                                         "Fragante",
+                                         "Relajacion",
+                                         "Antiseptico",
+                                         "Antimicrobiano",
                                          "Fragante"
                                      ],
                          "medicalProperties":  [
+                                                   "Antiseptico",
+                                                   "Bactericida",
+                                                   "Perfumeria",
                                                    "Antiseptico",
                                                    "Bactericida",
                                                    "Perfumeria"
@@ -493,6 +656,10 @@
                          "biosynthesis":  "Se forma por hidratacion del limoneno en los oil glands",
                          "toxicity":  "Poco toxico; puede irritar la piel sensible",
                          "pairsWith":  [
+                                           "linalool",
+                                           "terpinolene",
+                                           "limonene",
+                                           "ocimene",
                                            "linalool",
                                            "terpinolene",
                                            "limonene",
@@ -505,9 +672,16 @@
                                          "OG Kush",
                                          "Amnesia Haze",
                                          "Mimosa Evo",
+                                         "Lemon Skunk",
+                                         "Amnesia Haze",
+                                         "Mimosa Evo",
                                          "Lemon Skunk"
                                      ],
                          "foundIn":  [
+                                         "Rosa",
+                                         "Jazmin",
+                                         "Manzanilla",
+                                         "Limon",
                                          "Rosa",
                                          "Jazmin",
                                          "Manzanilla",
@@ -2413,7 +2587,7 @@
                      },
                      {
                          "id":  "beta_myrcene",
-                         "name":  "Mirceno",
+                         "name":  "Mirceno beta",
                          "formula":  "C10H16",
                          "molarMass":  "136.23",
                          "family":  "Monoterpeno",
@@ -5187,7 +5361,7 @@
                      },
                      {
                          "id":  "beta_caryophyllene",
-                         "name":  "Cariofileno",
+                         "name":  "Cariofileno beta",
                          "formula":  "C15H24",
                          "molarMass":  "204.35",
                          "family":  "Sesquiterpeno",
@@ -5496,7 +5670,7 @@
                      },
                      {
                          "id":  "alpha_humulene",
-                         "name":  "Humuleno",
+                         "name":  "Humuleno alpha",
                          "formula":  "C15H24",
                          "molarMass":  "204.35",
                          "family":  "Sesquiterpeno",
@@ -6147,8 +6321,7 @@
                          "foundIn":  [
                                          "Pino",
                                          "Cedro",
-                                         "Cebada",
-                                         "Pino"
+                                         "Cebada"
                                      ],
                          "richness":  "bajo",
                          "boilingPoint":  "260 °C",

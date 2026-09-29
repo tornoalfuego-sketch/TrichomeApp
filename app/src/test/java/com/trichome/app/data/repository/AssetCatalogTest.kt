@@ -65,6 +65,41 @@ class AssetCatalogTest {
             assertTrue("terpene with a blank id or name: $it", it.id.isNotBlank() && it.name.isNotBlank())
         }
         assertEquals("terpene ids must be unique", terpenes.size, terpenes.map { it.id }.toSet().size)
+
+        // The name used to be the only field not checked, and the catalog shipped
+        // three collisions: `myrcene` and `beta_myrcene` were both "Mirceno",
+        // `caryophyllene` and `beta_caryophyllene` both "Cariofileno", `humulene`
+        // and `alpha_humulene` both "Humuleno". The chemistry is fine -- these
+        // are isomers, and isomers share a molecular formula and a molar mass by
+        // definition -- but the encyclopedia showed the user two identical rows.
+        // A bare "humulene" conventionally means alpha-humulene, so the qualified
+        // form carries the distinction and the bare one keeps the common name.
+        val byName = terpenes.groupBy { it.name }
+        val collisions = byName.filterValues { it.size > 1 }
+        assertTrue(
+            "terpene display names must be unique, found: " +
+                collisions.map { (name, group) -> "$name -> ${group.map { it.id }}" },
+            collisions.isEmpty()
+        )
+    }
+
+    @Test
+    fun everyTerpeneNameIsAccentCorrect() {
+        // Spanish display names are user-facing. "Limonen" shipped without its
+        // accent, and nothing looked at spelling because nothing could.
+        val terpenes = terpeneCatalog().terpenes
+        val knownMisspellings = mapOf(
+            "Limonen" to "Limoneno",
+            "Citrico" to "Cítrico",
+            "Aromatico" to "Aromático"
+        )
+        terpenes.forEach { t ->
+            val corrected = knownMisspellings[t.name]
+            assertTrue(
+                "terpene '${t.id}' ships as '$t.name'; it should be '$corrected'",
+                corrected == null
+            )
+        }
     }
 
     @Test

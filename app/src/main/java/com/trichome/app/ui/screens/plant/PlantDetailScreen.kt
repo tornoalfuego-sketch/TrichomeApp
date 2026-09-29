@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.trichome.app.data.entity.GrowEvent
+import com.trichome.app.data.entity.Plant
 import com.trichome.app.model.Phase
 import com.trichome.app.model.StageProgressEngine
 import com.trichome.app.model.SuperCycleEngine
@@ -22,6 +23,7 @@ import com.trichome.app.ui.components.FloatingOrbBackground
 import com.trichome.app.ui.components.GlassCard
 import com.trichome.app.ui.components.GlassProgressIndicator
 import com.trichome.app.ui.components.GlassmorphicBottomBar
+import com.trichome.app.ui.components.rememberDestructiveConfirmation
 import com.trichome.app.ui.theme.TrichomeThemeState
 import com.trichome.app.viewmodel.PlantDetailUiState
 import com.trichome.app.viewmodel.PlantDetailViewModel
@@ -51,6 +53,20 @@ fun PlantDetailScreen(
     val plant = (uiState as? PlantDetailUiState.Success)?.plant
     val tintAccent = themeState.accentColor
 
+    // The screen had no action icons at all: a plant could only be renamed or
+    // deleted from a tent row, and `PlantDetailViewModel` had neither method.
+    // `rememberDestructiveConfirmation` is the shared one every other delete
+    // uses; a tap only arms it, the write happens after the grower confirms.
+    var editing by remember { mutableStateOf(false) }
+    val deleteConfirmation = rememberDestructiveConfirmation<Plant>(
+        title = { "Eliminar planta" },
+        message = { PlantDeletionNotice.message(it) },
+        confirmLabel = { "Eliminar" },
+        onConfirmed = { target ->
+            vm.deletePlant(target) { deleted -> if (deleted) navController.popBackStack() }
+        }
+    )
+
     Box {
         FloatingOrbBackground(
             accentColor1 = accent,
@@ -65,6 +81,23 @@ fun PlantDetailScreen(
                     navigationIcon = {
                         IconButton(onClick = { navController.popBackStack() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
+                        }
+                    },
+                    actions = {
+                        // Only offered once the row has resolved: there is
+                        // nothing to edit or delete while it is still loading,
+                        // and a wrong id is worse than no button.
+                        plant?.let { current ->
+                            IconButton(onClick = { editing = true }) {
+                                Icon(Icons.Default.Edit, "Editar planta")
+                            }
+                            IconButton(onClick = { deleteConfirmation.request(current) }) {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    "Eliminar planta",
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            }
                         }
                     }
                 )
@@ -149,6 +182,25 @@ fun PlantDetailScreen(
                 }
             }
         }
+    }
+
+    if (editing && plant != null) {
+        PlantEditDialog(
+            plant = plant,
+            accent = accent,
+            onDismiss = { editing = false },
+            onSave = { updated ->
+                vm.updatePlant(updated) { saved ->
+                    if (saved) {
+                        editing = false
+                        // Re-read only once the write has landed. Reloading from
+                        // `onSave` instead would race the update and repaint the
+                        // values the grower just changed.
+                        vm.loadPlant(plant.id)
+                    }
+                }
+            }
+        )
     }
 }
 
