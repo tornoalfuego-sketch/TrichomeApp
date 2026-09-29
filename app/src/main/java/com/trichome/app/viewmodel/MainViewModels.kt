@@ -823,29 +823,43 @@ class TerpenesViewModel(container: AppContainer) : ViewModel() {
         private set
     var quizzesCorrect by mutableStateOf(0)
         private set
+    var quizzesCompleted by mutableStateOf(0)
+        private set
+    var earnedBadges by mutableStateOf<Set<String>>(emptySet())
+        private set
+
+    /** Longest terpene streak reached, which is what the streak medal reads. */
+    private var bestStreak by mutableStateOf(0)
+        private set
 
     val level: Int get() = TerpeneProgression.levelFor(xp)
     val levelProgress: Float get() = TerpeneProgression.levelProgress(xp)
     val rankTitle: String get() = TerpeneProgression.rankTitle(level)
 
+    /** Badge requirements, derived from live state. */
+    val badgeCounters: BadgeCounters
+        get() = BadgeCounters(
+            discoveredCount = discovered.size,
+            familiesCompleted = TerpeneProgression.completedFamilies(familyMembers(), discovered),
+            favorites = terpenes.count { it.isFavorite },
+            bestStreak = bestStreak,
+            quizzesCorrect = quizzesCorrect
+        )
+
     val badges: List<Badge>
-        get() {
-            val completedFamilies = terpenes
-                .filter { it.family.isNotBlank() }
-                .groupBy { it.family }
-                .count { (_, group) -> group.all { it.id in discovered } }
-            return TerpeneProgression.badges(
-                discoveredCount = discovered.size,
-                familiesCompleted = completedFamilies,
-                favorites = terpenes.count { it.isFavorite },
-                streak = streak,
-                quizzesCorrect = quizzesCorrect
-            )
-        }
+        get() = TerpeneProgression.badges(badgeCounters, earnedBadges)
+
+    /**
+     * The catalog reduced to what the family rule needs, so the reward logic
+     * stays free of any dependency on the repository layer.
+     */
+    private fun familyMembers(): List<TerpeneFamilyMember> =
+        terpenes.map { TerpeneFamilyMember(it.id, it.family) }
 
     init {
         viewModelScope.launch {
             val all = repo.getTerpenes()
+            terpenes = all
             families = all.map { it.family }.filter { it.isNotBlank() }.distinct().sorted()
             effectGroups = all.map { it.effectGroup }.distinct().sorted()
             aromaFamilies = all.map { it.aromaFamily }.distinct().sorted()
@@ -856,8 +870,24 @@ class TerpenesViewModel(container: AppContainer) : ViewModel() {
                 discovered = p.discovered
                 streak = p.streak
                 quizzesCorrect = p.quizCorrect
-                xp = TerpeneProgression.XP_PER_DISCOVERY * p.discovered.size +
-                    TerpeneProgression.XP_PER_QUIZ_CORRECT * p.quizCorrect
+                quizzesCompleted = p.quizzesCompleted
+                earnedBadges = p.earnedBadges
+                bestStreak = maxOf(bestStreak, p.bestStreak)
+                xp = TerpeneProgression.totalXp(
+                    TerpeneXpSources(
+                        discovered = p.discovered.size,
+                        familiesCompleted = TerpeneProgression.completedFamilies(familyMembers(), p.discovered),
+                        quizCorrect = p.quizCorrect,
+                        quizzesCompleted = p.quizzesCompleted
+                    )
+                )
+                // Bank anything newly earned, so a later dip in the counters
+                // cannot revoke it.
+                val held = TerpeneProgression.unlockedBadgeIds(badgeCounters, p.earnedBadges)
+                if (held != p.earnedBadges) {
+                    earnedBadges = held
+                    progress.keepBadges(held)
+                }
             }
         }
     }
@@ -923,6 +953,11 @@ class TerpenesViewModel(container: AppContainer) : ViewModel() {
 
     fun recordQuiz(correct: Boolean) {
         viewModelScope.launch { progress.recordQuiz(correct) }
+    }
+
+    /** Registers a run played through to the last round, for the completion bonus. */
+    fun recordQuizCompleted() {
+        viewModelScope.launch { progress.recordQuizCompleted() }
     }
 
     suspend fun detail(id: String): Terpene? = repo.getTerpene(id)

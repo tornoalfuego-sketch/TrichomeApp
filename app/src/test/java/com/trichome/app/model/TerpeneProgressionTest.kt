@@ -81,13 +81,15 @@ class TerpeneProgressionTest {
 
     @Test
     fun badgesUnlockWithProgressAndStayLockedWithoutIt() {
-        val none = TerpeneProgression.badges(discoveredCount = 0)
+        val none = TerpeneProgression.badges(BadgeCounters())
         val many = TerpeneProgression.badges(
-            discoveredCount = 40,
-            familiesCompleted = 5,
-            favorites = 3,
-            streak = 7,
-            quizzesCorrect = 12
+            BadgeCounters(
+                discoveredCount = 40,
+                familiesCompleted = 5,
+                favorites = 3,
+                bestStreak = 7,
+                quizzesCorrect = 12
+            )
         )
 
         val unlockedAtStart = none.count { it.unlocked }
