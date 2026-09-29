@@ -22,10 +22,29 @@ import com.trichome.app.ui.screens.terpenes.TerpenesScreen
 import com.trichome.app.ui.theme.TrichomeThemeState
 
 /**
+ * Every route the `NavHost` below declares, in one list.
+ *
+ * Exists so a `navigate(...)` call can be checked against the graph instead of
+ * against a route name typed twice. `NavHostController.navigate` throws
+ * `IllegalArgumentException` at runtime for a route nobody declared, which on a
+ * tile tap means a crash rather than a wrong screen — and a `composable("...")`
+ * literal is invisible to the compiler.
+ */
+val DECLARED_ROUTES: Set<String> = setOf(
+    "home", "tents", "journal", "diagnosis", "settings",
+    "calendar", "charts", "terpenes", "breeding",
+    "plant_detail/{plantId}", "protocol/{plantId}",
+    "super_cycle/{plantId}", "journal/{plantId}", "terpene/{terpeneId}"
+)
+
+/**
  * App navigation graph with all routes:
  * - Bottom tabs: home, tents, journal, diagnosis, settings
  * - Plant scoped: plant_detail, protocol, super_cycle, journal/{plantId}
  * - Feature screens: calendar, charts, terpenes, breeding
+ *
+ * Every `composable` below is also listed in [DECLARED_ROUTES]; the test
+ * `AppNavigationRouteTest` fails if the two drift apart.
  */
 @Composable
 fun AppNavigation(
