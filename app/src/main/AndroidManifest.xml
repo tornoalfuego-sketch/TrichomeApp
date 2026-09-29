@@ -10,6 +10,50 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
 
+    <!--
+        Exact alarms. The reminder feature schedules real system alarms, which
+        on API 31+ require SCHEDULE_EXACT_ALARM. USE_EXACT_ALARM is deliberately
+        NOT declared: it is granted at install time but is restricted to
+        alarm-clock style apps, and lint rejects it for everyone else. The
+        scheduler falls back to setAndAllowWhileIdle when the user has not
+        granted the exact-alarm permission.
+
+        SCHEDULE_EXACT_ALARM is itself reported by lint's ProtectedPermissions
+        check because it is a special-access permission. It is kept and the
+        check suppressed here: watering and feeding reminders are the feature,
+        an inexact alarm would drift by minutes or hours, and Android grants
+        the permission on request rather than at install time.
+    -->
+    <uses-permission
+        android:name="android.permission.SCHEDULE_EXACT_ALARM"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <uses-feature android:name="android.hardware.camera.any" android:required="false" />
+
+    <!--
+        Package visibility (Android 11+ / API 30).
+
+        Without these entries, PackageManager.resolveActivity() returns null for
+        the camera and gallery intents even when the apps are installed, and
+        ActivityResultContracts.TakePicturePreview then throws
+        ActivityNotFoundException / SecurityException straight from the click
+        handler, which kills the process.
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.media.action.IMAGE_CAPTURE" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.GET_CONTENT" />
+            <data android:mimeType="image/*" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.PICK" />
+            <data android:mimeType="image/*" />
+        </intent>
+    </queries>
+
     <application
         android:name=".TrichomeApp"
         android:allowBackup="true"
@@ -31,7 +75,38 @@
             </intent-filter>
         </activity>
 
-        <!-- The WorkManager scheduler + notification helpers need no receiver. -->
+        <!--
+            In-process camera capture for the diagnosis and trichome modules.
+            Not exported: it is only reachable from inside the app.
+        -->
+        <activity
+            android:name=".ui.screens.diagnosis.CameraCaptureActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Trichome"
+            android:screenOrientation="portrait"
+            tools:node="merge" />
+
+        <!--
+            Reminder alarms.
+
+            ReminderAlarmReceiver fires the notification when AlarmManager
+            triggers the exact alarm, and ReminderBootReceiver re-arms every
+            pending reminder after a reboot, because AlarmManager drops all
+            registered alarms when the device restarts.
+        -->
+        <receiver
+            android:name=".worker.ReminderAlarmReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".worker.ReminderBootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
 
         <!--
             WorkManager on-demand initialization.
