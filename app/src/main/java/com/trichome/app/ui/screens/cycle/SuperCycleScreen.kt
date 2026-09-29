@@ -205,7 +205,7 @@ private fun SuperCycleResultCard(
     progress: Float,
     accent: Color
 ) {
-    GlassCard(accentColor = accent, glassOpacity = 0.18f) {
+    GlassCard(accentColor = accent) {
         Column(modifier = Modifier.padding(14.dp)) {
             Text("📊 Resultados del SuperCycle", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(12.dp))
