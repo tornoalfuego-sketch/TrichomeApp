@@ -92,8 +92,14 @@ fun TentListScreen(
                                 plants = plants.filter { it.tentId == tent.id }.sortedBy { it.sortOrder },
                                 accent = accent,
                                 glassOpacity = themeState.glassTokens.glassOpacity,
-                                onOpen = {
-                                    navController.navigate("plant_detail/${plants.firstOrNull { p -> p.tentId == tent.id }?.id ?: -1}")
+                                onOpen = { tapped ->
+                                    // A tent with no plants renders no row to
+                                    // tap; if one is ever reached with nothing
+                                    // selected the tap is ignored rather than
+                                    // navigating to a sentinel id.
+                                    TentNavigation.targetForTap(tapped)?.let { route ->
+                                        navController.navigate(route)
+                                    }
                                 },
                                 onEdit = { editingTent = tent },
                                 onDelete = { vm.deleteTent(tent) },
@@ -134,7 +140,7 @@ private fun TentCard(
     plants: List<Plant>,
     accent: Color,
     glassOpacity: Float,
-    onOpen: () -> Unit,
+    onOpen: (Plant) -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onMoveUp: (Plant) -> Unit,
@@ -165,7 +171,7 @@ private fun TentCard(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onOpen() }
+                            .clickable { onOpen(plant) }
                             .padding(vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
