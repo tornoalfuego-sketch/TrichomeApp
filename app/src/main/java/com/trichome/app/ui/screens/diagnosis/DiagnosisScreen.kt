@@ -284,8 +284,7 @@ var currentImageError by remember { mutableStateOf<String?>(null) }
                     DiagnosisReport(
                         result = result,
                         condition = reportCondition!!,
-                        accent = accent,
-                        glassOpacity = themeState.glassTokens.glassOpacity
+                        accent = accent
                     )
 
                     // Register in journal
@@ -352,8 +351,7 @@ var currentImageError by remember { mutableStateOf<String?>(null) }
 private fun DiagnosisReport(
     result: DiagnosisResult,
     condition: DiagnosisCondition,
-    accent: Color,
-    glassOpacity: Float
+    accent: Color
 ) {
     val categoryLabel = when (result.category) {
         "deficiency" -> "Deficiencia"
@@ -363,7 +361,7 @@ private fun DiagnosisReport(
         else -> "Planta Saludable"
     }
 
-    GlassCard(accentColor = accent, glassOpacity = glassOpacity + 0.08f) {
+    GlassCard(accentColor = accent) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("📋 Reporte de Diagnóstico", style = MaterialTheme.typography.titleMedium)
             Row(verticalAlignment = Alignment.CenterVertically) {

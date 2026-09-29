@@ -262,7 +262,6 @@ private fun resolveTargets(
 @Composable
 private fun EventRow(event: GrowEvent, onDelete: () -> Unit) {
     GlassCard(
-        glassOpacity = 0.12f,
         accentColor = MaterialTheme.colorScheme.primary,
         cornerRadius = 14
     ) {

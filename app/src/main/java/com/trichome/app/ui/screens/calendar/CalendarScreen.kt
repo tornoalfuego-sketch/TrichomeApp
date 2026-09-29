@@ -341,7 +341,7 @@ private fun DayDot(color: Color, count: Int) {
 
 @Composable
 private fun MonthEventRow(event: GrowEvent, plantName: String) {
-    GlassCard(glassOpacity = 0.10f, accentColor = MaterialTheme.colorScheme.primary, cornerRadius = 12) {
+    GlassCard(accentColor = MaterialTheme.colorScheme.primary, cornerRadius = 12) {
         Row(
             modifier = Modifier.padding(10.dp),
             verticalAlignment = Alignment.CenterVertically

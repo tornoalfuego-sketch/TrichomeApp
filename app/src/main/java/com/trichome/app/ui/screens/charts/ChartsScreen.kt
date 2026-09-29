@@ -189,7 +189,7 @@ private fun MetricRow(event: GrowEvent, metric: String, accent: Color) {
         "height" -> " cm"
         else -> ""
     }
-    GlassCard(glassOpacity = 0.10f, accentColor = accent, cornerRadius = 12) {
+    GlassCard(accentColor = accent, cornerRadius = 12) {
         Row(
             modifier = Modifier.padding(10.dp),
             verticalAlignment = Alignment.CenterVertically

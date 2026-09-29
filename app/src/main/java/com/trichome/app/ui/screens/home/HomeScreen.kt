@@ -132,7 +132,6 @@ fun HomeScreen(
 private fun StatCard(emoji: String, value: String, label: String, modifier: Modifier = Modifier) {
     GlassCard(
         modifier = modifier,
-        glassOpacity = 0.18f,
         accentColor = MaterialTheme.colorScheme.primary,
         cornerRadius = 20
     ) {

@@ -7,10 +7,12 @@ import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontFamily
@@ -61,6 +63,11 @@ enum class AppFontWeight(val label: String, val weight: FontWeight) {
 data class AppTheme(
     val index: Int,
     val label: String,
+    /**
+     * Spanish name of the opaque counterpart shown when glassmorphism is off.
+     * Kept next to [label] so the two looks of one theme can never drift apart.
+     */
+    val solidLabel: String,
     val emoji: String,
     val isDark: Boolean,
     /** App backdrop. Deliberately much further from [surface] than a glass panel. */
@@ -83,6 +90,7 @@ data class AppTheme(
         val GREEN = AppTheme(
             index = ThemeIndex.GREEN,
             label = "Brote Verde",
+            solidLabel = "Brote Verde Sólido",
             emoji = "🌿",
             isDark = true,
             background = Color(0xFF0A120C),
@@ -97,6 +105,7 @@ data class AppTheme(
         val AUTUMN = AppTheme(
             index = ThemeIndex.AUTUMN,
             label = "Cosecha de Otoño",
+            solidLabel = "Cosecha Otoñal Sólida",
             emoji = "🍂",
             isDark = true,
             background = Color(0xFF140A05),
@@ -111,6 +120,7 @@ data class AppTheme(
         val NIGHT = AppTheme(
             index = ThemeIndex.NIGHT,
             label = "Cuidado Nocturno",
+            solidLabel = "Oscuro Extremo Sólido",
             emoji = "🌙",
             isDark = true,
             background = Color(0xFF05070F),
@@ -125,6 +135,7 @@ data class AppTheme(
         val SUNNY = AppTheme(
             index = ThemeIndex.SUNNY,
             label = "Invernadero Soleado",
+            solidLabel = "Claro Solar Sólido",
             emoji = "☀️",
             isDark = false,
             background = Color(0xFFEFF5E9),
@@ -203,6 +214,64 @@ fun schemeFor(theme: AppTheme, accent: Color): ColorScheme {
 fun readableOn(color: Color): Color =
     if (color.luminance() > 0.45f) Color(0xFF101410) else Color.White
 
+/* ─────────────────────────── WCAG contrast math ─────────────────────────── */
+
+/** WCAG 2.1 AA ratio for body text. Anything below this is unreadable. */
+const val MINIMUM_TEXT_CONTRAST = 4.5f
+
+/**
+ * WCAG 2.1 AA ratio for non-text UI: borders, dividers, panel edges.
+ *
+ * Separate from [MINIMUM_TEXT_CONTRAST] because a panel outline carries no
+ * text, so 4.5:1 is the wrong bar for it — but 3:1 is the right one, and it is
+ * still a real requirement. The solid themes exist to draw a *visible* edge
+ * around each panel, and an outline sitting at 2.5:1 against its own surface
+ * fails that while passing every text assertion.
+ */
+const val MINIMUM_NON_TEXT_CONTRAST = 3f
+
+private val SolidInk = Color(0xFF000000)
+private val SolidIvory = Color(0xFFFFFFFF)
+
+/** Inverse of the sRGB electro-optical transfer function, per WCAG 2.1. */
+private fun linearize(channel: Float): Float {
+    val c = channel.coerceIn(0f, 1f)
+    return if (c <= 0.04045f) c / 12.92f else Math.pow(((c + 0.055f) / 1.055f).toDouble(), 2.4).toFloat()
+}
+
+/**
+ * WCAG relative luminance, computed from the sRGB components.
+ *
+ * Deliberately not `Color.luminance()`: the app runs unit tests with
+ * `isReturnDefaultValues = true`, so any code path that reaches an unmocked
+ * `android.graphics` method returns zero and a contrast assertion would pass
+ * without comparing anything. This version touches no platform API.
+ */
+fun relativeLuminance(color: Color): Float =
+    0.2126f * linearize(color.red) +
+        0.7152f * linearize(color.green) +
+        0.0722f * linearize(color.blue)
+
+/** WCAG contrast ratio between two opaque colours, from 1.0 to 21.0. */
+fun contrastRatio(foreground: Color, background: Color): Float {
+    val a = relativeLuminance(foreground)
+    val b = relativeLuminance(background)
+    val lighter = maxOf(a, b)
+    val darker = minOf(a, b)
+    return (lighter + 0.05f) / (darker + 0.05f)
+}
+
+/**
+ * The black-or-white foreground that actually contrasts more with [color].
+ *
+ * [readableOn] is a luminance threshold, which is why the glass themes still
+ * produced unreadable pairings. Picking the better of the two extremes is
+ * provably at least 4.58:1 for *any* input, which is what the opaque themes
+ * need when the accent is an arbitrary user-chosen colour.
+ */
+fun readableOnStrict(color: Color): Color =
+    if (contrastRatio(SolidInk, color) >= contrastRatio(SolidIvory, color)) SolidInk else SolidIvory
+
 private fun blend(foreground: Color, background: Color, ratio: Float): Color {
     val r = ratio.coerceIn(0f, 1f)
     return Color(
@@ -215,12 +284,287 @@ private fun blend(foreground: Color, background: Color, ratio: Float): Color {
 
 private fun Color.darken(factor: Float): Color = blend(Color.Black, this, factor.coerceIn(0f, 1f))
 
-/* ─────────────────────────── Glass tokens ─────────────────────────────── */
+/* ─────────────────────────── Solid (opaque) themes ─────────────────────── */
+
+/**
+ * The opaque counterpart of an [AppTheme].
+ *
+ * "Solid" means exactly two things: every colour below is fully opaque, and
+ * every `on*` role is resolved with [readableOnStrict] so it clears
+ * [MINIMUM_TEXT_CONTRAST] against the surface it is drawn on. `NIGHT` and
+ * `SUNNY` are the extremes (true black, true white) and the other two mirror
+ * their glass counterparts.
+ */
+data class SolidPalette(
+    val background: Color,
+    val surface: Color,
+    val surfaceVariant: Color,
+    val outline: Color,
+    val outlineVariant: Color,
+    val onBackground: Color,
+    val onSurface: Color,
+    val onSurfaceVariant: Color,
+    val error: Color
+)
+
+/** The four opaque palettes, keyed by [AppTheme.index]. */
+object SolidPalettes {
+
+    val GREEN = SolidPalette(
+        background = Color(0xFF040A06),
+        surface = Color(0xFF15261A),
+        surfaceVariant = Color(0xFF213526),
+        outline = Color(0xFF62815D),
+        outlineVariant = Color(0xFF5F8262),
+        onBackground = Color(0xFFF3F9F2),
+        onSurface = Color(0xFFF3F9F2),
+        onSurfaceVariant = Color(0xFFC2D5C4),
+        error = Color(0xFFFFB4AB)
+    )
+
+    val AUTUMN = SolidPalette(
+        background = Color(0xFF100702),
+        surface = Color(0xFF291608),
+        surfaceVariant = Color(0xFF3A2011),
+        outline = Color(0xFF956944),
+        outlineVariant = Color(0xFF966443),
+        onBackground = Color(0xFFFDF2E7),
+        onSurface = Color(0xFFFDF2E7),
+        onSurfaceVariant = Color(0xFFDDC3A8),
+        error = Color(0xFFFFB4AB)
+    )
+
+    val NIGHT = SolidPalette(
+        background = Color(0xFF000000),
+        surface = Color(0xFF0D111C),
+        surfaceVariant = Color(0xFF17202F),
+        outline = Color(0xFF596D93),
+        outlineVariant = Color(0xFF536A97),
+        onBackground = Color(0xFFF5F7FF),
+        onSurface = Color(0xFFF5F7FF),
+        onSurfaceVariant = Color(0xFFBFC9E0),
+        error = Color(0xFFFFB4AB)
+    )
+
+    val SUNNY = SolidPalette(
+        background = Color(0xFFFCFBF2),
+        surface = Color(0xFFFFFFFF),
+        surfaceVariant = Color(0xFFEDEFDF),
+        outline = Color(0xFF6E7A66),
+        outlineVariant = Color(0xFF858A7C),
+        onBackground = Color(0xFF14180F),
+        onSurface = Color(0xFF14180F),
+        onSurfaceVariant = Color(0xFF3E4739),
+        error = Color(0xFFB3261E)
+    )
+
+    /** Palette for [theme], falling back to [GREEN] for an unknown index. */
+    fun forTheme(theme: AppTheme): SolidPalette = when (theme.index) {
+        ThemeIndex.GREEN -> GREEN
+        ThemeIndex.AUTUMN -> AUTUMN
+        ThemeIndex.NIGHT -> NIGHT
+        ThemeIndex.SUNNY -> SUNNY
+        else -> GREEN
+    }
+}
+
+/**
+ * The opaque Material 3 scheme for a theme, used whenever the glassmorphism
+ * flag is off.
+ *
+ * The accent keeps its meaning: it is the `primary` role, its container is
+ * mixed into the surface, and every `on*` role derived from those user-chosen
+ * colours is resolved with [readableOnStrict] rather than a luminance
+ * threshold, so any accent stays legible.
+ */
+fun solidSchemeFor(theme: AppTheme, accent: Color): ColorScheme {
+    val palette = SolidPalettes.forTheme(theme)
+
+    val primaryContainer = blend(accent, palette.surface, 0.72f)
+    val secondaryBase = if (theme.isDark) theme.secondaryBase else theme.secondaryBase.darken(0.35f)
+    val secondaryContainer = blend(secondaryBase, palette.surface, 0.75f)
+    val tertiaryBase = if (theme.isDark) theme.tertiaryBase else theme.tertiaryBase.darken(0.40f)
+    val tertiaryContainer = blend(tertiaryBase, palette.surface, 0.75f)
+    val errorContainer = blend(palette.error, palette.surface, 0.80f)
+
+    // Every default role of darkColorScheme/lightColorScheme is already opaque;
+    // only the roles the palette owns are replaced.
+    val base = if (theme.isDark) darkColorScheme() else lightColorScheme()
+
+    return base.copy(
+        primary = accent,
+        onPrimary = readableOnStrict(accent),
+        primaryContainer = primaryContainer,
+        onPrimaryContainer = readableOnStrict(primaryContainer),
+        secondary = secondaryBase,
+        onSecondary = readableOnStrict(secondaryBase),
+        secondaryContainer = secondaryContainer,
+        onSecondaryContainer = readableOnStrict(secondaryContainer),
+        tertiary = tertiaryBase,
+        onTertiary = readableOnStrict(tertiaryBase),
+        tertiaryContainer = tertiaryContainer,
+        onTertiaryContainer = readableOnStrict(tertiaryContainer),
+        background = palette.background,
+        onBackground = palette.onBackground,
+        surface = palette.surface,
+        onSurface = palette.onSurface,
+        surfaceVariant = palette.surfaceVariant,
+        onSurfaceVariant = palette.onSurfaceVariant,
+        outline = palette.outline,
+        outlineVariant = palette.outlineVariant,
+        error = palette.error,
+        onError = readableOnStrict(palette.error),
+        errorContainer = errorContainer,
+        onErrorContainer = readableOnStrict(errorContainer)
+    )
+}
+
+/**
+ * The one place where the glassmorphism flag chooses the active scheme.
+ *
+ * Everything that needs a scheme goes through here, so there is no way for one
+ * screen to keep rendering the glass palette while the rest of the app renders
+ * the opaque one.
+ */
+fun activeSchemeFor(theme: AppTheme, accent: Color, glassEnabled: Boolean): ColorScheme =
+    if (glassEnabled) schemeFor(theme, accent) else solidSchemeFor(theme, accent)
+
+/**
+ * Every colour role carried by [scheme], keyed by role name.
+ *
+ * Exists so the opacity guarantee can be checked exhaustively from a JVM test
+ * instead of by hand. All the colours returned here are opaque, but nothing
+ * stops a future edit from introducing a translucent one — this is the tripwire.
+ */
+fun schemeColorsOf(scheme: ColorScheme): Map<String, Color> = mapOf(
+    "primary" to scheme.primary,
+    "onPrimary" to scheme.onPrimary,
+    "primaryContainer" to scheme.primaryContainer,
+    "onPrimaryContainer" to scheme.onPrimaryContainer,
+    "inversePrimary" to scheme.inversePrimary,
+    "secondary" to scheme.secondary,
+    "onSecondary" to scheme.onSecondary,
+    "secondaryContainer" to scheme.secondaryContainer,
+    "onSecondaryContainer" to scheme.onSecondaryContainer,
+    "tertiary" to scheme.tertiary,
+    "onTertiary" to scheme.onTertiary,
+    "tertiaryContainer" to scheme.tertiaryContainer,
+    "onTertiaryContainer" to scheme.onTertiaryContainer,
+    "background" to scheme.background,
+    "onBackground" to scheme.onBackground,
+    "surface" to scheme.surface,
+    "onSurface" to scheme.onSurface,
+    "surfaceVariant" to scheme.surfaceVariant,
+    "onSurfaceVariant" to scheme.onSurfaceVariant,
+    "surfaceTint" to scheme.surfaceTint,
+    "inverseSurface" to scheme.inverseSurface,
+    "inverseOnSurface" to scheme.inverseOnSurface,
+    "error" to scheme.error,
+    "onError" to scheme.onError,
+    "errorContainer" to scheme.errorContainer,
+    "onErrorContainer" to scheme.onErrorContainer,
+    "outline" to scheme.outline,
+    "outlineVariant" to scheme.outlineVariant,
+    "scrim" to scheme.scrim,
+    "surfaceBright" to scheme.surfaceBright,
+    "surfaceDim" to scheme.surfaceDim,
+    "surfaceContainer" to scheme.surfaceContainer,
+    "surfaceContainerHigh" to scheme.surfaceContainerHigh,
+    "surfaceContainerHighest" to scheme.surfaceContainerHighest,
+    "surfaceContainerLow" to scheme.surfaceContainerLow,
+    "surfaceContainerLowest" to scheme.surfaceContainerLowest
+)
+
+/* ─────────────────────────── Glass control ranges ──────────────────────── */
+
+/**
+ * The single source of truth for the glass sliders.
+ *
+ * The repository used to clamp opacity to 0.50 while the state holder and the
+ * Settings slider offered 0.55, so every value in `(0.50, 0.55]` was silently
+ * discarded on restart. All three sites now read these constants, and
+ * [opacity] / [blur] are the exact ranges handed to the sliders.
+ */
+object GlassRanges {
+    const val OPACITY_MIN = 0.05f
+    const val OPACITY_MAX = 0.55f
+    const val BLUR_MIN = 0f
+    const val BLUR_MAX = 32f
+
+    /** Persisted default, also the [GlassTokens] default. */
+    const val OPACITY_DEFAULT = 0.15f
+    const val BLUR_DEFAULT = 12f
+
+    val opacity: ClosedFloatingPointRange<Float> = OPACITY_MIN..OPACITY_MAX
+    val blur: ClosedFloatingPointRange<Float> = BLUR_MIN..BLUR_MAX
+
+    fun clampOpacity(value: Float): Float = value.coerceIn(OPACITY_MIN, OPACITY_MAX)
+    fun clampBlur(value: Float): Float = value.coerceIn(BLUR_MIN, BLUR_MAX)
+}
+
+/* ─────────────────────────── Glass config ──────────────────────────────── */
 
 data class GlassTokens(
-    val glassOpacity: Float = 0.15f,
-    val blurRadius: Float = 12f,
+    val glassOpacity: Float = GlassRanges.OPACITY_DEFAULT,
+    val blurRadius: Float = GlassRanges.BLUR_DEFAULT,
     val accentColor: Color = Color(0xFF66BB6A)
+)
+
+/**
+ * The resolved glass configuration, provided to the whole tree by
+ * [TrichomeTheme] and read by every glass component.
+ *
+ * [enabled] is the on/off preference. When it is `false` the components render
+ * opaque surfaces instead of translucent ones; the three tuning fields stay in
+ * the config either way, so turning the effect back on restores the exact look
+ * the user had set up.
+ */
+data class GlassConfig(
+    val enabled: Boolean = false,
+    val glassOpacity: Float = GlassRanges.OPACITY_DEFAULT,
+    val blurRadius: Float = GlassRanges.BLUR_DEFAULT,
+    val accentColor: Color = Color(0xFF4CAF50)
+) {
+    /**
+     * Applies the per-call-site overrides, if any.
+     *
+     * Note what is *not* overridable: [enabled]. A call site can still nudge
+     * the opacity of one panel, but nothing but the user's preference decides
+     * whether the app is glassy — which is what stops a leftover literal from
+     * silently defeating the toggle.
+     */
+    fun resolve(
+        glassOpacity: Float? = null,
+        blurRadius: Float? = null,
+        accentColor: Color? = null
+    ): GlassConfig = GlassConfig(
+        enabled = enabled,
+        glassOpacity = glassOpacity ?: this.glassOpacity,
+        blurRadius = blurRadius ?: this.blurRadius,
+        accentColor = accentColor ?: this.accentColor
+    )
+}
+
+/**
+ * Reads the glass configuration from the nearest [TrichomeTheme].
+ *
+ * `staticCompositionLocalOf` rather than `compositionLocalOf`: the value is
+ * recomputed on every preference change anyway, and the whole subtree is
+ * invalidated with it, so per-reader recomposition would buy nothing.
+ */
+val LocalGlassConfig = staticCompositionLocalOf { GlassConfig() }
+
+/** Pure projection from the persisted primitives onto the composition local. */
+fun glassConfigOf(
+    enabled: Boolean,
+    glassOpacity: Float,
+    blurRadius: Float,
+    accentArgb: Int
+): GlassConfig = GlassConfig(
+    enabled = enabled,
+    glassOpacity = GlassRanges.clampOpacity(glassOpacity),
+    blurRadius = GlassRanges.clampBlur(blurRadius),
+    accentColor = Color(accentArgb)
 )
 
 /* ─────────────────────────── Typography ───────────────────────────────── */
@@ -288,6 +632,15 @@ class TrichomeThemeState(
     var glassTokens by mutableStateOf(GlassTokens())
         private set
 
+    /**
+     * Whether the app renders translucent glass panels at all.
+     *
+     * Defaults to `false`: a user who never chose a look gets the opaque,
+     * high-contrast themes, which is the safer default for legibility.
+     */
+    var isGlassmorphismEnabled by mutableStateOf(false)
+        private set
+
     var fontScale by mutableStateOf(1.0f)
         private set
 
@@ -323,9 +676,10 @@ class TrichomeThemeState(
             accentColor = Color(prefs.accentArgb)
             fontFamilyIndex = prefs.fontFamilyIndex.coerceIn(AppFontFamily.entries.indices)
             fontWeightIndex = prefs.fontWeightIndex.coerceIn(AppFontWeight.entries.indices)
+            isGlassmorphismEnabled = prefs.glassEnabled
             glassTokens = GlassTokens(
-                glassOpacity = prefs.glassOpacity,
-                blurRadius = prefs.blurRadius,
+                glassOpacity = GlassRanges.clampOpacity(prefs.glassOpacity),
+                blurRadius = GlassRanges.clampBlur(prefs.blurRadius),
                 accentColor = Color(prefs.accentArgb)
             )
         }
@@ -338,15 +692,27 @@ class TrichomeThemeState(
     }
 
     fun setGlassOpacity(opacity: Float) {
-        val v = opacity.coerceIn(0.05f, 0.55f)
+        val v = GlassRanges.clampOpacity(opacity)
         glassTokens = glassTokens.copy(glassOpacity = v)
         scope.launch { appContainer?.appearanceSettings?.setGlassOpacity(v) }
     }
 
     fun setBlurRadius(radius: Float) {
-        val v = radius.coerceIn(0f, 32f)
+        val v = GlassRanges.clampBlur(radius)
         glassTokens = glassTokens.copy(blurRadius = v)
         scope.launch { appContainer?.appearanceSettings?.setBlurRadius(v) }
+    }
+
+    /**
+     * Turns the glassmorphism effect on or off across the whole UI.
+     *
+     * Named `update...` rather than `set...` because the `isGlassmorphismEnabled`
+     * property already compiles to a `setGlassmorphismEnabled(Z)V` setter, and
+     * a function of that name would clash on the JVM signature.
+     */
+    fun updateGlassmorphismEnabled(enabled: Boolean) {
+        isGlassmorphismEnabled = enabled
+        scope.launch { appContainer?.appearanceSettings?.setGlassEnabled(enabled) }
     }
 
     /** The accent is the single source of truth for the `primary` role. */
@@ -375,7 +741,18 @@ class TrichomeThemeState(
         scope.launch { appContainer?.appearanceSettings?.setFontWeightIndex(safe) }
     }
 
-    fun colorScheme(): ColorScheme = schemeFor(theme, accentColor)
+    /**
+     * The config handed to [LocalGlassConfig]. Reading the state fields here is
+     * what subscribes [TrichomeTheme] to every appearance change.
+     */
+    fun glassConfig(): GlassConfig = glassConfigOf(
+        enabled = isGlassmorphismEnabled,
+        glassOpacity = glassTokens.glassOpacity,
+        blurRadius = glassTokens.blurRadius,
+        accentArgb = accentColor.toArgbInt()
+    )
+
+    fun colorScheme(): ColorScheme = activeSchemeFor(theme, accentColor, isGlassmorphismEnabled)
 
     fun typography(): Typography = buildTypography(fontScale, fontFamily, fontWeight)
 }
@@ -398,7 +775,9 @@ fun Color.toArgbHex(): String = toArgbInt().toUInt().toString(16).uppercase().pa
  *
  * The colour scheme and the typography are recomputed on every preference
  * change, so a theme, accent, typeface or size tweak is reflected immediately
- * without recreating the activity.
+ * without recreating the activity. The glass configuration is published
+ * alongside them, which is what lets every glass component read the user's
+ * preference instead of a hardcoded default.
  */
 @Composable
 fun TrichomeTheme(
@@ -407,6 +786,7 @@ fun TrichomeTheme(
 ) {
     val scheme = themeState.colorScheme()
     val typography = themeState.typography()
+    val glassConfig = themeState.glassConfig()
     val view = androidx.compose.ui.platform.LocalView.current
     if (!view.isInEditMode) {
         val context = androidx.compose.ui.platform.LocalContext.current
@@ -422,7 +802,11 @@ fun TrichomeTheme(
 
     MaterialTheme(
         colorScheme = scheme,
-        typography = typography,
-        content = content
-    )
+        typography = typography
+    ) {
+        CompositionLocalProvider(
+            LocalGlassConfig provides glassConfig,
+            content = content
+        )
+    }
 }

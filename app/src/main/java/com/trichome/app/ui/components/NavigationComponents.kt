@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import com.trichome.app.ui.theme.LocalGlassConfig
 import com.trichome.app.ui.theme.TrichomeThemeState
 
 data class BottomBarItem(
@@ -51,7 +52,12 @@ fun GlassmorphicBottomBar(
 ) {
     val scheme = themeState.colorScheme()
     val accent = scheme.primary
-    val alpha = panelAlphaFor(themeState.glassTokens.glassOpacity)
+    // Opaque mode drops the translucency instead of reusing the glass alpha.
+    val alpha = if (themeState.isGlassmorphismEnabled) {
+        panelAlphaFor(themeState.glassTokens.glassOpacity)
+    } else {
+        1f
+    }
 
     Column(modifier = modifier.fillMaxWidth()) {
         Box(
@@ -98,32 +104,62 @@ fun GlassmorphicBottomBar(
     }
 }
 
-/** Quick chip with glass style, e.g. event type chips. */
+/**
+ * Quick chip with glass style, e.g. event type chips.
+ *
+ * [accentColor] is a nullable override so the chip follows the user's accent by
+ * default; the previous hardcoded green made every chip the wrong colour as soon
+ * as the accent was changed. In opaque mode the chip also drops its translucency
+ * and uses the solid surface roles instead of a faded panel.
+ */
 @Composable
 fun GlassChip(
     text: String,
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    accentColor: Color = Color(0xFF66BB6A)
+    accentColor: Color? = null
 ) {
+    val scheme = MaterialTheme.colorScheme
+    val config = LocalGlassConfig.current
+    val accent = accentColor ?: config.accentColor
+
     FilterChip(
         selected = selected,
         onClick = onClick,
         label = { Text(text) },
         modifier = modifier,
-        colors = FilterChipDefaults.filterChipColors(
-            selectedContainerColor = accentColor.copy(alpha = 0.25f),
-            selectedLabelColor = MaterialTheme.colorScheme.onSurface,
-            containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surface.copy(alpha = 0.4f)
-        ),
-        border = FilterChipDefaults.filterChipBorder(
-            enabled = true,
-            selected = selected,
-            borderColor = accentColor.copy(alpha = 0.6f),
-            selectedBorderColor = accentColor,
-            borderWidth = 1.dp,
-            selectedBorderWidth = 1.dp
-        )
+        colors = if (config.enabled) {
+            FilterChipDefaults.filterChipColors(
+                selectedContainerColor = accent.copy(alpha = 0.25f),
+                selectedLabelColor = scheme.onSurface,
+                containerColor = scheme.surface.copy(alpha = 0.4f)
+            )
+        } else {
+            FilterChipDefaults.filterChipColors(
+                selectedContainerColor = scheme.secondaryContainer,
+                selectedLabelColor = scheme.onSecondaryContainer,
+                containerColor = scheme.surfaceVariant
+            )
+        },
+        border = if (config.enabled) {
+            FilterChipDefaults.filterChipBorder(
+                enabled = true,
+                selected = selected,
+                borderColor = accent.copy(alpha = 0.6f),
+                selectedBorderColor = accent,
+                borderWidth = 1.dp,
+                selectedBorderWidth = 1.dp
+            )
+        } else {
+            FilterChipDefaults.filterChipBorder(
+                enabled = true,
+                selected = selected,
+                borderColor = scheme.outline,
+                selectedBorderColor = scheme.outline,
+                borderWidth = 1.dp,
+                selectedBorderWidth = 1.dp
+            )
+        }
     )
 }
