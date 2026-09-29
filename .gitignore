@@ -27,3 +27,6 @@ Thumbs.db
 
 # Agent tooling caches
 .atl/
+
+# CodeGraph local index (regenerate with: codegraph init)
+.codegraph/
