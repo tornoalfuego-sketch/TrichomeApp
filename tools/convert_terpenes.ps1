@@ -44,10 +44,35 @@ function New-Entry {
 $existingPath = Resolve-Path 'app\src\main\assets\data\terpenes.json'
 $existing = ([System.IO.File]::ReadAllText($existingPath, [System.Text.Encoding]::UTF8) | ConvertFrom-Json)
 
-# Enrichment for rows that shipped as stubs. The original ten entries carried
-# no chemistry at all, which left them as bare names in an encyclopedia whose
-# whole promise is doctoral-level detail. Blank fields are filled from here;
-# fields that already have content are never overwritten.
+# ── Source data, and the order of authority ────────────────────────────────────
+# The pipe files are the authored source. terpenes.json is generated OUTPUT and
+# must never be treated as the source of truth for text, because a corrupted
+# output that "already has content" is then preserved forever.
+#
+# That is not hypothetical: an earlier version gave the existing JSON priority,
+# so a run that had written mojibake into the accents -- every accented Spanish
+# character became two box-drawing codepoints, and the degree sign in 158 boiling
+# points became U+252C U+2591 -- could never be repaired. The pipe files were
+# clean the whole time. The source now wins; the JSON is a cache.
+$source = @{}
+foreach ($candidate in @('tools\terp_source.txt', 'build\gen\terp_*.txt')) {
+  $files = @(Get-ChildItem $candidate -ErrorAction SilentlyContinue | Sort-Object Name)
+  if ($files.Count -eq 0) { continue }
+  foreach ($file in $files) {
+    foreach ($line in [System.IO.File]::ReadAllLines($file.FullName, [System.Text.Encoding]::UTF8)) {
+      if ([string]::IsNullOrWhiteSpace($line)) { continue }
+      $f = $line.Split('|')
+      if ($f.Count -ne 17) { throw "Source field count $($f.Count) for $($f[0])" }
+      if (-not $source.ContainsKey($f[0])) { $source[$f[0]] = $f }
+    }
+  }
+  break
+}
+if ($source.Count -eq 0) { throw "No terpene source found; refusing to regenerate from nothing." }
+
+# Enrichment for rows that shipped as stubs. The original ten entries carried no
+# chemistry at all, which left them as bare names in an encyclopedia whose whole
+# promise is doctoral-level detail. It is a FALLBACK now, not an overlay.
 $enrichPath = $null
 foreach ($candidate in @('tools\terp_legacy_enrichment.txt', 'build\gen\terp_legacy_enrichment.txt')) {
   if (Test-Path $candidate) { $enrichPath = Join-Path (Get-Location) $candidate; break }
@@ -67,19 +92,47 @@ $fieldMap = @{
   effects = 7; medical = 8; mechanism = 9; biosynth = 10; toxicity = 11
   pairs = 12; foundIn = 13; strains = 14; richness = 15; bp = 16
 }
+# Codepoints a mojibake pass leaves behind. A single accented Spanish character
+# was being written as two of these, so "Cítrico" arrived as C U+251C U+00A1 trico
+# and nothing downstream could tell it from intended text.
+$mojibakePattern = '[\u251C\u2502\u2551\u252C\u2591\u2592\u2500\u2550\u256D]'
+function Is-Corrupt($v) {
+  if ($null -eq $v) { return $false }
+  return "$v" -match $mojibakePattern
+}
+# Source first, enrichment second, the existing JSON only as a last resort -- and
+# never when it is corrupt.
 function Enrich($id, $field, $current) {
-  if ($current -and "$current".Trim()) { return $current }
-  if (-not $enrich.ContainsKey($id)) { return $current }
-  $v = $enrich[$id][$fieldMap[$field]]
-  if ($v -and $v.Trim()) { return $v.Trim() }
+  $idx = $fieldMap[$field]
+  if ($source.ContainsKey($id)) {
+    $v = $source[$id][$idx]
+    if ($v -and $v.Trim()) { return $v.Trim() }
+  }
+  if ($enrich.ContainsKey($id)) {
+    $v = $enrich[$id][$idx]
+    if ($v -and $v.Trim()) { return $v.Trim() }
+  }
+  if ((Is-Corrupt $current) -or -not ($current -and "$current".Trim())) { return '' }
   return $current
 }
 # A field can hold either a list or, in older assets, a stray object. Coerce
 # both shapes to a list so the shipped JSON matches the app's schema.
+#
+# A `;`-joined string must be SPLIT before it can be merged. Returning it whole
+# made every merge append the enrichment as one opaque blob instead of
+# deduplicating item by item, so re-running the generator grew strains, effects,
+# synergies and sources on every pass: 517 references became 544, and myrcene
+# ended up listing OG Kush and Blue Dream twice. An empty result also unrolls to
+# $null in PowerShell 5.1, so the call site wraps this in @().
 function As-List($v) {
   if ($null -eq $v) { return @() }
-  if ($v -is [string]) { return @($v) }
-  if ($v -is [System.Collections.IEnumerable]) { return @($v | ForEach-Object { "$_" }) }
+  if ($v -is [string]) {
+    if (-not $v.Trim()) { return @() }
+    return @($v.Split(';') | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+  }
+  if ($v -is [System.Collections.IEnumerable]) {
+    return @($v | ForEach-Object { "$_".Trim() } | Where-Object { $_ })
+  }
   return @()
 }
 function As-Text($v) { if ($null -eq $v) { return '' } else { return "$v" } }
@@ -147,10 +200,39 @@ $withChemistry = @($check.terpenes | Where-Object { $_.formula -and $_.mechanism
 if ($check.terpenes.Count -gt 10 -and $withChemistry -lt ($check.terpenes.Count * 4 / 5)) {
   $schemaErrors += "only $withChemistry of $($check.terpenes.Count) entries carry a formula and mechanism"
 }
+# Idempotence guard on the list fields. As-List once failed to split the
+# `;`-joined enrichment strings, so every re-run appended the whole enrichment
+# blob as one extra item and the catalogue grew: 517 references became 544 and
+# myrcene listed OG Kush and Blue Dream twice. The schema checks above all
+# passed while this happened, because a duplicated list is still a valid list.
+foreach ($t in $check.terpenes) {
+  foreach ($f in @('effects', 'medicalProperties', 'pairsWith', 'strains', 'foundIn')) {
+    $items = @($t.$f)
+    if ($items.Count -ne @($items | Select-Object -Unique).Count) {
+      $schemaErrors += "$($t.id)/$f lists $($items.Count) items with a repeat: $($items -join ', ')"
+    }
+  }
+}
+# Display names must be unique too: three isomer pairs once shipped under one
+# Spanish name, so the encyclopedia showed two identical rows.
+$nameCollisions = @($check.terpenes | Group-Object name | Where-Object { $_.Count -gt 1 })
+foreach ($c in $nameCollisions) {
+  $schemaErrors += "display name '$($c.Name)' is used by $($c.Count) entries: $(($c.Group | ForEach-Object { $_.id }) -join ', ')"
+}
+# Mojibake guard. A corrupted accent is still a valid string, so every schema
+# check above passes while the encyclopedia shows C U+251C U+00A1 trico instead
+# of Cítrico. This is the one check that catches an encoding regression.
+foreach ($t in $check.terpenes) {
+  foreach ($f in @('name', 'aroma', 'taste', 'mechanism', 'biosynthesis', 'toxicity', 'richness', 'boilingPoint')) {
+    if (Is-Corrupt $t.$f) { $schemaErrors += "$($t.id)/$f contains mojibake: '$($t.$f)'" }
+  }
+}
 if ($schemaErrors.Count -gt 0) {
   $schemaErrors | ForEach-Object { "SCHEMA ERROR: $_" }
   throw "terpenes.json does not match the app's schema; refusing to pass this build off as valid."
 }
+"source rows   : $($source.Count)"
+"enrichment    : $(if ($enrich.Count -gt 0) { $enrich.Count } else { 'none' })"
 "kept existing : $kept"
 "added         : $added"
 "total written : $($check.terpenes.Count)"
