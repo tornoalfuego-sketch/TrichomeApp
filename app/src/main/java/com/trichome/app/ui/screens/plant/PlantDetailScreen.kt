@@ -13,14 +13,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.trichome.app.data.entity.GrowEvent
 import com.trichome.app.model.Phase
 import com.trichome.app.model.StageProgressEngine
 import com.trichome.app.model.SuperCycleEngine
+import com.trichome.app.model.SuperCycleResult
 import com.trichome.app.ui.components.FloatingOrbBackground
 import com.trichome.app.ui.components.GlassCard
 import com.trichome.app.ui.components.GlassProgressIndicator
 import com.trichome.app.ui.components.GlassmorphicBottomBar
 import com.trichome.app.ui.theme.TrichomeThemeState
+import com.trichome.app.viewmodel.PlantDetailUiState
 import com.trichome.app.viewmodel.PlantDetailViewModel
 import com.trichome.app.viewmodel.appViewModel
 
@@ -42,10 +45,10 @@ fun PlantDetailScreen(
         vm.loadPlant(plantId)
         vm.loadSuperCycle(plantId)
         vm.loadLatestStage(plantId)
-        vm.loadStageProgress(plantId)
     }
 
-    val plant = vm.plant
+    val uiState = vm.uiState
+    val plant = (uiState as? PlantDetailUiState.Success)?.plant
     val tintAccent = themeState.accentColor
 
     Box {
@@ -96,117 +99,176 @@ fun PlantDetailScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                if (plant == null) {
-                    Text("Cargando planta…", style = MaterialTheme.typography.bodyLarge)
-                    return@Column
-                }
-
-                // ── Header info ──────────────────────────────────────────
-                GlassCard(accentColor = accent, glassOpacity = themeState.glassTokens.glassOpacity) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("Día de Crecimiento", style = MaterialTheme.typography.labelLarge)
-                            Text(
-                                "${vm.daysInGrow} días",
-                                style = MaterialTheme.typography.displaySmall,
-                                color = accent
-                            )
-                            Text(
-                                plant.strain.ifBlank { "Cepa sin nombre" } + " · " + plant.currentStage,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
+                when (uiState) {
+                    PlantDetailUiState.Loading -> {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            CircularProgressIndicator(color = accent)
+                            Text("Cargando planta…", style = MaterialTheme.typography.bodyLarge)
                         }
-                        GlassProgressIndicator(
-                            percentage = 1f,
-                            size = 72,
-                            color = accent
+                    }
+
+                    is PlantDetailUiState.Error -> {
+                        GlassCard(accentColor = accent, glassOpacity = themeState.glassTokens.glassOpacity) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Text(
+                                    "⚠️ No pudimos abrir la planta",
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Text(
+                                    uiState.message,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Button(
+                                    onClick = { navController.popBackStack() },
+                                    colors = ButtonDefaults.buttonColors(containerColor = accent)
+                                ) {
+                                    Text("← Volver a las carpas")
+                                }
+                            }
+                        }
+                    }
+
+                    is PlantDetailUiState.Success -> {
+                        val success = uiState
+                        PlantDetailContent(
+                            success = success,
+                            superCycleResult = vm.superCycleResult,
+                            events = vm.events,
+                            accent = accent,
+                            glassOpacity = themeState.glassTokens.glassOpacity
                         )
                     }
                 }
+            }
+        }
+    }
+}
 
-                // ── SuperCycle status ────────────────────────────────────
-                vm.superCycleResult?.let { result ->
-                    GlassCard(accentColor = accent, glassOpacity = themeState.glassTokens.glassOpacity) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text("☀️ Fase actual", style = MaterialTheme.typography.titleMedium)
-                            Spacer(Modifier.height(8.dp))
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                val phaseText = when (result.phase) {
-                                    Phase.LIGHT -> "☀️ LUZ"
-                                    Phase.DARK -> "🌙 OSCURIDAD"
-                                    Phase.OFF -> "⏸️ OFF"
-                                }
-                                Text(phaseText, style = MaterialTheme.typography.headlineSmall)
-                                Spacer(Modifier.weight(1f))
-                                GlassProgressIndicator(
-                                    percentage = result.phaseProgress,
-                                    size = 64,
-                                    color = if (result.isLight) Color(0xFFFFD54F) else Color(0xFF7C4DFF)
-                                )
-                            }
-                            Spacer(Modifier.height(8.dp))
-                            Text(
-                                "Superday ${result.superday} · ${result.hoursRemainingInPhase}h restantes · ${result.phasePercentage.toInt()}%",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
-                    }
-                }
+/**
+ * Everything the plant itself contributes to the screen, rendered only once the
+ * row has resolved.
+ */
+@Composable
+private fun PlantDetailContent(
+    success: PlantDetailUiState.Success,
+    superCycleResult: SuperCycleResult?,
+    events: List<GrowEvent>,
+    accent: Color,
+    glassOpacity: Float
+) {
+    val plant = success.plant
 
-                // ── Stage progress (protocol blocks) ─────────────────────
-                vm.stageProgress?.let { sp ->
-                    GlassCard(accentColor = accent, glassOpacity = themeState.glassTokens.glassOpacity) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text("📈 Progreso del protocolo", style = MaterialTheme.typography.titleMedium)
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                "Etapa: ${sp.stageName}",
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                            Text(
-                                "Día ${sp.daysInCurrentStage} en etapa · ${sp.daysRemainingInStage} restantes · de ${sp.totalCycleDays} días",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            Spacer(Modifier.height(8.dp))
-                            LinearProgressIndicator(
-                                progress = { sp.overallProgress },
-                                modifier = Modifier.fillMaxWidth(),
-                                color = accent
-                            )
-                        }
-                    }
-                }
+    // ── Header info ─────────────────────────────────────────────────────
+    GlassCard(accentColor = accent, glassOpacity = glassOpacity) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Día de Crecimiento", style = MaterialTheme.typography.labelLarge)
+                Text(
+                    "${success.daysInGrow} días",
+                    style = MaterialTheme.typography.displaySmall,
+                    color = accent
+                )
+                Text(
+                    plant.strain.ifBlank { "Cepa sin nombre" } + " · " + plant.currentStage,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+            GlassProgressIndicator(
+                percentage = 1f,
+                size = 72,
+                color = accent
+            )
+        }
+    }
 
-                // ── Latest events ────────────────────────────────────────
-                GlassCard(accentColor = accent, glassOpacity = themeState.glassTokens.glassOpacity) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text("📒 Últimos eventos", style = MaterialTheme.typography.titleMedium)
-                        Spacer(Modifier.height(8.dp))
-                        val latest = vm.events.take(4)
-                        if (latest.isEmpty()) {
-                            Text("Sin eventos registrados", style = MaterialTheme.typography.bodyMedium)
-                        } else {
-                            latest.forEach { e ->
-                                Text(
-                                    "• ${com.trichome.app.ui.screens.journal.EventTypeUi.labelResolved(e.eventType)} — ${dateShort(e.timestamp)}",
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            }
-                        }
+    // ── SuperCycle status ───────────────────────────────────────────────
+    superCycleResult?.let { result ->
+        GlassCard(accentColor = accent, glassOpacity = glassOpacity) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text("☀️ Fase actual", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    val phaseText = when (result.phase) {
+                        Phase.LIGHT -> "☀️ LUZ"
+                        Phase.DARK -> "🌙 OSCURIDAD"
+                        Phase.OFF -> "⏸️ OFF"
                     }
+                    Text(phaseText, style = MaterialTheme.typography.headlineSmall)
+                    Spacer(Modifier.weight(1f))
+                    GlassProgressIndicator(
+                        percentage = result.phaseProgress,
+                        size = 64,
+                        color = if (result.isLight) Color(0xFFFFD54F) else Color(0xFF7C4DFF)
+                    )
                 }
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "Superday ${result.superday} · ${result.hoursRemainingInPhase}h restantes · ${result.phasePercentage.toInt()}%",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+    }
 
-                if (plant.notes.isNotBlank()) {
-                    GlassCard(accentColor = accent) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text("📝 Notas", style = MaterialTheme.typography.titleMedium)
-                            Text(plant.notes, style = MaterialTheme.typography.bodyMedium)
-                        }
-                    }
+    // ── Stage progress (protocol blocks) ─────────────────────────────────
+    success.stageProgress?.let { sp ->
+        GlassCard(accentColor = accent, glassOpacity = glassOpacity) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text("📈 Progreso del protocolo", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "Etapa: ${sp.stageName}",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Text(
+                    "Día ${sp.daysInCurrentStage} en etapa · ${sp.daysRemainingInStage} restantes · de ${sp.totalCycleDays} días",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(Modifier.height(8.dp))
+                LinearProgressIndicator(
+                    progress = { sp.overallProgress },
+                    modifier = Modifier.fillMaxWidth(),
+                    color = accent
+                )
+            }
+        }
+    }
+
+    // ── Latest events ───────────────────────────────────────────────────
+    GlassCard(accentColor = accent, glassOpacity = glassOpacity) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("📒 Últimos eventos", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(8.dp))
+            val latest = events.take(4)
+            if (latest.isEmpty()) {
+                Text("Sin eventos registrados", style = MaterialTheme.typography.bodyMedium)
+            } else {
+                latest.forEach { e ->
+                    Text(
+                        "• ${com.trichome.app.ui.screens.journal.EventTypeUi.labelResolved(e.eventType)} — ${dateShort(e.timestamp)}",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                 }
+            }
+        }
+    }
+
+    if (plant.notes.isNotBlank()) {
+        GlassCard(accentColor = accent) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text("📝 Notas", style = MaterialTheme.typography.titleMedium)
+                Text(plant.notes, style = MaterialTheme.typography.bodyMedium)
             }
         }
     }

@@ -12,10 +12,14 @@ import com.trichome.app.di.AppContainer
 import com.trichome.app.domain.vision.PhotoAnalyzer
 import com.trichome.app.model.*
 import com.trichome.app.worker.ReminderAlarmScheduler
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 
 /** Factory helper: `viewModelFactory { initializer { ... } }` (per architecture rules). */
 @Composable
@@ -113,6 +117,99 @@ class TentViewModel(container: AppContainer) : ViewModel() {
 
 /* ─────────────────────────── Plant detail ─────────────────────────────── */
 
+/**
+ * Screen state of a plant detail.
+ *
+ * The endless `"Cargando planta…"` spinner came from having no terminal state
+ * for a missing id: `loadPlant` wrote nothing when the lookup returned `null`,
+ * so the screen had only `Loading` left to draw. Every load now lands on exactly
+ * one of these three.
+ */
+sealed interface PlantDetailUiState {
+    /** The lookup is in flight. */
+    data object Loading : PlantDetailUiState
+
+    /**
+     * The plant resolved.
+     *
+     * [stageProgress] is null when no active protocol applies, which is a normal
+     * state and not a failure.
+     */
+    data class Success(
+        val plant: Plant,
+        val daysInGrow: Int,
+        val stageProgress: StageProgressEngine.StageProgress?
+    ) : PlantDetailUiState
+
+    /** [message] is Spanish and ready to be shown to the user as-is. */
+    data class Error(val message: String) : PlantDetailUiState
+}
+
+/**
+ * The decision behind [PlantDetailUiState], free of Android and Compose so it
+ * runs on the JVM under test.
+ *
+ * [load] cannot return [PlantDetailUiState.Loading]: a lookup that is missing,
+ * that fails, or that never answers all end on a terminal state, so no caller
+ * can be left hanging on a spinner.
+ */
+object PlantDetailLoader {
+
+    /** Upper bound on one plant lookup. Room reads are local; this is slack. */
+    const val LOOKUP_TIMEOUT_MS = 5_000L
+
+    private const val ERROR_NOT_FOUND =
+        "No encontramos esta planta. Puede que se haya eliminado."
+    private const val ERROR_TIMEOUT =
+        "La planta tardó demasiado en cargar. Inténtalo de nuevo."
+    private const val ERROR_READ =
+        "No se pudo leer la planta desde la base de datos."
+
+    /**
+     * Resolves the plant into a terminal [PlantDetailUiState].
+     *
+     * @param lookupPlant read of the row, bounded by [timeoutMillis].
+     * @param stageProgressFor best-effort protocol progress. It receives the
+     *   plant this call itself resolved, never a field another coroutine may not
+     *   have written yet — that read is the race this shape removes.
+     */
+    suspend fun load(
+        lookupPlant: suspend () -> Plant?,
+        stageProgressFor: suspend (Plant) -> StageProgressEngine.StageProgress? = { null },
+        nowMillis: Long = System.currentTimeMillis(),
+        timeoutMillis: Long = LOOKUP_TIMEOUT_MS
+    ): PlantDetailUiState {
+        val plant = try {
+            withTimeout(timeoutMillis) { lookupPlant() }
+        } catch (e: TimeoutCancellationException) {
+            // Only this scope was cancelled; the caller's job is still active,
+            // so reporting a failure here is safe.
+            return PlantDetailUiState.Error(ERROR_TIMEOUT)
+        } catch (e: CancellationException) {
+            // The caller went away. Structured concurrency wins over reporting.
+            throw e
+        } catch (e: Exception) {
+            return PlantDetailUiState.Error(ERROR_READ)
+        }
+        if (plant == null) return PlantDetailUiState.Error(ERROR_NOT_FOUND)
+
+        // Missing or broken protocol data costs the stage card, never the plant.
+        val progress = try {
+            withTimeoutOrNull(timeoutMillis) { stageProgressFor(plant) }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            null
+        }
+
+        return PlantDetailUiState.Success(
+            plant = plant,
+            daysInGrow = StageProgressEngine.daysInGrow(plant.growStartTimestamp, nowMillis),
+            stageProgress = progress
+        )
+    }
+}
+
 class PlantDetailViewModel(container: AppContainer) : ViewModel() {
     private val plantRepo = container.plantRepository
     private val superCycleRepo = container.superCycleRepository
@@ -120,36 +217,74 @@ class PlantDetailViewModel(container: AppContainer) : ViewModel() {
     private val protocolRepo = container.protocolRepository
     private val stageEntryRepo = container.stageEntryRepository
 
-    var plant by mutableStateOf<Plant?>(null)
+    /** Whole-screen state. Starts and reloads on [PlantDetailUiState.Loading]. */
+    var uiState by mutableStateOf<PlantDetailUiState>(PlantDetailUiState.Loading)
         private set
 
     var superCycleResult by mutableStateOf<SuperCycleResult?>(null)
         private set
 
-    var daysInGrow by mutableStateOf(1)
-        private set
-
-    var events by mutableStateOf<List<GrowEvent>>(emptyList())
-        private set
-
     var latestStageEntry by mutableStateOf<StageEntry?>(null)
         private set
 
-    var stageProgress by mutableStateOf<StageProgressEngine.StageProgress?>(null)
+    /**
+     * Single source of truth for this plant's events.
+     *
+     * There used to be a second `MutableStateFlow` written on every emission
+     * alongside this field; one writer, one value.
+     */
+    var events by mutableStateOf<List<GrowEvent>>(emptyList())
         private set
 
-    val eventsFlow = MutableStateFlow<List<GrowEvent>>(emptyList())
-
+    /**
+     * Loads [plantId] and publishes a terminal [uiState].
+     *
+     * Stage progress is resolved here, from the plant this same call returned.
+     * The previous `loadStageProgress` read the plain `plant` field from a
+     * second coroutine launched in the same `LaunchedEffect`, so on a cold open
+     * it always found null and the stage card never rendered.
+     */
     fun loadPlant(plantId: Long) {
         viewModelScope.launch {
-            plantRepo.getPlantById(plantId)?.let { p ->
-                plant = p
-                daysInGrow = StageProgressEngine.daysInGrow(p.growStartTimestamp)
-            }
+            uiState = PlantDetailUiState.Loading
+            uiState = PlantDetailLoader.load(
+                lookupPlant = { plantRepo.getPlantById(plantId) },
+                stageProgressFor = { plant -> resolveStageProgress(plantId, plant) }
+            )
+        }
+        // Events stream forever, so they need their own coroutine: a bare
+        // `collect()` inside the load above would never return and would keep
+        // the state from ever being published.
+        viewModelScope.launch {
             eventRepo.getEventsByPlant(plantId)
-                .onEach { eventsFlow.value = it; events = it }
+                .onEach { events = it }
                 .collect()
         }
+    }
+
+    /**
+     * Progress of the protocol bound to [plantId], derived from [current]'s own
+     * grow start.
+     *
+     * @return null when the plant has no active protocol or its stages are
+     *   unusable — both are normal and leave the rest of the screen intact.
+     */
+    private suspend fun resolveStageProgress(
+        plantId: Long,
+        current: Plant,
+        now: Long = System.currentTimeMillis()
+    ): StageProgressEngine.StageProgress? {
+        val protocol = protocolRepo.getActiveProtocols().firstOrNull { it.plantId == plantId }
+            ?: return null
+        val blocks = protocolRepo.getStages(protocol.id)
+            .sortedBy { it.sortOrder }
+            .map { StageProgressEngine.StageBlock(it.stageName, it.durationDays) }
+        if (blocks.isEmpty()) return null
+        return StageProgressEngine.calculateProgress(
+            blocks = blocks,
+            startTimestamp = current.growStartTimestamp,
+            nowTimestamp = now
+        )
     }
 
     fun loadSuperCycle(plantId: Long, now: Long = System.currentTimeMillis()) {
@@ -167,24 +302,6 @@ class PlantDetailViewModel(container: AppContainer) : ViewModel() {
     fun loadLatestStage(plantId: Long) {
         viewModelScope.launch {
             latestStageEntry = stageEntryRepo.getLatestStageEntry(plantId)
-        }
-    }
-
-    fun loadStageProgress(plantId: Long) {
-        viewModelScope.launch {
-            val current = plant ?: return@launch
-            val activeProtocols = protocolRepo.getActiveProtocols().filter { it.plantId == plantId }
-            val protocol = activeProtocols.firstOrNull() ?: return@launch
-            val blocks = protocolRepo.getStages(protocol.id)
-                .sortedBy { it.sortOrder }
-                .map { StageProgressEngine.StageBlock(it.stageName, it.durationDays) }
-            if (blocks.isNotEmpty()) {
-                stageProgress = StageProgressEngine.calculateProgress(
-                    blocks = blocks,
-                    startTimestamp = current.growStartTimestamp,
-                    nowTimestamp = System.currentTimeMillis()
-                )
-            }
         }
     }
 
