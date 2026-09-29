@@ -84,7 +84,13 @@ class EventRepository(private val dao: EventDao) {
     suspend fun updateEvent(event: GrowEvent) = dao.updateEvent(event)
     suspend fun deleteEvent(event: GrowEvent) = dao.deleteEvent(event)
     suspend fun getEventsByType(type: String, limit: Int): List<GrowEvent> = dao.getEventsByType(type, limit)
-    suspend fun getEventsBetween(from: Long, to: Long): List<GrowEvent> = dao.getEventsBetween(from, to)
+    /**
+     * Events inside a month window, observed. Replaces the one-shot
+     * `getEventsBetween`, which left the calendar stale until the user changed
+     * month. The window stays bounded, so this never reads the whole table.
+     */
+    fun watchEventsBetween(from: Long, to: Long): Flow<List<GrowEvent>> =
+        dao.watchEventsBetween(from, to)
     suspend fun getEventsByTypeInRange(plantId: Long, type: String, from: Long, to: Long): List<GrowEvent> =
         dao.getEventsByTypeInRange(plantId, type, from, to)
 
@@ -123,10 +129,12 @@ class BreedingRepository(private val dao: BreedingDao) {
     fun getAllProjects(): Flow<List<BreedingProject>> = dao.getAllProjects()
     suspend fun getProjectById(id: Long): BreedingProject? = dao.getProjectById(id)
     suspend fun insertProject(project: BreedingProject): Long = dao.insertProject(project)
+    suspend fun updateProject(project: BreedingProject) = dao.updateProject(project)
     suspend fun deleteProject(project: BreedingProject) = dao.deleteProject(project)
     suspend fun getCrossesByProject(projectId: Long): List<BreedingCross> = dao.getCrossesByProject(projectId)
     fun getAllCrosses(): Flow<List<BreedingCross>> = dao.getAllCrosses()
     suspend fun insertCross(cross: BreedingCross): Long = dao.insertCross(cross)
+    suspend fun updateCross(cross: BreedingCross) = dao.updateCross(cross)
     suspend fun deleteCross(cross: BreedingCross) = dao.deleteCross(cross)
 }
 

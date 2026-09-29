@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -58,8 +59,13 @@ fun BreedingScreen(
         glossary = container.breedingContentRepository.getGlossary()
     }
 
+    // One slot per dialog, each carrying the row it was opened on. A null row
+    // means "new"; a non-null one means the form is seeded from it and the save
+    // updates it. `BreedingDao` had no `@Update` before, so every save here was
+    // an insert and editing a cross produced a duplicate.
+    var projectTarget by remember { mutableStateOf<BreedingProject?>(null) }
     var showProjectDialog by remember { mutableStateOf(false) }
-    var crossTarget by remember { mutableStateOf<BreedingProject?>(null) }
+    var crossTarget by remember { mutableStateOf<Pair<BreedingProject, BreedingCross?>?>(null) }
 
     // A tap only arms the dialog; the project and its crosses go once the user
     // confirms, naming the row they picked.
@@ -131,7 +137,9 @@ fun BreedingScreen(
                         accent = accent,
                         glassOpacity = themeState.glassTokens.glassOpacity,
                         onDeleteProject = { deleteProjectConfirmation.request(it) },
-                        onAddCross = { crossTarget = it },
+                        onEditProject = { projectTarget = it },
+                        onAddCross = { crossTarget = it to null },
+                        onEditCross = { project, cross -> crossTarget = project to cross },
                         onDeleteCross = { deleteCrossConfirmation.request(it) }
                     )
                 }
@@ -139,24 +147,39 @@ fun BreedingScreen(
         }
     }
 
-    if (showProjectDialog) {
+    if (showProjectDialog || projectTarget != null) {
         ProjectDialog(
+            project = projectTarget,
             accent = accent,
-            onDismiss = { showProjectDialog = false },
-            onSave = { name, mother, father, generation ->
-                scope.launch { vm.addProject(name, mother, father, generation) }
+            onDismiss = { showProjectDialog = false; projectTarget = null },
+            onSave = { saved ->
+                scope.launch {
+                    if (BreedingForm.isNew(saved.id)) {
+                        vm.addProject(saved.name, saved.motherId, saved.fatherId, saved.generation)
+                    } else {
+                        vm.updateProject(saved)
+                    }
+                }
                 showProjectDialog = false
+                projectTarget = null
             }
         )
     }
 
-    crossTarget?.let { project ->
+    crossTarget?.let { (project, cross) ->
         CrossDialog(
             project = project,
+            cross = cross,
             accent = accent,
             onDismiss = { crossTarget = null },
-            onSave = { parent1, parent2, score, notes ->
-                scope.launch { vm.addCross(project.id, parent1, parent2, score, notes) }
+            onSave = { saved ->
+                scope.launch {
+                    if (BreedingForm.isNew(saved.id)) {
+                        vm.addCross(project.id, saved.parent1, saved.parent2, saved.phenotypeScore, saved.notes)
+                    } else {
+                        vm.updateCross(saved)
+                    }
+                }
                 crossTarget = null
             }
         )
@@ -231,7 +254,9 @@ private fun ProjectsTab(
     accent: Color,
     glassOpacity: Float,
     onDeleteProject: (BreedingProject) -> Unit,
+    onEditProject: (BreedingProject) -> Unit,
     onAddCross: (BreedingProject) -> Unit,
+    onEditCross: (BreedingProject, BreedingCross) -> Unit,
     onDeleteCross: (BreedingCross) -> Unit
 ) {
     if (projects.isEmpty()) {
@@ -258,6 +283,9 @@ private fun ProjectsTab(
                                 "Madre: ${project.motherId.ifBlank { "—" }} · Padre: ${project.fatherId.ifBlank { "—" }} · ${project.generation}",
                                 style = MaterialTheme.typography.bodySmall
                             )
+                        }
+                        IconButton(onClick = { onEditProject(project) }) {
+                            Icon(Icons.Default.Edit, "Editar proyecto")
                         }
                         IconButton(onClick = { onDeleteProject(project) }) {
                             Icon(Icons.Default.Delete, "Eliminar proyecto")
@@ -288,6 +316,9 @@ private fun ProjectsTab(
                                     style = MaterialTheme.typography.labelMedium,
                                     color = accent
                                 )
+                                IconButton(onClick = { onEditCross(project, cross) }) {
+                                    Icon(Icons.Default.Edit, "Editar cruce")
+                                }
                                 IconButton(onClick = { onDeleteCross(cross) }) {
                                     Icon(Icons.Default.Delete, "Eliminar cruce")
                                 }
@@ -308,56 +339,73 @@ private fun ProjectsTab(
     }
 }
 
+/**
+ * Project editor.
+ *
+ * One dialog for both jobs: [project] null means "new", a non-null project
+ * means the form is seeded from the row and the save updates it. The state is
+ * keyed on [ProjectForm.id] so reusing this dialog across projects cannot keep
+ * the previous one's values — the `remember`-seeding bug from v1.1.0.
+ */
 @Composable
 private fun ProjectDialog(
+    project: BreedingProject?,
     accent: Color,
     onDismiss: () -> Unit,
-    onSave: (name: String, mother: String, father: String, generation: String) -> Unit
+    onSave: (BreedingProject) -> Unit
 ) {
-    var name by remember { mutableStateOf("") }
-    var mother by remember { mutableStateOf("") }
-    var father by remember { mutableStateOf("") }
-    var generation by remember { mutableStateOf("F1") }
-    var nameError by remember { mutableStateOf(false) }
+    val isNew = BreedingForm.isNew(project?.id)
+    var form by remember(project?.id) { mutableStateOf(BreedingForm.projectOf(project)) }
+    var nameError by remember(project?.id) { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Nuevo Proyecto de Cría") },
+        title = { Text(if (isNew) "Nuevo Proyecto de Cría" else "Editar Proyecto de Cría") },
         confirmButton = {
-            TextButton(onClick = {
-                if (name.isBlank()) nameError = true else onSave(name.trim(), mother.trim(), father.trim(), generation)
-            }) { Text("Guardar") }
+            TextButton(
+                onClick = {
+                    val rejection = BreedingForm.validate(form)
+                    if (rejection != null) {
+                        nameError = true
+                    } else {
+                        onSave(BreedingForm.projectFrom(form))
+                    }
+                },
+                colors = ButtonDefaults.textButtonColors(contentColor = accent)
+            ) { Text("Guardar") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it; nameError = false },
+                    value = form.name,
+                    onValueChange = { form = form.copy(name = it); nameError = false },
                     label = { Text("Nombre del Proyecto *") },
                     isError = nameError,
                     supportingText = if (nameError) { { Text("El nombre no puede estar vacío") } } else null,
                     singleLine = true
                 )
                 OutlinedTextField(
-                    value = mother,
-                    onValueChange = { mother = it },
+                    value = form.mother,
+                    onValueChange = { form = form.copy(mother = it) },
                     label = { Text("Planta Madre") },
                     singleLine = true
                 )
                 OutlinedTextField(
-                    value = father,
-                    onValueChange = { father = it },
+                    value = form.father,
+                    onValueChange = { form = form.copy(father = it) },
                     label = { Text("Planta Padre") },
                     singleLine = true
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    listOf("F1", "F2", "F3", "IBL", "Feminizada", "Retrocruz").forEach { g ->
-                        FilterChip(
-                            selected = generation == g,
-                            onClick = { generation = g },
-                            label = { Text(g) }
-                        )
+                BreedingForm.GENERATIONS.chunked(3).forEach { row ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        row.forEach { g ->
+                            FilterChip(
+                                selected = form.generation == g,
+                                onClick = { form = form.copy(generation = g) },
+                                label = { Text(g) }
+                            )
+                        }
                     }
                 }
             }
@@ -365,49 +413,64 @@ private fun ProjectDialog(
     )
 }
 
+/**
+ * Cross editor.
+ *
+ * [cross] null registers a new cross; a non-null one is seeded from the row and
+ * saved with an `@Update`. Before `BreedingDao` grew an `@Update` this dialog
+ * always inserted, so editing a cross produced a duplicate next to it.
+ */
 @Composable
 private fun CrossDialog(
     project: BreedingProject,
+    cross: BreedingCross?,
     accent: Color,
     onDismiss: () -> Unit,
-    onSave: (parent1: String, parent2: String, score: Float, notes: String) -> Unit
+    onSave: (BreedingCross) -> Unit
 ) {
-    var parent1 by remember { mutableStateOf("") }
-    var parent2 by remember { mutableStateOf("") }
-    var score by remember { mutableStateOf(5f) }
-    var notes by remember { mutableStateOf("") }
+    val isNew = BreedingForm.isNew(cross?.id)
+    var form by remember(cross?.id, project.id) {
+        mutableStateOf(BreedingForm.crossOf(project.id, cross))
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Registrar Cruce · ${project.name}") },
+        title = {
+            Text(
+                (if (isNew) "Registrar Cruce · " else "Editar Cruce · ") + project.name
+            )
+        },
         confirmButton = {
-            TextButton(onClick = { onSave(parent1.trim(), parent2.trim(), score, notes.trim()) }) { Text("Guardar") }
+            TextButton(
+                onClick = { onSave(BreedingForm.crossFrom(form)) },
+                colors = ButtonDefaults.textButtonColors(contentColor = accent)
+            ) { Text("Guardar") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedTextField(
-                    value = parent1,
-                    onValueChange = { parent1 = it },
+                    value = form.parent1,
+                    onValueChange = { form = form.copy(parent1 = it) },
                     label = { Text("Parental 1") },
                     singleLine = true
                 )
                 OutlinedTextField(
-                    value = parent2,
-                    onValueChange = { parent2 = it },
+                    value = form.parent2,
+                    onValueChange = { form = form.copy(parent2 = it) },
                     label = { Text("Parental 2") },
                     singleLine = true
                 )
-                Text("Phenotype score: ${score.toInt()}/10", style = MaterialTheme.typography.bodyMedium)
+                Text("Phenotype score: ${form.score.toInt()}/10", style = MaterialTheme.typography.bodyMedium)
                 Slider(
-                    value = score,
-                    onValueChange = { score = it },
+                    value = form.score,
+                    onValueChange = { form = form.copy(score = it) },
                     valueRange = 0f..10f,
                     steps = 9
                 )
                 OutlinedTextField(
-                    value = notes,
-                    onValueChange = { notes = it },
+                    value = form.notes,
+                    onValueChange = { form = form.copy(notes = it) },
                     label = { Text("Notas") },
                     minLines = 2
                 )
