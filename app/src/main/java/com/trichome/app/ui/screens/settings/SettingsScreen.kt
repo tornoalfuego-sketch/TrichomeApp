@@ -29,6 +29,8 @@ import com.trichome.app.ui.components.GlassmorphicBottomBar
 import com.trichome.app.ui.theme.AppFontFamily
 import com.trichome.app.ui.theme.AppFontWeight
 import com.trichome.app.ui.theme.AppTheme
+import com.trichome.app.ui.theme.GlassRanges
+import com.trichome.app.ui.theme.SolidPalettes
 import com.trichome.app.ui.theme.TrichomeThemeState
 import com.trichome.app.ui.theme.toArgbHex
 
@@ -88,10 +90,47 @@ fun SettingsScreen(
                 Text("Ajustes", style = MaterialTheme.typography.headlineSmall)
             }
 
+            /* ── Cristal (global) ─────────────────────────────────────── */
+            // Placed first, above every other control, because it governs the
+            // whole app: toggling it re-renders each card, chip and menu below.
+            GlassCard(
+                accentColor = accent,
+                contentColor = scheme.onSurface
+            ) {
+                Column(Modifier.padding(16.dp)) {
+                    Text("🪟 Efecto de cristal", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "Desactívalo para usar superficies opacas y máximo contraste en toda la aplicación.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = scheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                "Cristal translúcido",
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                            Text(
+                                "Se aplica a todos los paneles, tarjetas y menús.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = scheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = themeState.isGlassmorphismEnabled,
+                            onCheckedChange = themeState::updateGlassmorphismEnabled
+                        )
+                    }
+                }
+            }
+
             /* ── Tema ─────────────────────────────────────────────────── */
             GlassCard(
-                glassOpacity = glass.glassOpacity,
-                blurRadius = glass.blurRadius,
                 accentColor = accent,
                 contentColor = scheme.onSurface
             ) {
@@ -109,6 +148,7 @@ fun SettingsScreen(
                         ThemeOption(
                             theme = candidate,
                             selected = themeState.selectedColorIndex == candidate.index,
+                            glassEnabled = themeState.isGlassmorphismEnabled,
                             onClick = { themeState.selectColor(candidate.index) }
                         )
                         Spacer(Modifier.height(8.dp))
@@ -118,8 +158,6 @@ fun SettingsScreen(
 
             /* ── Color de acento ──────────────────────────────────────── */
             GlassCard(
-                glassOpacity = glass.glassOpacity,
-                blurRadius = glass.blurRadius,
                 accentColor = accent,
                 contentColor = scheme.onSurface
             ) {
@@ -156,8 +194,6 @@ fun SettingsScreen(
 
             /* ── Tipografía ───────────────────────────────────────────── */
             GlassCard(
-                glassOpacity = glass.glassOpacity,
-                blurRadius = glass.blurRadius,
                 accentColor = accent,
                 contentColor = scheme.onSurface
             ) {
@@ -193,7 +229,6 @@ fun SettingsScreen(
                         value = themeState.fontScale,
                         onValueChange = themeState::updateFontScale,
                         valueRange = 0.85f..1.30f,
-                        accentColor = accent,
                         modifier = Modifier.fillMaxWidth()
                     )
 
@@ -214,8 +249,6 @@ fun SettingsScreen(
 
             /* ── Cristal ─────────────────────────────────────────────── */
             GlassCard(
-                glassOpacity = glass.glassOpacity,
-                blurRadius = glass.blurRadius,
                 accentColor = accent,
                 contentColor = scheme.onSurface
             ) {
@@ -230,8 +263,8 @@ fun SettingsScreen(
                     GlassSlider(
                         value = glass.glassOpacity,
                         onValueChange = themeState::setGlassOpacity,
-                        valueRange = 0.05f..0.55f,
-                        accentColor = accent,
+                        valueRange = GlassRanges.opacity,
+                        enabled = themeState.isGlassmorphismEnabled,
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(Modifier.height(8.dp))
@@ -242,13 +275,17 @@ fun SettingsScreen(
                     GlassSlider(
                         value = glass.blurRadius,
                         onValueChange = themeState::setBlurRadius,
-                        valueRange = 0f..32f,
-                        accentColor = accent,
+                        valueRange = GlassRanges.blur,
+                        enabled = themeState.isGlassmorphismEnabled,
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "El difuminado afecta a la profundidad visual del panel; el texto nunca se difumina para mantenerlo legible.",
+                        if (themeState.isGlassmorphismEnabled) {
+                            "El difuminado afecta a la profundidad visual del panel; el texto nunca se difumina para mantenerlo legible."
+                        } else {
+                            "Estos controles solo se aplican cuando el efecto de cristal está activado."
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = scheme.onSurfaceVariant
                     )
@@ -257,8 +294,6 @@ fun SettingsScreen(
 
             /* ── Sobre la app ────────────────────────────────────────── */
             GlassCard(
-                glassOpacity = glass.glassOpacity,
-                blurRadius = glass.blurRadius,
                 accentColor = accent,
                 contentColor = scheme.onSurface
             ) {
@@ -281,17 +316,25 @@ fun SettingsScreen(
 private fun ThemeOption(
     theme: AppTheme,
     selected: Boolean,
+    glassEnabled: Boolean,
     onClick: () -> Unit
 ) {
     val shape = RoundedCornerShape(14.dp)
+    // Preview the palette that is actually on screen, not always the glass one.
+    val solid = SolidPalettes.forTheme(theme)
+    val previewBackground = if (glassEnabled) theme.background else solid.background
+    val previewSurface = if (glassEnabled) theme.surface else solid.surface
+    val previewOutline = if (glassEnabled) theme.outline else solid.outline
+    val previewOnBackground = if (glassEnabled) theme.onBackground else solid.onBackground
+    val previewOnSurfaceVariant = if (glassEnabled) theme.onSurfaceVariant else solid.onSurfaceVariant
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(shape)
-            .background(theme.background)
+            .background(previewBackground)
             .border(
                 width = if (selected) 2.dp else 1.dp,
-                color = if (selected) theme.secondaryBase else theme.outline,
+                color = if (selected) theme.secondaryBase else previewOutline,
                 shape = shape
             )
             .clickable(onClick = onClick)
@@ -303,27 +346,31 @@ private fun ThemeOption(
             modifier = Modifier
                 .size(36.dp)
                 .clip(CircleShape)
-                .background(theme.background)
-                .border(1.dp, theme.outline, CircleShape)
+                .background(previewBackground)
+                .border(1.dp, previewOutline, CircleShape)
         )
         Box(
             modifier = Modifier
                 .size(22.dp)
                 .clip(CircleShape)
-                .background(theme.surface)
-                .border(1.dp, theme.outline, CircleShape)
+                .background(previewSurface)
+                .border(1.dp, previewOutline, CircleShape)
         )
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(
-                "${theme.emoji}  ${theme.label}",
+                // The solid themes have their own name; showing the glass one
+                // would label a theme the user is not looking at.
+                "${theme.emoji}  ${if (glassEnabled) theme.label else theme.solidLabel}",
                 style = MaterialTheme.typography.titleSmall,
-                color = theme.onBackground
+                color = previewOnBackground
             )
             Text(
-                if (theme.isDark) "Tema oscuro" else "Tema claro",
+                (if (theme.isDark) "Oscuro" else "Claro") +
+                    " · " +
+                    (if (glassEnabled) "cristal" else "sólido"),
                 style = MaterialTheme.typography.labelSmall,
-                color = theme.onSurfaceVariant
+                color = previewOnSurfaceVariant
             )
         }
         if (selected) {
