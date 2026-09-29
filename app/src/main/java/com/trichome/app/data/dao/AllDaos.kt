@@ -141,8 +141,18 @@ interface EventDao {
     @Query("SELECT * FROM grow_events")
     suspend fun getAllEventsSnapshot(): List<GrowEvent>
 
+    /**
+     * Events whose timestamp falls inside a month window, observed.
+     *
+     * This used to be a one-shot `suspend fun getEventsBetween`, and that is
+     * exactly why the calendar ignored a just-saved event: the screen read it
+     * once from `LaunchedEffect(month, filterPlantId)` and never again, so a
+     * row written while the month was already open stayed invisible. The window
+     * stays bounded — this is not [getAllEvents] behind a filter — so it cannot
+     * turn into a whole-table read.
+     */
     @Query("SELECT * FROM grow_events WHERE timestamp BETWEEN :from AND :to ORDER BY timestamp ASC")
-    suspend fun getEventsBetween(from: Long, to: Long): List<GrowEvent>
+    fun watchEventsBetween(from: Long, to: Long): Flow<List<GrowEvent>>
 
     @Query("SELECT * FROM grow_events WHERE eventType = :type AND plantId = :plantId AND timestamp BETWEEN :from AND :to ORDER BY timestamp ASC")
     suspend fun getEventsByTypeInRange(plantId: Long, type: String, from: Long, to: Long): List<GrowEvent>
@@ -217,6 +227,14 @@ interface BreedingDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertProject(project: BreedingProject): Long
 
+    /**
+     * Without this, opening the project editor on an existing row had nowhere
+     * to write: `BreedingDao` had no `@Update` at all, so the only way to change
+     * a project was to delete it and lose `createdAt` and `status` with it.
+     */
+    @Update
+    suspend fun updateProject(project: BreedingProject)
+
     @Delete
     suspend fun deleteProject(project: BreedingProject)
 
@@ -228,6 +246,14 @@ interface BreedingDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCross(cross: BreedingCross): Long
+
+    /**
+     * The missing half of the same story: `CrossDialog` only ever inserted, so
+     * editing an existing cross wrote a duplicate row next to it instead of
+     * changing it.
+     */
+    @Update
+    suspend fun updateCross(cross: BreedingCross)
 
     @Delete
     suspend fun deleteCross(cross: BreedingCross)

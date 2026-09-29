@@ -11,9 +11,14 @@ import com.trichome.app.data.repository.*
 import com.trichome.app.di.AppContainer
 import com.trichome.app.domain.vision.PhotoAnalyzer
 import com.trichome.app.model.*
+import com.trichome.app.model.CalendarWindow
 import com.trichome.app.worker.ReminderAlarmScheduler
+import com.trichome.app.worker.ReminderCancellation
+import com.trichome.app.worker.ReminderSchedulerWorker
+import androidx.work.WorkManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -228,6 +233,13 @@ class PlantDetailViewModel(container: AppContainer) : ViewModel() {
         private set
 
     /**
+     * Set once the grower deletes this plant, so a load that lands afterwards
+     * does not blame them for a read that only failed because the row they just
+     * removed is gone. See [deletePlant].
+     */
+    private var retiredPlantId: Long? = null
+
+    /**
      * Single source of truth for this plant's events.
      *
      * There used to be a second `MutableStateFlow` written on every emission
@@ -247,10 +259,16 @@ class PlantDetailViewModel(container: AppContainer) : ViewModel() {
     fun loadPlant(plantId: Long) {
         viewModelScope.launch {
             uiState = PlantDetailUiState.Loading
-            uiState = PlantDetailLoader.load(
+            val state = PlantDetailLoader.load(
                 lookupPlant = { plantRepo.getPlantById(plantId) },
                 stageProgressFor = { plant -> resolveStageProgress(plantId, plant) }
             )
+            // A retired plant that no longer resolves is the expected outcome of
+            // a delete, not a read failure: publishing Error here would put
+            // "no pudimos abrir la planta" on a row the user removed seconds
+            // ago. The state is left alone and the screen pops instead.
+            if (retiredPlantId == plantId && state is PlantDetailUiState.Error) return@launch
+            uiState = state
         }
         // Events stream forever, so they need their own coroutine: a bare
         // `collect()` inside the load above would never return and would keep
@@ -309,6 +327,50 @@ class PlantDetailViewModel(container: AppContainer) : ViewModel() {
         viewModelScope.launch {
             if (isNew) superCycleRepo.insertSuperCycle(config) else superCycleRepo.updateSuperCycle(config)
             loadSuperCycle(config.plantId)
+        }
+    }
+
+    /**
+     * Writes an edited plant.
+     *
+     * The caller must pass the **whole** row, edited fields included: this
+     * delegates to [PlantRepository.updatePlant], and an update that dropped a
+     * field would write that entity default over the grower's real data.
+     * [onSaved] receives the real outcome so a failed write is not shown as a
+     * successful one.
+     */
+    fun updatePlant(plant: Plant, onSaved: (Boolean) -> Unit = {}) {
+        viewModelScope.launch {
+            val ok = runCatching { plantRepo.updatePlant(plant) }.isSuccess
+            onSaved(ok)
+        }
+    }
+
+    /**
+     * Deletes the plant and takes the screen off it.
+     *
+     * A delete is not a read failure, so [uiState] is deliberately **not**
+     * driven into [PlantDetailUiState.Error]: that state is a dead end by
+     * design, and rendering it for a plant the user just removed would show
+     * "no pudimos abrir la planta" for a row that existed seconds ago. Instead
+     * the row is retired and the screen is told to leave.
+     *
+     * [onDeleted] is the only signal the UI acts on: it pops the back stack
+     * once the write actually succeeded, so a failed delete never navigates away
+     * from a plant that is still there.
+     */
+    fun deletePlant(plant: Plant, onDeleted: (Boolean) -> Unit = {}) {
+        viewModelScope.launch {
+            val ok = runCatching { plantRepo.deletePlant(plant) }.isSuccess
+            if (ok) {
+                retiredPlantId = plant.id
+                // Clear the content so no stale card is drawn between the
+                // delete and the pop.
+                events = emptyList()
+                superCycleResult = null
+                latestStageEntry = null
+            }
+            onDeleted(ok)
         }
     }
 
@@ -483,10 +545,114 @@ class JournalViewModel(container: AppContainer) : ViewModel() {
             }
             saveError = when {
                 written == 0 -> "No se pudo guardar el recordatorio."
-                !armedAll -> "Recordatorio guardado, pero el sistema no permitio programar la alarma exacta. Revisa los permisos de Ajustes."
+                !armedAll -> "Recordatorio guardado, pero el sistema no permitió programar la alarma exacta. Revisa los permisos de Ajustes."
                 else -> null
             }
         }
+    }
+}
+
+/* ─────────────────────────── Reminders ────────────────────────────────── */
+
+private const val ERROR_REMINDER_NOT_ARMED =
+    "Recordatorio guardado, pero el sistema no permitió programar la alarma exacta. " +
+        "Revisa los permisos de Ajustes."
+
+/**
+ * Edit and delete for reminders.
+ *
+ * `ReminderDao.updateReminder` and `deleteReminder` had **zero** callers in
+ * `main`: a reminder could be created and then never changed or removed, and no
+ * UI could mark one inactive, so `ReminderAlarmScheduler.cancel` was reachable
+ * only from a branch no screen could take.
+ *
+ * Both operations need something Room cannot do. A reminder is not just a row:
+ * it is an `AlarmManager` exact alarm plus a `WorkManager` unique job, and
+ * deleting the row leaves both registered. A delete here is therefore a full
+ * cancel, and an edit re-arms at the new time.
+ */
+class ReminderViewModel(container: AppContainer) : ViewModel() {
+    private val reminderRepo = container.reminderRepository
+    private val appContext = container.application.applicationContext
+
+    /**
+     * Active reminders, observed.
+     *
+     * A snapshot read would show the row the grower just edited or deleted as
+     * if nothing happened, which is the same class of bug as the calendar's
+     * one-shot month query.
+     */
+    val activeReminders: StateFlow<List<Reminder>> = reminderRepo.getAllActiveReminders()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /** Non-null when the last write or cancel failed. Spanish, shown as-is. */
+    var saveError by mutableStateOf<String?>(null)
+        private set
+
+    fun clearSaveError() {
+        saveError = null
+    }
+
+    /**
+     * Writes the edited row and re-arms the alarm, so the change takes effect
+     * instead of firing at the old time tomorrow.
+     *
+     * Only the WorkManager job is dropped first: the pending alarm is
+     * re-registered for the same reminder at the new time right after, and
+     * cancelling it would open a window where neither exists.
+     */
+    fun updateReminder(reminder: Reminder, onSaved: (Boolean) -> Unit = {}) {
+        viewModelScope.launch {
+            val written = runCatching { reminderRepo.updateReminder(reminder) }.isSuccess
+            if (!written) {
+                saveError = "No se pudo guardar el recordatorio."
+                onSaved(false)
+                return@launch
+            }
+            ReminderCancellation.cancelStaleWork(reminder.id) { name ->
+                WorkManager.getInstance(appContext).cancelUniqueWork(name)
+            }
+            val armed = ReminderAlarmScheduler.schedule(appContext, reminder)
+            // Re-sync the recurring chain so the new interval is honoured even
+            // if the alarm itself was refused.
+            ReminderSchedulerWorker.syncNow(appContext)
+            // The row landed, so the editor closes. A refused alarm is reported
+            // separately: the change is saved, it just will not ring.
+            saveError = armProblem(reminder, armed)
+            onSaved(true)
+        }
+    }
+
+    /**
+     * Full cancel: the alarm, the unique job, then the row.
+     *
+     * The order matters. A row deleted while its alarm stays registered still
+     * fires, and the receiver then finds nothing to look up — a "deleted"
+     * reminder the system keeps nagging about.
+     */
+    fun deleteReminder(reminder: Reminder, onDeleted: (Boolean) -> Unit = {}) {
+        viewModelScope.launch {
+            ReminderCancellation.cancelAll(
+                reminderId = reminder.id,
+                cancelAlarm = { ReminderAlarmScheduler.cancel(appContext, it) },
+                cancelWork = { WorkManager.getInstance(appContext).cancelUniqueWork(it) }
+            )
+            val deleted = runCatching { reminderRepo.deleteReminder(reminder) }.isSuccess
+            saveError = if (deleted) null else "No se pudo eliminar el recordatorio."
+            onDeleted(deleted)
+        }
+    }
+
+    /**
+     * What to tell the user after a re-arm.
+     *
+     * An inactive reminder is cancelled on purpose, so `schedule` returning
+     * false is the expected outcome and not a failure to report.
+     */
+    private fun armProblem(reminder: Reminder, armed: Boolean): String? = when {
+        !reminder.isActive -> null
+        armed -> null
+        else -> ERROR_REMINDER_NOT_ARMED
     }
 }
 
@@ -506,6 +672,27 @@ class CalendarViewModel(container: AppContainer) : ViewModel() {
     var reminders by mutableStateOf<List<Reminder>>(emptyList())
         private set
 
+    /**
+     * Window the collector is currently reading, or null before the first call.
+     *
+     * Compared on every [loadMonth] so the same month is not re-queried and the
+     * previous collector is never left running next to the new one.
+     */
+    private var activeWindow: LongRange? = null
+    private var monthCollector: Job? = null
+
+    init {
+        // Reminders are observed for the same reason the events are: a reminder
+        // created or deleted from the calendar has to show up without leaving
+        // the screen. `getActiveRemindersSnapshot()` was a one-shot read, so it
+        // missed exactly the writes this screen performs itself.
+        viewModelScope.launch {
+            reminderRepo.getAllActiveReminders()
+                .onEach { reminders = it }
+                .collect()
+        }
+    }
+
     /** Day currently expanded in the detail list, in epoch millis. */
     var selectedDay by mutableStateOf<Long?>(null)
         private set
@@ -521,10 +708,29 @@ class CalendarViewModel(container: AppContainer) : ViewModel() {
         saveError = null
     }
 
+    /**
+     * Observes the events of the month window `[from, to]`.
+     *
+     * This replaces a one-shot `getEventsBetween(from, to)` that ran once per
+     * `LaunchedEffect(month, filterPlantId)`, which is why a just-saved event
+     * stayed invisible until the user changed month or plant filter: the write
+     * succeeded, but nothing re-read it. The window is still honoured, so this
+     * is a bounded query and not a whole-table read.
+     *
+     * Re-entrant calls with the same window are ignored — the collector is
+     * already reading exactly those rows — and a different window cancels the
+     * previous collector instead of running two of them.
+     */
     fun loadMonth(from: Long, to: Long) {
-        viewModelScope.launch {
-            events = eventRepo.getEventsBetween(from, to)
-            reminders = reminderRepo.getActiveRemindersSnapshot()
+        val next = from..to
+        if (!CalendarWindow.shouldReload(activeWindow, next)) return
+        activeWindow = next
+
+        monthCollector?.cancel()
+        monthCollector = viewModelScope.launch {
+            eventRepo.watchEventsBetween(from, to)
+                .onEach { events = it }
+                .collect()
         }
     }
 
@@ -749,6 +955,15 @@ class BreedingViewModel(container: AppContainer) : ViewModel() {
         }
     }
 
+    /**
+     * Writes an edited project.
+     *
+     * Separate from [addProject] on purpose: there is no `@Insert`-then-fix
+     * shortcut here, because an insert would mint a new id and orphan every
+     * cross that pointed at the old one.
+     */
+    fun updateProject(project: BreedingProject) = viewModelScope.launch { repo.updateProject(project) }
+
     fun deleteProject(project: BreedingProject) = viewModelScope.launch { repo.deleteProject(project) }
 
     fun addCross(projectId: Long, parent1: String, parent2: String, score: Float, notes: String) {
@@ -758,6 +973,14 @@ class BreedingViewModel(container: AppContainer) : ViewModel() {
             )
         }
     }
+
+    /**
+     * Writes an edited cross in place.
+     *
+     * The dialog used to reach [addCross] whatever it was opened on, so editing
+     * a cross produced a second row with identical parents.
+     */
+    fun updateCross(cross: BreedingCross) = viewModelScope.launch { repo.updateCross(cross) }
 
     fun deleteCross(cross: BreedingCross) = viewModelScope.launch { repo.deleteCross(cross) }
 }
