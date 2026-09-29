@@ -22,6 +22,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.trichome.app.BuildConfig
+import com.trichome.app.data.database.AppDatabase
 import com.trichome.app.ui.components.FloatingOrbBackground
 import com.trichome.app.ui.components.GlassCard
 import com.trichome.app.ui.components.GlassSlider
@@ -300,9 +302,13 @@ fun SettingsScreen(
                 Column(Modifier.padding(16.dp)) {
                     Text("ℹ️ Acerca de", style = MaterialTheme.typography.titleMedium)
                     Spacer(Modifier.height(8.dp))
-                    InfoRow("Versión", "1.0.1")
-                    InfoRow("Datos", "100 % locales y sin conexión")
-                    InfoRow("Base de datos", "Room v${2}")
+                    // Both rows are derived from the build and from the database
+                    // class, never from a literal that a release bump or a
+                    // migration would silently invalidate.
+                    val about = aboutInfo(BuildConfig.VERSION_NAME, AppDatabase.VERSION)
+                    InfoRow("Versión", about.version)
+                    InfoRow("Datos", about.storage)
+                    InfoRow("Base de datos", about.database)
                 }
             }
 
