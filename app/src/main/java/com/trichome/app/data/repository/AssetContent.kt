@@ -7,25 +7,88 @@ import kotlinx.serialization.json.Json
 
 /* ── Terpenes library ─────────────────────────────────────────────────── */
 
+/**
+ * A terpene entry in the encyclopedia.
+ *
+ * The v1 shape (id/name/aroma/effects/strains/boilingPoint) is preserved with
+ * defaults, so an older `terpenes.json` still parses; the added fields carry
+ * the scientific and pharmacological depth.
+ */
 @Serializable
 data class Terpene(
     val id: String = "",
     val name: String = "",
+    val formula: String = "",
+    @SerialName("molarMass") val molarMass: String = "",
+    /** Monoterpeno / Sesquiterpeno / Diterpeno / Triterpeno. */
+    val family: String = "",
     val aroma: String = "",
+    val taste: String = "",
     val effects: List<String> = emptyList(),
+    @SerialName("medicalProperties") val medicalProperties: List<String> = emptyList(),
+    /** Pharmacological mechanism of action. */
+    val mechanism: String = "",
+    val biosynthesis: String = "",
+    val toxicity: String = "",
+    /** Ids of other terpenes in this catalog that act as entourage partners. */
+    @SerialName("pairsWith") val pairsWith: List<String> = emptyList(),
     val strains: List<String> = emptyList(),
+    /** Non-cannabis plants where this compound is also abundant. */
+    @SerialName("foundIn") val foundIn: List<String> = emptyList(),
+    /** How strongly it accumulates in cannabis: muy alto / alto / medio / bajo. */
+    val richness: String = "",
     @SerialName("boilingPoint") val boilingPoint: String = "",
     @SerialName("isFavorite") val isFavorite: Boolean = false
-)
+) {
+    /** Boiling point in °C parsed from the display string, for the chart. */
+    val boilingPointCelsius: Int?
+        get() {
+            if (!boilingPoint.contains("°")) return null
+            return boilingPoint.filter { it.isDigit() }.toIntOrNull()
+        }
+
+    /** Coarse aroma family used by the multi-criteria filter. */
+    val aromaFamily: String
+        get() {
+            val haystack = "$aroma $taste".lowercase()
+            return when {
+                listOf("cítric", "citric", "limón", "limon", "naranja", "pomelo", "fresco").any { it in haystack } -> "Cítrico"
+                listOf("floral", "lavanda", "rosa", "jazmín", "jasmin", "orquídea").any { it in haystack } -> "Floral"
+                listOf("picante", "pimienta", "clavo", "especiado", "canela").any { it in haystack } -> "Picante"
+                listOf("terroso", "tierra", "húmedo", "humedo", "bosque", "musgo", "madera").any { it in haystack } -> "Terroso"
+                listOf("dulce", "caramelo", "miel", "vainilla", "fruta").any { it in haystack } -> "Dulce"
+                listOf("herbal", "hierba", "menta", "eucalipto", "mentolado").any { it in haystack } -> "Herbal"
+                listOf("resinoso", "resina", "cera", "cándido", "candido").any { it in haystack } -> "Resinoso"
+                else -> "Herbal"
+            }
+        }
+
+    /** Coarse effect grouping used by the effect filter. */
+    val effectGroup: String
+        get() {
+            val haystack = (effects + medicalProperties).joinToString(" ").lowercase()
+            return when {
+                listOf("analgés", "analges", "dolor", "antiinflam", "articular").any { it in haystack } -> "Alivio del dolor"
+                listOf("enfoque", "concentr", "claridad", "estimul", "energía", "energia").any { it in haystack } -> "Enfoque"
+                listOf("creativ", "inspir").any { it in haystack } -> "Creatividad"
+                listOf("eufóri", "eufori", "ánimo", "animo", "antidepres").any { it in haystack } -> "Euforia"
+                listOf("relaj", "sedante", "calmante", "sueño", "sueno", "ansiol").any { it in haystack } -> "Relajación"
+                else -> "Equilibrio"
+            }
+        }
+}
 
 @Serializable
-private data class TerpeneCatalog(
+internal data class TerpeneCatalog(
     val version: Int = 1,
     val terpenes: List<Terpene> = emptyList()
 )
 
 /**
  * Loads the terpenes bible from `assets/data/terpenes.json`.
+ *
+ * The catalog is parsed once and cached for the process lifetime; with 150+
+ * entries re-parsing on every keystroke of the search box was the bottleneck.
  */
 class TerpenesRepository(private val context: Context) {
 
@@ -44,18 +107,48 @@ class TerpenesRepository(private val context: Context) {
         return list.map { if (favorites.contains(it.id)) it.copy(isFavorite = true) else it }
     }
 
+    /** Single lookup by id, for the detail screen. */
+    suspend fun getTerpene(id: String): Terpene? =
+        getTerpenes().firstOrNull { it.id == id }
+
+    /** Resolves the ids in [pairsWith] to full entries. */
+    suspend fun resolve(list: List<String>): List<Terpene> {
+        if (list.isEmpty()) return emptyList()
+        val byId = getTerpenes().associateBy { it.id }
+        return list.mapNotNull { byId[it] }
+    }
+
     suspend fun getFavorites(): List<Terpene> = getTerpenes().filter { it.isFavorite }
 
     suspend fun toggleFavorite(terpene: Terpene) {
         if (!favorites.add(terpene.id)) favorites.remove(terpene.id)
     }
 
+    /** Distinct chemical families present in the catalog, for the filter chips. */
+    suspend fun families(): List<String> =
+        getTerpenes().map { it.family }.filter { it.isNotBlank() }.distinct().sorted()
+
+    /**
+     * Free-text search across every searchable field.
+     *
+     * An empty or whitespace-only query returns the whole catalog rather than an
+     * empty list, which is what the screen expects.
+     */
     suspend fun search(query: String): List<Terpene> {
-        if (query.isBlank()) return getTerpenes()
-        return getTerpenes().filter {
-            it.name.contains(query, ignoreCase = true) ||
-                it.aroma.contains(query, ignoreCase = true) ||
-                it.effects.any { e -> e.contains(query, ignoreCase = true) }
+        val q = query.trim()
+        if (q.isEmpty()) return getTerpenes()
+        val needle = q.lowercase()
+        return getTerpenes().filter { t ->
+            t.name.lowercase().contains(needle) ||
+                t.aroma.lowercase().contains(needle) ||
+                t.taste.lowercase().contains(needle) ||
+                t.family.lowercase().contains(needle) ||
+                t.formula.lowercase().contains(needle) ||
+                t.mechanism.lowercase().contains(needle) ||
+                t.effects.any { it.lowercase().contains(needle) } ||
+                t.medicalProperties.any { it.lowercase().contains(needle) } ||
+                t.strains.any { it.lowercase().contains(needle) } ||
+                t.foundIn.any { it.lowercase().contains(needle) }
         }
     }
 }
@@ -125,22 +218,59 @@ class BreedingContentRepository(private val context: Context) {
 data class DiagnosisSymptom(
     val id: String = "",
     @SerialName("label_es") val labelEs: String = "",
-    val icon: String = "🟢"
+    val icon: String = "🟢",
+    val category: String = "general"
 )
+
+/**
+ * Photographic evidence thresholds for a condition.
+ *
+ * Each `*Min` is a lower bound the measurement must clear for the condition to
+ * be plausible; `greenMax` is an upper bound (the condition needs tissue to
+ * *lack*). Absent keys are simply not evaluated, so a condition can be
+ * described with only the evidence that actually distinguishes it.
+ */
+@Serializable
+data class PhotoEvidence(
+    @SerialName("chlorosisMin") val chlorosisMin: Float? = null,
+    @SerialName("necrosisMin") val necrosisMin: Float? = null,
+    @SerialName("spotDensityMin") val spotDensityMin: Float? = null,
+    @SerialName("trichomeMin") val trichomeMin: Float? = null,
+    @SerialName("webbingMin") val webbingMin: Float? = null,
+    @SerialName("greenMin") val greenMin: Float? = null,
+    @SerialName("greenMax") val greenMax: Float? = null,
+    @SerialName("hueMin") val hueMin: Float? = null,
+    @SerialName("hueMax") val hueMax: Float? = null,
+    @SerialName("saturationMax") val saturationMax: Float? = null,
+    @SerialName("valueMin") val valueMin: Float? = null,
+    /** How much this evidence counts against the symptom score, 1..10. */
+    val weight: Int = 1
+) {
+    val isEmpty: Boolean
+        get() = chlorosisMin == null && necrosisMin == null && spotDensityMin == null &&
+            trichomeMin == null && webbingMin == null && greenMin == null &&
+            greenMax == null && hueMin == null && hueMax == null &&
+            saturationMax == null && valueMin == null
+}
 
 @Serializable
 data class DiagnosisCondition(
     val id: String = "",
     val category: String = "",
     @SerialName("label_es") val labelEs: String = "",
+    @SerialName("short_es") val shortEs: String = "",
+    val severity: String = "moderada",
     @SerialName("symptomWeights") val symptomWeights: Map<String, Int> = emptyMap(),
+    @SerialName("photoEvidence") val photoEvidence: PhotoEvidence? = null,
+    @SerialName("photoNotes_es") val photoNotesEs: String = "",
     @SerialName("cause_es") val causeEs: String = "",
     @SerialName("actionPlan_es") val actionPlanEs: List<String> = emptyList(),
-    @SerialName("prevention_es") val preventionEs: List<String> = emptyList()
+    @SerialName("prevention_es") val preventionEs: List<String> = emptyList(),
+    @SerialName("affectedPlants") val affectedPlants: List<String> = emptyList()
 )
 
 @Serializable
-private data class DiagnosisCatalog(
+internal data class DiagnosisCatalog(
     val version: Int = 1,
     val symptoms: List<DiagnosisSymptom> = emptyList(),
     val conditions: List<DiagnosisCondition> = emptyList()
@@ -160,6 +290,11 @@ class DiagnosisContentRepository(private val context: Context) {
     }
 
     suspend fun getSymptoms(): List<DiagnosisSymptom> = loadNow().symptoms
+
+    /** Every condition, ordered by category then name, for the encyclopedia. */
+    suspend fun getConditions(): List<DiagnosisCondition> =
+        loadNow().conditions.sortedWith(compareBy({ it.category }, { it.labelEs }))
+
     suspend fun getCondition(conditionId: String): DiagnosisCondition? =
         loadNow().conditions.firstOrNull { it.id == conditionId }
 

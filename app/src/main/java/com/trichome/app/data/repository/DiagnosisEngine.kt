@@ -127,7 +127,9 @@ data class DiagnosisResult(
     val condition: String,
     val category: String,
     val confidence: Float,
-    val symptoms: List<String>
+    val symptoms: List<String>,
+    /** Photographic evidence that supported the verdict, when a photo was used. */
+    val photoEvidence: List<String> = emptyList()
 ) {
     val isHealthy get() = condition == "healthy"
 }

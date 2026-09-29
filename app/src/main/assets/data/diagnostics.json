@@ -1,290 +1,2184 @@
 {
-  "version": 1,
-  "symptoms": [
-    { "id": "yellowing_lower_leaves", "label_es": "Amarillamiento en hojas inferiores", "icon": "🟡" },
-    { "id": "stunted_growth", "label_es": "Crecimiento atrofiado", "icon": "📉" },
-    { "id": "leaf_tip_burn", "label_es": "Puntas de hojas quemadas", "icon": "🔥" },
-    { "id": "purple_stems", "label_es": "Tallos y pecíolos morados", "icon": "🟣" },
-    { "id": "dark_green_leaves", "label_es": "Hojas verde oscuro azulado", "icon": "🟢" },
-    { "id": "stunted_root", "label_es": "Raíces poco desarrolladas", "icon": "🌱" },
-    { "id": "brown_leaf_edges", "label_es": "Bordes de hojas marrones", "icon": "🟤" },
-    { "id": "weak_stems", "label_es": "Tallos débiles y doblados", "icon": "🥀" },
-    { "id": "chlorosis", "label_es": "Clorosis general", "icon": "🟨" },
-    { "id": "new_growth_distorted", "label_es": "Nuevo crecimiento deformado", "icon": "🌀" },
-    { "id": "tip_burn", "label_es": "Quemadura de brotes jóvenes", "icon": "🌰" },
-    { "id": "young_leaves_curled", "label_es": "Hojas jóvenes enrolladas", "icon": "🍃" },
-    { "id": "interveinal_chlorosis", "label_es": "Clorosis entre nervaduras", "icon": "🟨" },
-    { "id": "yellowing_between_veins", "label_es": "Amarillamiento entre venas", "icon": "🟡" },
-    { "id": "young_leaves_yellow", "label_es": "Hojas jóvenes amarillas", "icon": "🌼" },
-    { "id": "interveinal_chlorosis_young", "label_es": "Clorosis intervenal en crecimiento nuevo", "icon": "🟨" },
-    { "id": "brown_tips", "label_es": "Puntas marrones secas", "icon": "🤎" },
-    { "id": "crooked_growing", "label_es": "Crecimiento torcido", "icon": "🌀" },
-    { "id": "ph_out_of_range", "label_es": "pH fuera de rango 5.5–6.5", "icon": "⚗️" },
-    { "id": "locked_nutrients", "label_es": "Nutrientes bloqueados", "icon": "🔒" },
-    { "id": "wilting", "label_es": "Marchitamiento", "icon": "🥀" },
-    { "id": "leaf_curl_heat", "label_es": "Hojas enrolladas por calor", "icon": "🌡️" },
-    { "id": "hot_spots", "label_es": "Zonas calientes en la copa", "icon": "🔥" },
-    { "id": "bleached_leaves", "label_es": "Hojas blanqueadas", "icon": "⚪" },
-    { "id": "light_burn", "label_es": "Quemadura lumínica", "icon": "💡" },
-    { "id": "white_powdery_residue", "label_es": "Residuo blanco en polvo", "icon": "🤍" },
-    { "id": "fuzzy_white_mold", "label_es": "Moho blanco algodonoso", "icon": "☁️" },
-    { "id": "gray_mold", "label_es": "Moho gris", "icon": "🌫️" },
-    { "id": "rotting_buds", "label_es": "Cogollos podridos", "icon": "🧟" },
-    { "id": "tiny_spiders", "label_es": "Ácaros diminutos (araña roja)", "icon": "🕷️" },
-    { "id": "webbing", "label_es": "Telarañas finas", "icon": "🕸️" },
-    { "id": "stippled_leaves", "label_es": "Hojas punteadas", "icon": "🔴" },
-    { "id": "silvering", "label_es": "Plateado en hojas", "icon": "🥈" },
-    { "id": "black_dots", "label_es": "Puntos negros (excrementos)", "icon": "⚫" },
-    { "id": "tiny_black_flies", "label_es": "Moscas negras diminutas", "icon": "🪰" },
-    { "id": "larvae_in_soil", "label_es": "Larvas en el sustrato", "icon": "🐛" }
-  ],
-  "conditions": [
-    {
-      "id": "nitrogen_deficiency",
-      "category": "deficiency",
-      "label_es": "Deficiencia de Nitrógeno",
-      "symptomWeights": { "yellowing_lower_leaves": 3, "stunted_growth": 2, "leaf_tip_burn": 1 },
-      "cause_es": "Niveles bajos de nitrógeno asimilable; pH extremo o lavado excesivo del sustrato.",
-      "actionPlan_es": [
-        "Fertiliza con fuente de nitrógeno (orgánica o mineral) a dosis media.",
-        "Ajusta el pH del riego entre 5.8 y 6.5.",
-        "Revisa que el sustrato drene sin lavar nutrientes."
-      ],
-      "prevention_es": [
-        "Mantén un calendario de fertilización equilibrado en fase vegetativa.",
-        "Monitorea el EC de salida semanalmente."
-      ]
-    },
-    {
-      "id": "phosphorus_deficiency",
-      "category": "deficiency",
-      "label_es": "Deficiencia de Fósforo",
-      "symptomWeights": { "purple_stems": 3, "dark_green_leaves": 2, "stunted_root": 2 },
-      "cause_es": "Baja disponibilidad de fósforo, sustrato frío o pH demasiado alto.",
-      "actionPlan_es": [
-        "Aplica fertilizante rico en fósforo (PK) en floración.",
-        "Mantén la temperatura de raíces sobre 18 °C.",
-        "Ajusta el pH de riego a 6.0–6.5."
-      ],
-      "prevention_es": [
-        "Usa microorganismos (micorrizas) que solubilizan fósforo.",
-        "Evita encharcamientos prolongados."
-      ]
-    },
-    {
-      "id": "potassium_deficiency",
-      "category": "deficiency",
-      "label_es": "Deficiencia de Potasio",
-      "symptomWeights": { "brown_leaf_edges": 3, "weak_stems": 2, "chlorosis": 1 },
-      "cause_es": "Insuficiente potasio; exceso de calcio o magnesio que antagoniza su absorción.",
-      "actionPlan_es": [
-        "Fertiliza con potasio (ej. sulfato de potasa).",
-        "Revisa el balance Ca/Mg/K del programa.",
-        "Asegura buen drenaje para evitar acumulación de sales."
-      ],
-      "prevention_es": [
-        "Incluye potasio desde la pre-floración.",
-        "Mide EC de salida para detectar bloqueos tempranos."
-      ]
-    },
-    {
-      "id": "calcium_deficiency",
-      "category": "deficiency",
-      "label_es": "Deficiencia de Calcio",
-      "symptomWeights": { "new_growth_distorted": 3, "tip_burn": 2, "young_leaves_curled": 2 },
-      "cause_es": "Calcio insuficiente o transpiración baja que limita su transporte a los brotes.",
-      "actionPlan_es": [
-        "Aplica calcio quelado o carbonato de calcio en riego.",
-        "Mejora la ventilación y humedad para favorecer transpiración.",
-        "No mezcles calcio con fosfatos en el mismo tanque."
-      ],
-      "prevention_es": [
-        "Mantén humedad relativa 55–65% en vegetativa.",
-        "Usa agua con dureza adecuada o suplementa calcio."
-      ]
-    },
-    {
-      "id": "magnesium_deficiency",
-      "category": "deficiency",
-      "label_es": "Deficiencia de Magnesio",
-      "symptomWeights": { "interveinal_chlorosis": 3, "yellowing_between_veins": 2 },
-      "cause_es": "Magnesio insuficiente o pH bajo que bloquea su absorción.",
-      "actionPlan_es": [
-        "Aplica sulfato de magnesio (sales de Epsom) disuelto en riego.",
-        "Sube el pH de riego a 6.0–6.5.",
-        "Verifica el balance Ca/Mg."
-      ],
-      "prevention_es": [
-        "Suplementa magnesio en riego cada 2–3 semanas.",
-        "Mide el pH y EC del agua de entrada y salida."
-      ]
-    },
-    {
-      "id": "iron_deficiency",
-      "category": "deficiency",
-      "label_es": "Deficiencia de Hierro",
-      "symptomWeights": { "young_leaves_yellow": 3, "interveinal_chlorosis_young": 2 },
-      "cause_es": "Hierro bloqueado por pH alto o exceso de fósforo; aparece primero en brotes nuevos.",
-      "actionPlan_es": [
-        "Aplica hierro quelado (EDDHA) foliar o en raíz.",
-        "Baja el pH del sustrato a 6.0–6.3.",
-        "Evita sobre-fertilización con fósforo."
-      ],
-      "prevention_es": [
-        "Usa quelatos estables en el rango de pH de tu sustrato.",
-        "Controla la EC para evitar antagonismos."
-      ]
-    },
-    {
-      "id": "nutrient_burn",
-      "category": "excess",
-      "label_es": "Quemadura por Nutrientes",
-      "symptomWeights": { "brown_tips": 3, "leaf_tip_burn": 2, "crooked_growing": 1 },
-      "cause_es": "Concentración de sales demasiado alta (EC elevada) o fertilización excesiva.",
-      "actionPlan_es": [
-        "Lava el sustrato con agua a pH 6.0 (3× volumen de maceta).",
-        "Reduce la dosis de fertilizante un 50% durante 1–2 semanas.",
-        "Mide la EC de salida hasta que baje a valores normales."
-      ],
-      "prevention_es": [
-        "Sube la EC gradualmente, no en saltos.",
-        "Riega con al menos 15–20% de drenaje."
-      ]
-    },
-    {
-      "id": "ph_lockout",
-      "category": "excess",
-      "label_es": "Bloqueo por pH",
-      "symptomWeights": { "ph_out_of_range": 3, "locked_nutrients": 2 },
-      "cause_es": "pH de riego o sustrato fuera del rango de absorción (5.5–6.5), impidiendo la asimilación de nutrientes.",
-      "actionPlan_es": [
-        "Ajusta el pH de entrada con ácido/base a 6.0 para sustrato.",
-        "Lava con agua tamponada y vuelve a medir el pH de salida.",
-        "Aplica riego con pH correcto durante 3–4 días antes de re-fertilizar."
-      ],
-      "prevention_es": [
-        "Calibra tu medidor de pH cada semana.",
-        "Mide pH y EC del drenaje en cada riego."
-      ]
-    },
-    {
-      "id": "thermal_stress",
-      "category": "excess",
-      "label_es": "Estrés Térmico",
-      "symptomWeights": { "wilting": 2, "leaf_curl_heat": 2, "hot_spots": 1 },
-      "cause_es": "Temperaturas por encima de 28–30 °C o picos de calor con baja ventilación.",
-      "actionPlan_es": [
-        "Ventila e introduce aire fresco (intake/extraction).",
-        "Baja la intensidad de la lámpara o súbela de altura.",
-        "Riega en horas frescas y mantén humedad 60% para mitigar el golpe de calor."
-      ],
-      "prevention_es": [
-        "Controla la temperatura de copa, no solo la ambiental.",
-        "Programa el encendido de luces en horas nocturnas durante el verano."
-      ]
-    },
-    {
-      "id": "light_stress",
-      "category": "excess",
-      "label_es": "Estrés Lumínico",
-      "symptomWeights": { "bleached_leaves": 3, "light_burn": 2 },
-      "cause_es": "PPFD demasiado alto o distancia de lámpara demasiado corta, blanqueando la clorofila.",
-      "actionPlan_es": [
-        "Sube la lámpara 15–30 cm o baja la potencia (dimmer).",
-        "Reduce el fotoperiodo temporalmente si es posible.",
-        "Aumenta la ventilación en la copa."
-      ],
-      "prevention_es": [
-        "Mide PPFD con aplicación o luxómetro (objetivo según etapa).",
-        "Acostumbra a las plantas gradualmente a luz intensa."
-      ]
-    },
-    {
-      "id": "powdery_mildew",
-      "category": "fungus",
-      "label_es": "Oídio",
-      "symptomWeights": { "white_powdery_residue": 3, "fuzzy_white_mold": 3 },
-      "cause_es": "Hongo Erysiphe cichoracearum: humedad alta, poca ventilación y cambios bruscos de temperatura.",
-      "actionPlan_es": [
-        "Elimina hojas afectadas y aísla la zona.",
-        "Aplica fungicida aprobado (azufre en vegetativa, bicarbonato en floración con precaución).",
-        "Mejora extracción y reduce humedad bajo 55%.",
-        "NO lave los cogollos en floración tardía con azufre."
-      ],
-      "prevention_es": [
-        "Mantén ventilación constante y flujo de aire bajo la copa.",
-        "Inspecciona el envés de las hojas semanalmente.",
-        "Controla los picos de humedad en el encendido/apagado."
-      ]
-    },
-    {
-      "id": "botrytis",
-      "category": "fungus",
-      "label_es": "Botrytis (Moho Gris)",
-      "symptomWeights": { "gray_mold": 3, "rotting_buds": 3 },
-      "cause_es": "Botrytis cinerea en cogollos densos con humedad >60%, poca ventilación o flores húmedas.",
-      "actionPlan_es": [
-        "Retira con guantes los cogollos afectados sin esparcir esporas.",
-        "Reduce humedad al 45–50% en floración tardía.",
-        "Mejora la extracción y el flujo de aire entre cogollos.",
-        "Aplica tratamiento preventivo a base de Bacillus subtilis o cobre."
-      ],
-      "prevention_es": [
-        "Deshoja el interior de la copa para evitar bolsas de humedad.",
-        "Evita que las flores toquen agua o condensación.",
-        "Chequea los cogollos más densos cada dos días en floración."
-      ]
-    },
-    {
-      "id": "spider_mite",
-      "category": "pest",
-      "label_es": "Araña Roja",
-      "symptomWeights": { "tiny_spiders": 3, "webbing": 3, "stippled_leaves": 2 },
-      "cause_es": "Tetranychus urticae prolifera en ambientes cálidos y secos; coloniza rápidamente el envés.",
-      "actionPlan_es": [
-        "Aplica acaricida específico rotando principios activos.",
-        "Usa depredadores naturales (Phytoseiulus persimilis).",
-        "Sube la humedad al 65% para frenar su reproducción.",
-        "Limpia carpa y herramientas para evitar reinfestación."
-      ],
-      "prevention_es": [
-        "Introduce plantas de cuarentena antes de entrar a la sala.",
-        "Revisa el envés con lupa 10–20× semanalmente.",
-        "Mantén polvo y polen fuera de la zona de cultivo."
-      ]
-    },
-    {
-      "id": "thrips",
-      "category": "pest",
-      "label_es": "Trips",
-      "symptomWeights": { "silvering": 3, "black_dots": 2 },
-      "cause_es": "Insectos Frankliniella occidentalis que raspan la superficie foliar y dejan puntos negros fecales.",
-      "actionPlan_es": [
-        "Aplica insecticida sistémico o jabón potásico en ciclos de 5–7 días.",
-        "Coloca trampas cromáticas azules.",
-        "Introduce depredadores (Orius laevigatus)."
-      ],
-      "prevention_es": [
-        "Controla malas hierbas cerca del invernadero.",
-        "Inspecciona flores y hojas nuevas al recibir esquejes."
-      ]
-    },
-    {
-      "id": "fungus_gnat",
-      "category": "pest",
-      "label_es": "Mosca del Sustrato",
-      "symptomWeights": { "tiny_black_flies": 3, "larvae_in_soil": 2 },
-      "cause_es": "Sciaridae: sustrato constantemente húmedo y materia orgánica en descomposición.",
-      "actionPlan_es": [
-        "Deja secar la capa superior del sustrato entre riegos.",
-        "Aplica Bacillus thuringiensis israelensis al agua de riego.",
-        "Coloca trampas amarillas adhesivas.",
-        "Cubre el sustrato con arena o perlita para bloquear la puesta."
-      ],
-      "prevention_es": [
-        "Evita el exceso de riego y acumulación de agua en bandejas.",
-        "Usa sustratos compostados correctamente."
-      ]
-    }
-  ]
+    "version":  2,
+    "conditions":  [
+                       {
+                           "id":  "nitrogen_deficiency_lower_leaves",
+                           "category":  "deficiency",
+                           "label_es":  "Deficiencia de nitrógeno en hojas bajas",
+                           "short_es":  "Amarillamiento progresivo desde el follaje inferior",
+                           "severity":  "moderada",
+                           "symptomWeights":  {
+                                                  "hojas_inferiores_amarillas":  1,
+                                                  "marchitez_sequedad_hojas_bajas":  1,
+                                                  "crecimiento_lento_planta_entera":  1
+                                              },
+                           "cause_es":  "El nitrógeno es un elemento móvil: cuando escasea, la planta lo traslada desde las hojas viejas hacia los brotes nuevos y el daño aparece abajo",
+                           "actionPlan_es":  [
+                                                 "Deja de añadir nitrógeno extra y retoma la dosis base de fertilizante completo, sin sobrefertilizar",
+                                                 "Comprueba y ajusta el pH de la solución nutritiva a 5.8-6.5, porque el nitrógeno se pierde o se bloquea fuera de ese rango",
+                                                 "Riega solo cuando los 3-4 cm superiores del sustrato estén secos, para no lavar el nitrógeno por drenaje",
+                                                 "Retira las hojas más amarillas y colapsadas, porque siguen consumiendo reservas sin aportar nada a la planta",
+                                                 "Espera 10-14 días: con el nitrógeno corregido las hojas nuevas saldrán verdes y las viejas ya no empeorarán"
+                                             ],
+                           "prevention_es":  [
+                                                 "Mantén una fertilización regular a dosis completas, sin ciclos largos de privación entre riegos",
+                                                 "Riega solo con agua de baja alcalinidad, por debajo de 100 ppm de sodio y calcio",
+                                                 "Usa sustrato con suficiente materia orgánica y capacidad de retención, para que el nitrógeno no se lixivie"
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "photoEvidence":  {
+                                                 "greenMin":  45,
+                                                 "chlorosisMin":  30
+                                             }
+                       },
+                       {
+                           "id":  "iron_deficiency_young_leaves",
+                           "category":  "deficiency",
+                           "label_es":  "Clorosis ferrica en hojas nuevas",
+                           "short_es":  "Nervaduras verdes sobre limbo amarillento",
+                           "severity":  "moderada",
+                           "symptomWeights":  {
+                                                  "nervios_verdes_hojas_amarillas":  1,
+                                                  "brotes_jovenes_dorados_blanqueados":  1,
+                                                  "clorosis_intensa_hojas_jovenes":  1
+                                              },
+                           "cause_es":  "El hierro es inmóvil, así que el daño sale primero en las hojas nuevas. Con pH alto se insolubiliza y la planta no puede absorberlo aunque haya en el sustrato",
+                           "actionPlan_es":  [
+                                                 "Baja el pH del agua de riego a 5.5-6.2 y acidifica el sustrato, porque el hierro se bloquea por encima de 6.5",
+                                                 "Aplica un quelato de hierro EDDHA, que sigue disponible hasta pH 7, respetando la dosis de la etiqueta",
+                                                 "Suspende el calcio de la solución nutritiva durante una semana, porque en exceso compite con el hierro en la raíz",
+                                                 "Corrige el encharcamiento, porque las raíces saturadas de agua no absorben nutrientes aunque el sustrato los tenga",
+                                                 "Repite el aporte cada 7-10 días durante dos o tres ciclos de hojas nuevas, ya que el hierro es inmóvil"
+                                             ],
+                           "prevention_es":  [
+                                                 "Mantén el pH entre 5.8 y 6.3 durante todo el ciclo, el rango donde el hierro se absorbe mejor",
+                                                 "Usa agua de baja dureza, porque el carbonato del agua dura bloquea el hierro del sustrato",
+                                                 "Alterna sustratos con turba y fibra de coco, que acidifican de forma natural la zona radicular"
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "photoEvidence":  {
+                                                 "greenMin":  30,
+                                                 "chlorosisMin":  22
+                                             }
+                       },
+                       {
+                           "id":  "magnesium_deficiency_interveinal",
+                           "category":  "deficiency",
+                           "label_es":  "Clorosis de magnesio entre nervaduras",
+                           "short_es":  "Amarillamiento interveinal en hojas medias",
+                           "severity":  "moderada",
+                           "symptomWeights":  {
+                                                  "amarillamiento_entre_nervaduras":  1,
+                                                  "necrosis_entre_venas_hojas_medias":  1,
+                                                  "caida_premura_hojas_bajas":  1
+                                              },
+                           "cause_es":  "El magnesio es móvil y ocupa el centro de la molécula de clorofila: al faltar, la planta lo extrae de las hojas medias y el limbo pierde color entre nervaduras",
+                           "actionPlan_es":  [
+                                                 "Sube el aporte de magnesio un 30-50 % con un fertilizante rico en Mg, sin elevar el potasio en la misma medida",
+                                                 "Corrige el exceso de potasio, que desplaza al magnesio dentro de la planta y agrava la clorosis",
+                                                 "Ajusta el pH a 5.8-6.5 y evita riegos con agua muy dura o calcárea, que limitan su absorción",
+                                                 "Retira las hojas más afectadas para que la planta deje de desviar magnesio hacia un follaje que ya no se recupera",
+                                                 "Espera 10-14 días: las hojas nuevas deben verse más verdes, pero la necrosis antigua no desaparece"
+                                             ],
+                           "prevention_es":  [
+                                                 "Mantén una relación de nutrientes con más P y K en floración, que deja margen para el magnesio",
+                                                 "Incorpora epsomita o sulfato de magnesio a 5-10 g por cada 10 litros, una vez al mes en fase vegetativa",
+                                                 "Riega solo cuando seque la capa superior del sustrato, para evitar lavados continuos de cationes"
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "photoEvidence":  {
+                                                 "greenMin":  42,
+                                                 "chlorosisMin":  28
+                                             }
+                       },
+                       {
+                           "id":  "calcium_deficiency_new_growth",
+                           "category":  "deficiency",
+                           "label_es":  "Deficiencia de calcio en brotes nuevos",
+                           "short_es":  "Puntas quemadas y deformes en el ápice",
+                           "severity":  "grave",
+                           "symptomWeights":  {
+                                                  "cogollos_tiernos_deformados_rigidos":  1,
+                                                  "hojas_curvas_torcidas_vertice":  1,
+                                                  "aborto_floral_caida_cogollos":  1,
+                                                  "punta_brote_quemada_seca":  1
+                                              },
+                           "cause_es":  "El calcio es inmóvil y viaja solo por la savia elaborada, así que llega al ápice y a las hojas nuevas únicamente si la transpiración funciona bien",
+                           "actionPlan_es":  [
+                                                 "Aumenta el calcio con un fertilizante cálcico, sin superar 200 ppm de Ca en la solución nutritiva",
+                                                 "Estabiliza el pH entre 5.8 y 6.5, porque por debajo de 5.5 el calcio queda retenido y por encima se precipita",
+                                                 "Evita el encharcamiento, porque sin flujo de savia elaborada el calcio no llega a los tejidos en crecimiento",
+                                                 "Aumenta la circulación de aire y baja la humedad del cuarto, para que la transpiración siga activa",
+                                                 "En 7-10 días se corrigen las puntas nuevas, pero el daño apical ya necrosado no vuelve a crecer"
+                                             ],
+                           "prevention_es":  [
+                                                 "Mantén un pH estable entre 5.8 y 6.5, porque cada oscilación reequilibra los nutrientes disponibles",
+                                                 "Abona con calcio y magnesio en la misma aplicación, manteniendo la relación Ca:Mg por encima de 1.5:1",
+                                                 "Aplica un fertilizante foliar de calcio cada dos semanas durante el crecimiento vegetativo rápido"
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "photoEvidence":  {
+                                                 "greenMin":  38,
+                                                 "necrosisMin":  7,
+                                                 "chlorosisMin":  20
+                                             }
+                       },
+                       {
+                           "id":  "potassium_deficiency_leaf_margins",
+                           "category":  "deficiency",
+                           "label_es":  "Quemadura de potasio en los bordes",
+                           "short_es":  "Márgenes marrones y secos en hojas medias",
+                           "severity":  "moderada",
+                           "symptomWeights":  {
+                                                  "margenes_secos_color_tostado":  1,
+                                                  "tallos_debiles_dobladizos":  1
+                                              },
+                           "cause_es":  "El potasio es móvil y regula la apertura de los estomas: al faltar, la planta lo extrae de las hojas medias y sus bordes se secan por deshidratación",
+                           "actionPlan_es":  [
+                                                 "Aumenta el potasio en la solución nutritiva hasta 200-250 ppm, bajando algo el nitrógeno para no forzar el follaje",
+                                                 "Suspende las dosis altas de calcio y magnesio, que compiten con el potasio por la absorción en la raíz",
+                                                 "Riega más a menudo y con menos caudal, para que las hojas puedan cerrar estomas y limitar la pérdida de agua",
+                                                 "Retira las hojas con márgenes muy quemados, porque no se regeneran y siguen desecando al resto del follaje",
+                                                 "Verifica en 10-14 días que las hojas nuevas salgan con bordes verdes y sin necrosis"
+                                             ],
+                           "prevention_es":  [
+                                                 "Mantén el potasio en el rango recomendado de cada etapa, más alto en floración que en crecimiento",
+                                                 "Usa fertilizante con alto contenido de K durante la floración, sin pasar de 300 ppm en la solución",
+                                                 "Controla el volumen de riego, porque un sustrato que se seca cada día lava el potasio con facilidad"
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "photoEvidence":  {
+                                                 "greenMin":  44,
+                                                 "necrosisMin":  9,
+                                                 "chlorosisMin":  18
+                                             }
+                       },
+                       {
+                           "id":  "zinc_deficiency_small_leaves",
+                           "category":  "deficiency",
+                           "label_es":  "Deficiencia de zinc con hojas pequeñas",
+                           "short_es":  "Hojas jóvenes reducidas y con manchas",
+                           "severity":  "leve",
+                           "symptomWeights":  {
+                                                  "hojas_nuevas_pequenas_reducidas":  1,
+                                                  "manchas_blancas_bronceadas_hoja":  1
+                                              },
+                           "cause_es":  "El zinc es inmóvil y participa en la síntesis de auxinas y enzimas: al faltar, el brote nuevo se queda pequeño, arrugado y con manchas",
+                           "actionPlan_es":  [
+                                                 "Aplica un fertilizante con zinc quelatado o sulfato de zinc a la dosis de etiqueta, en una sola aplicación",
+                                                 "Ajusta el pH a 5.8-6.5, porque por encima de 6.8 el zinc queda inmovilizado y deja de absorberse",
+                                                 "Reduce el fósforo de la dieta, porque en exceso reduce la disponibilidad de zinc para la planta",
+                                                 "Da un riego de lavado con agua de pH 6.0 si el sustrato ha acumulado sales por fertilización masiva",
+                                                 "Espera 14-21 días, porque hacen falta varios ciclos de hojas nuevas para ver un tamaño normal"
+                                             ],
+                           "prevention_es":  [
+                                                 "Usa sustratos con zinc incorporado, como los de turba y coco formulados para floración",
+                                                 "Alterna varios abonos entre riegos en lugar de usar siempre el mismo durante semanas",
+                                                 "Mantén el pH entre 5.8 y 6.5, el rango en el que los micronutrientes permanecen disponibles"
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "photoEvidence":  {
+                                                 "greenMin":  46,
+                                                 "chlorosisMin":  24
+                                             }
+                       },
+                       {
+                           "id":  "phosphorus_deficiency_dark_purple",
+                           "category":  "nutrient",
+                           "label_es":  "Fósforo deficiente con tono púrpura",
+                           "short_es":  "Tono púrpura oscuro en tallos y hojas",
+                           "severity":  "moderada",
+                           "symptomWeights":  {
+                                                  "tallos_petiolos_tono_purpura":  1,
+                                                  "hojas_verde_oscuro_azulado":  1,
+                                                  "raices_finas_cortas_marrones":  1
+                                              },
+                           "cause_es":  "El fósforo se moviliza desde las hojas viejas cuando escasea, frena la fotosíntesis y acumula azúcares que tiñen el follaje de púrpura",
+                           "actionPlan_es":  [
+                                                 "Sube el fósforo con un fertilizante rico en P o con fosfato mono y potásico, en dosis moderadas y medidas",
+                                                 "Ajusta el pH entre 5.8 y 6.5, porque fuera de ese rango el fósforo queda fijado en el sustrato",
+                                                 "Reduce el nitrógeno si usas un fertilizante muy vegetativo, que agrava el desequilibrio entre macros",
+                                                 "Sube la temperatura de la raíz a 18-22 grados, porque por debajo de 14 el fósforo deja de absorberse",
+                                                 "Con el pH y la temperatura corregidos, el verde vuelve al crecimiento nuevo en 10-14 días"
+                                             ],
+                           "prevention_es":  [
+                                                 "Usa una relación de nutrientes adaptada a cada fase, con más fósforo al inicio de la floración",
+                                                 "Mantén la temperatura de raíz entre 18 y 24 grados, sobre todo durante la noche",
+                                                 "Evita la salinidad del agua de riego y no fertilices el sustrato seco, para no concentrar sales"
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "photoEvidence":  {
+                                                 "greenMin":  34,
+                                                 "necrosisMin":  5,
+                                                 "chlorosisMin":  16
+                                             }
+                       },
+                       {
+                           "id":  "ph_lockout_nutrient_block",
+                           "category":  "nutrient",
+                           "label_es":  "Bloqueo de nutrientes por pH alto",
+                           "short_es":  "Amarillamiento pese a fertilizar bien",
+                           "severity":  "moderada",
+                           "symptomWeights":  {
+                                                  "manchas_herrumbrosas_tostadas":  1,
+                                                  "tono_herrumbrroso_uniforme_hoja":  1,
+                                                  "raiz_negra_descompuesta":  1,
+                                                  "desarrollo_planta_estancado":  1
+                                              },
+                           "cause_es":  "Con pH alto el hierro, manganeso y zinc se insolubilizan, y con pH muy bajo se lavan calcio y magnesio, así que la planta no absorbe lo que sí tiene",
+                           "actionPlan_es":  [
+                                                 "Mide el pH de entrada y de salida, no solo el del agua del grifo, y anota el valor cada semana",
+                                                 "Ajusta el pH de entrada entre 5.8 y 6.2 con ácido nítrico o fosfórico, siempre en dosis medidas",
+                                                 "Si el agua es dura, mezcla un 30-50 % de agua de lluvia filtrada o desmineralizada al agua de riego",
+                                                 "Haz un riego de lavado con agua a pH 6.0 y no fertilices en las 48 horas siguientes",
+                                                 "Reduce un 20 % la dosis de fertilizante hasta normalizar el pH, porque abonar bloqueado no sirve"
+                                             ],
+                           "prevention_es":  [
+                                                 "Instala un medidor de pH de calidad con calibración, en lugar de estimar el pH al ojo",
+                                                 "Calibra el medidor cada mes con soluciones estándar de 4.01 y 7.00",
+                                                 "Usa sustrato con cal dolomita autoequilibrante y macetas con drenaje suficiente"
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "photoEvidence":  {
+                                                 "greenMin":  32,
+                                                 "chlorosisMin":  26
+                                             }
+                       },
+                       {
+                           "id":  "powdery_mildew_leaf_coating",
+                           "category":  "fungus",
+                           "label_es":  "Oídio con polvo blanco en las hojas",
+                           "short_es":  "Manchas blancas como talco en el envés",
+                           "severity":  "moderada",
+                           "symptomWeights":  {
+                                                  "polvo_blanco_talco_hojas":  1,
+                                                  "moho_algodonoso_enves":  1,
+                                                  "manchas_blancas_extendidas_copa":  1
+                                              },
+                           "cause_es":  "El oídio coloniza la superficie de la hoja cuando hay humedad alta, ventilación pobre y temperaturas templadas sin golpe de luz directo",
+                           "actionPlan_es":  [
+                                                 "Retira a mano las hojas con más moho y bótalas fuera del cultivo, nunca en el compostaje casero",
+                                                 "Desinfecta bandeja, superficie y herramientas con lejía diluida al 10 % tras cada sesión de trabajo",
+                                                 "Pulveriza bicarbonato de potasio a 5 g por litro mojando bien el envés, o un fungicida etiquetado para oídio",
+                                                 "Baja la humedad relativa por debajo del 60 % y aumenta el caudal de extractor, sin corrientes directas",
+                                                 "Repite cada 7-10 días y alterna con un producto de cobre si la presión del hongo es alta"
+                                             ],
+                           "prevention_es":  [
+                                                 "Mantén la humedad relativa entre 45 y 60 % con deshumidificador o extracción constante",
+                                                 "Espacia las plantas hasta que el aire circule entre hojas, sin envés en contacto entre vecinas",
+                                                 "Riega por la base y por la mañana, para que el follaje esté seco antes de la noche"
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "photoEvidence":  {
+                                                 "greenMin":  60,
+                                                 "trichomeMin":  18,
+                                                 "chlorosisMin":  8
+                                             }
+                       },
+                       {
+                           "id":  "botrytis_bud_gray_mold",
+                           "category":  "fungus",
+                           "label_es":  "Moho gris en cogollos densos",
+                           "short_es":  "Caldo gris sobre flores tras la lluvia",
+                           "severity":  "grave",
+                           "symptomWeights":  {
+                                                  "pudricion_babosa_cogollos_humedos":  1,
+                                                  "velo_gris_sobre_las_flores":  1,
+                                                  "marchitez_rapida_copa_densa":  1
+                                              },
+                           "cause_es":  "El Botrytis infecta cogollos y zonas internas con humedad por encima del 85 %, poca ventilación y tejidos jóvenes muy húmedos",
+                           "actionPlan_es":  [
+                                                 "Retira de inmediato los cogollos con moho gris y sella cada uno en una bolsa antes de sacarlo del cuarto",
+                                                 "Corta el follaje muerto y sobrante que atrapa humedad en la parte interna de la planta",
+                                                 "Desinfecta tijeras, guantes y bandeja de floración con alcohol o lejía diluida tras cada corte",
+                                                 "Baja la humedad al 50-60 % y añade extractores, porque el hongo consume un cogollo en 72 horas",
+                                                 "Aplica un fungicida sistémico etiquetado para botritis, alternando modo de acción cada 10-14 días"
+                                             ],
+                           "prevention_es":  [
+                                                 "Riega solo cuando los 2-3 primeros centímetros de sustrato estén secos, sin saturar el bloque de raíces",
+                                                 "Desfolia y despuntilla antes de que los cogollos se aprieten, para mantener el centro abierto al aire",
+                                                 "Cosecha en 4-6 días si ya hay botritis visible, porque el inóculo vuelve cada ciclo en los restos"
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "photoEvidence":  {
+                                                 "greenMin":  25,
+                                                 "trichomeMin":  15,
+                                                 "necrosisMin":  22,
+                                                 "chlorosisMin":  12
+                                             }
+                       },
+                       {
+                           "id":  "downy_mildew_leaf_underside",
+                           "category":  "fungus",
+                           "label_es":  "Mildiu velloso en el envés de las hojas",
+                           "short_es":  "Vello gris con esporas en el envés",
+                           "severity":  "moderada",
+                           "symptomWeights":  {
+                                                  "vello_gris_aterciopelado_enves":  1,
+                                                  "angulos_amarillos_limitados_venas":  1
+                                              },
+                           "cause_es":  "El mildiu velloso necesita agua libre sobre la hoja, como la del rocío o el riego por encima, con humedad alta y noche templada",
+                           "actionPlan_es":  [
+                                                 "Recorta las hojas con vello gris, sécalas y retíralas del cultivo sin pasarlas por la mesa de trabajo",
+                                                 "Aplica cobre o un fungicida específico para mildiu, respetando dosis y periodo de seguridad de la etiqueta",
+                                                 "Deja de regar por aspersión y pasa a riego por goteo en la base de la maceta",
+                                                 "Baja la humedad al 55 % y calienta la sala al final del día, para que las hojas sequen antes de la noche",
+                                                 "Repite cada 7-10 días durante dos ciclos y vigila el envés de las hojas bajas, donde suele empezar"
+                                             ],
+                           "prevention_es":  [
+                                                 "Mantén la humedad relativa entre 45 y 60 % y la temperatura diurna entre 20 y 26 grados",
+                                                 "Riega por la base y por la mañana, sin mojar el follaje en ningún momento del ciclo",
+                                                 "Ventila al anochecer para bajar la temperatura de hoja y evitar la condensación nocturna"
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "photoEvidence":  {
+                                                 "greenMin":  32,
+                                                 "trichomeMin":  10,
+                                                 "spotDensityMin":  6,
+                                                 "necrosisMin":  9,
+                                                 "chlorosisMin":  24
+                                             }
+                       },
+                       {
+                           "id":  "septoria_leaf_spot",
+                           "category":  "fungus",
+                           "label_es":  "Septoria con manchas circulares",
+                           "short_es":  "Manchas redondas con puntos negros",
+                           "severity":  "moderada",
+                           "symptomWeights":  {
+                                                  "manchas_marrones_puntos_negros":  1,
+                                                  "hojas_inferiores_secan_desprenden":  1
+                                              },
+                           "cause_es":  "El hongo Septoria salta desde los restos de poda mojados hasta las hojas bajas y sanas cuando la humedad se mantiene alta varios días",
+                           "actionPlan_es":  [
+                                                 "Retira las hojas afectadas y los restos de poda del sustrato, y lávate las manos tras cada planta tocada",
+                                                 "Desinfecta herramientas y tijeras con alcohol isopropílico antes de pasar a la siguiente planta",
+                                                 "Aplica cobre o un fungicida etiquetado para manchas foliares, alternando modos de acción cada 10-14 días",
+                                                 "Baja la humedad por debajo del 60 % y aumenta el aire, sin volver a mojar el follaje al regar",
+                                                 "No podes por encima de las manchas, porque los bordes secos siguen liberando esporas durante días"
+                                             ],
+                           "prevention_es":  [
+                                                 "Retira y tira al exterior los restos de poda, sin dejarlos en la bandeja de cultivo",
+                                                 "Espacia el follaje y recorta las hojas bajas, para que la humedad no se acumule en el dosel",
+                                                 "Riega por la base al amanecer, para que el follaje seque rápido y no haya horas de hoja mojada"
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "photoEvidence":  {
+                                                 "greenMin":  40,
+                                                 "spotDensityMin":  10,
+                                                 "necrosisMin":  8,
+                                                 "chlorosisMin":  18
+                                             }
+                       },
+                       {
+                           "id":  "alternaria_leaf_spot",
+                           "category":  "fungus",
+                           "label_es":  "Alternaria con manchas concéntricas",
+                           "short_es":  "Anillos concéntricos marrones en el follaje",
+                           "severity":  "moderada",
+                           "symptomWeights":  {
+                                                  "manchas_anillos_concentricos":  1,
+                                                  "manchas_oscuras_halo_amarillo":  1
+                                              },
+                           "cause_es":  "Alternaria es un hongo saprofito que infecta hojas dañadas o estresadas cuando hay humedad alta, muchos días nublados y poca luz",
+                           "actionPlan_es":  [
+                                                 "Retira las hojas con anillos concéntricos y bótalas lejos del cultivo, sin arrastrar esporas al resto",
+                                                 "Aplica un fungicida etiquetado para Alternaria, alternando con cobre cada 10-14 días para evitar resistencia",
+                                                 "Espacia las plantas y sube el caudal de aire, bajando la humedad relativa por debajo del 60 %",
+                                                 "Sube la luz a 700-900 PPFD en floración, porque la sombra y el follaje denso favorecen a Alternaria",
+                                                 "Repite cada 10-14 días hasta que un ciclo completo de hojas salga sin manchas nuevas"
+                                             ],
+                           "prevention_es":  [
+                                                 "Evita el estrés de calor y de riego, que son la puerta de entrada más común de este hongo",
+                                                 "Desinfecta bandeja y sustrato antes de cada siembra y no reutilices macetas de plantas enfermas",
+                                                 "Retira el follaje muerto con regularidad y elimínalo fuera de la zona de cultivo"
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "photoEvidence":  {
+                                                 "greenMin":  42,
+                                                 "spotDensityMin":  11,
+                                                 "necrosisMin":  9,
+                                                 "chlorosisMin":  16
+                                             }
+                       },
+                       {
+                           "id":  "fusarium_wilt_stem_rot",
+                           "category":  "fungus",
+                           "label_es":  "Fusarium con marchitez y tallo podrido",
+                           "short_es":  "Marchitez con corte de tallo oscurecido",
+                           "severity":  "grave",
+                           "symptomWeights":  {
+                                                  "marchitez_general_tras_riego":  1,
+                                                  "corte_tallo_venas_oscurecidas":  1,
+                                                  "pudricion_oscura_base_tallo":  1
+                                              },
+                           "cause_es":  "Fusarium vive en el sustrato y sube por los vasos del tallo, donde bloquea el transporte de savia. El corte oscurecido lo delata",
+                           "actionPlan_es":  [
+                                                 "Aísla la planta, retírala del bloque con su sustrato y no la sacudas junto a las demás",
+                                                 "Corta por la base y descarta la planta completa, porque el hongo sobrevive años en restos y sustrato",
+                                                 "Desinfecta macetas, bandejas y herramientas con lejía al 10 % y déjalas al sol varias horas",
+                                                 "Riega solo a pH 5.8-6.2 y mejora el drenaje, porque Fusarium prospera en sustrato anaerobio y salino",
+                                                 "Aplica un biofungicida de Trichoderma en el sustrato de las plantas sanas y repite a las tres semanas"
+                                             ],
+                           "prevention_es":  [
+                                                 "Usa sustrato estéril o pasteurizado y macetas limpias, sin restos del ciclo anterior",
+                                                 "Monta las colas de cultivo con desagüe completo, sin charcos bajo las mesas",
+                                                 "Deja la mesa vacía y sanitizada 10 días entre ciclos y rota la ubicación de las plantas"
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "photoEvidence":  {
+                                                 "greenMin":  18,
+                                                 "necrosisMin":  18,
+                                                 "chlorosisMin":  20
+                                             }
+                       },
+                       {
+                           "id":  "rhizopus_head_mold",
+                           "category":  "fungus",
+                           "label_es":  "Moho negro en las inflorescencias",
+                           "short_es":  "Cabellos negros y baboso en cogollos",
+                           "severity":  "grave",
+                           "symptomWeights":  {
+                                                  "cabellos_negros_en_cogollos":  1,
+                                                  "mohos_negros_cabellos_cogollos":  1
+                                              },
+                           "cause_es":  "Rhizopus crece en flores con calor y humedad alta, y salta entre cogollos con sus esporas ligeras, dejando un vello negro y baboso",
+                           "actionPlan_es":  [
+                                                 "Elimina de inmediato los cogollos con moho negro y séllalos en una bolsa antes de sacarlos del cuarto",
+                                                 "No sacudas el resto de la planta ni toques los cogollos cercanos, porque sus esporas viajan con el aire",
+                                                 "Baja la temperatura a 22-24 grados y la humedad al 50-55 % para frenar su crecimiento diario",
+                                                 "Recorta el follaje sobrante y mejora la circulación de aire entre los cogollos centrales",
+                                                 "Aplica un conservante natural de floración a la dosis de etiqueta para proteger los cogollos sanos"
+                                             ],
+                           "prevention_es":  [
+                                                 "Cosecha en el punto óptimo de maduración y no dejes cogollos inservibles en la planta",
+                                                 "Mantén el cuarto por debajo de 25 grados y la humedad entre 45 y 55 % durante la noche",
+                                                 "Extiende las ramas hacia los lados en la semana 3 y separa el follaje húmedo de la floración"
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "photoEvidence":  {
+                                                 "greenMin":  20,
+                                                 "trichomeMin":  20,
+                                                 "necrosisMin":  25,
+                                                 "chlorosisMin":  15
+                                             }
+                       },
+                       {
+                           "id":  "rust_pustules_leaf",
+                           "category":  "fungus",
+                           "label_es":  "Roya con pústulas rojizas",
+                           "short_es":  "Pústulas anaranjadas en el envés",
+                           "severity":  "leve",
+                           "symptomWeights":  {
+                                                  "pustulas_naranjas_redondas":  1,
+                                                  "clorosis_amarilla_alrededor_manchas":  1
+                                              },
+                           "cause_es":  "La roya necesita agua libre en la hoja y humedad alta para germinar sus esporas, que salen como pústulas anaranjadas en el envés",
+                           "actionPlan_es":  [
+                                                 "Recorta las hojas con pústulas, lávalas con agua corriente para soltar las esporas y bótalas fuera",
+                                                 "Aplica un fungicida de cobre a la dosis de etiqueta, mojando también el envés, y repite cada 10 días",
+                                                 "Baja la humedad al 55 % y deja de regar por encima, porque el agua libre germina las esporas",
+                                                 "Aumenta la luz y la circulación de aire, porque el hongo prospera con sombra y follaje muy denso",
+                                                 "Retira también las hojas caídas del sustrato, donde la roya se conserva de un ciclo al siguiente"
+                                             ],
+                           "prevention_es":  [
+                                                 "Mantén la humedad relativa entre 45 y 55 % y la temperatura nocturna por encima de 16 grados",
+                                                 "Riega por goteo al inicio del día y revisa que ninguna bandeja acumule agua bajo las mesas",
+                                                 "Rota la ubicación del cultivo y limpia el cuarto a fondo entre ciclos, sin restos de la cosecha"
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "photoEvidence":  {
+                                                 "greenMin":  48,
+                                                 "spotDensityMin":  7,
+                                                 "necrosisMin":  6,
+                                                 "chlorosisMin":  20
+                                             }
+                       },
+                       {
+                           "id":  "spider_mite_webbing_infestation",
+                           "category":  "pest",
+                           "label_es":  "Araña roja con telarañas finas",
+                           "short_es":  "Filamentos finos entre hojas y ápice",
+                           "severity":  "moderada",
+                           "symptomWeights":  {
+                                                  "telaranas_finas_entre_hojas":  1,
+                                                  "punteado_blanco_superficie_foliar":  1,
+                                                  "baba_pegajosa_suciedad_hojas":  1
+                                              },
+                           "cause_es":  "El ácaro rojo se reproduce con calor y humedad seca, y completa su ciclo en menos de una semana, por eso arrasa antes de verse telarañas",
+                           "actionPlan_es":  [
+                                                 "Retira a mano las hojas con más telaraña y descarta el follaje, para bajar la carga de ácaros",
+                                                 "Lava a presión las hojas con agua potable arrastrando ácaros y huevos, empezando por el envés",
+                                                 "Cuelga trampas amarillas pegajosas cada 10-20 plantas para detectar la infestación y contar adultos",
+                                                 "Aplica aceite hortícola o jabón potásico al 1-2 % con follaje seco, taponando bien el envés",
+                                                 "Repite cada 5-7 días durante dos semanas, alternando aceite y azufre, y sube la humedad al 60 %"
+                                             ],
+                           "prevention_es":  [
+                                                 "Revisa a diario el envés de las hojas con lupa de 10x, empezando por las plantas del filtro de aire",
+                                                 "Introduce ácaros depredadores como Phytoseiulus persimilis y mantén el ciclo completo para que se asiente",
+                                                 "Limpia filtros, paredes y ventiladores cada dos semanas, donde anidan y se multiplican los ácaros"
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "photoEvidence":  {
+                                                 "greenMin":  28,
+                                                 "webbingMin":  6,
+                                                 "chlorosisMin":  16
+                                             }
+                       },
+                       {
+                           "id":  "broad_mite_leaf_curl",
+                           "category":  "pest",
+                           "label_es":  "Ácaro ancho con hojas encogidas",
+                           "short_es":  "Hojas arrugadas por ácaro diminuto",
+                           "severity":  "moderada",
+                           "symptomWeights":  {
+                                                  "hojas_arrugadas_cogollos_tiernos":  1,
+                                                  "terminales_oscurecidos_bronceados":  1
+                                              },
+                           "cause_es":  "El ácaro ancho mide menos de 0.2 mm y ataca el brote nuevo inyectando toxinas, así que encoge y deforma las hojas sin verse",
+                           "actionPlan_es":  [
+                                                 "Aplica un acaricida etiquetado para ácaro ancho o aceite hortícola al 2 %, mojando los brotes jóvenes",
+                                                 "Retira y descarta los brotes deformes, que son el foco desde el que se reinvadan las plantas limpias",
+                                                 "Riega el sustrato con un plaguicida sistémico de uso en interiores, para llegar a los ácaros del brote",
+                                                 "Desinfecta tijeras, guantes y bandejas, porque el ácaro ancho se transmite por contacto entre plantas",
+                                                 "Repite cada 7-10 días durante tres aplicaciones, porque los huevos sobreviven a un solo tratamiento"
+                                             ],
+                           "prevention_es":  [
+                                                 "Mantén toda planta nueva en cuarentena 21 días en una sala aparte, revisando el envés cada semana",
+                                                 "Limpia a fondo el cuarto entre ciclos, incluidas las juntas de mesa y los filtros de ventilación",
+                                                 "Vigila las zonas de floración muy juntas y húmedas, donde el ácaro ancho se reproduce más rápido"
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "photoEvidence":  {
+                                                 "greenMin":  30,
+                                                 "webbingMin":  4,
+                                                 "chlorosisMin":  20
+                                             }
+                       },
+                       {
+                           "id":  "aphid_cluster_new_growth",
+                           "category":  "pest",
+                           "label_es":  "Pulgones agrupados en brotes nuevos",
+                           "short_es":  "Insectos agrupados con melaza pegajosa",
+                           "severity":  "leve",
+                           "symptomWeights":  {
+                                                  "pulgones_agrupados_brotes_nuevos":  1,
+                                                  "melaza_pegajosa_hormigas_hojas":  1
+                                              },
+                           "cause_es":  "Los pulgones pican los brotes jóvenes y excretan melaza pegajosa, y una sola hembra puede dejar cientos de descendientes en pocos días",
+                           "actionPlan_es":  [
+                                                 "Aplasta con los dedos los racimos del brote nuevo, uno por uno, y repite cada dos días",
+                                                 "Riega el follaje con agua potable a presión, sobre todo el envés, para arrastrar los pulgones sueltos",
+                                                 "Coloca trampas amarillas pegajosas para controlar la población y detectar la llegada de alados",
+                                                 "Pulveriza jabón potásico o aceite hortícola al 1-2 % con follaje seco y rocía bien el envés",
+                                                 "Introduce mariquitas o sírfidos cada dos semanas si la infestación es moderada y cabe bien en el cuarto"
+                                             ],
+                           "prevention_es":  [
+                                                 "Revisa los brotes nuevos con lupa cada 2-3 días, porque los pulgones colonizan muy rápido los cogollos",
+                                                 "Coloca mallas anti-insectos de 0.4 mm en ventanas y en todas las entradas de aire del cuarto",
+                                                 "Fumiga la sala entre ciclos y limpia ventanas y mamparas, donde sobrevivieron huevos todo el invierno"
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "photoEvidence":  {
+                                                 "greenMin":  45,
+                                                 "trichomeMin":  12,
+                                                 "chlorosisMin":  15
+                                             }
+                       },
+                       {
+                           "id":  "whitefly_swarm_underside",
+                           "category":  "pest",
+                           "label_es":  "Mosca blanca con nube en el envés",
+                           "short_es":  "Nube de moscas al agitar la planta",
+                           "severity":  "moderada",
+                           "symptomWeights":  {
+                                                  "nube_aleteo_al_tocar_planta":  1,
+                                                  "mosca_blanca_adherida_enves":  1
+                                              },
+                           "cause_es":  "La mosca blanca succiona savia en el envés, transmite virus al picar y protege sus huevos y ninfas de la lluvia bajo la hoja",
+                           "actionPlan_es":  [
+                                                 "Sacude las plantas sobre una bandeja blanca al anochecer y cuenta los adultos para medir la presión",
+                                                 "Retira las hojas más invadidas y lava el envés de las restantes con agua potable a presión",
+                                                 "Coloca trampas amarillas pegajosas cada 5-10 plantas y renuévalas cuando pierdan pegajosidad",
+                                                 "Pulveriza aceite hortícola o jabón potásico al 1-2 % cada 5-7 días, mojando envés y estados juveniles",
+                                                 "Usa control biológico con Encarsia formosa o Nymphaliser, y reserva el químico para picos de plaga"
+                                             ],
+                           "prevention_es":  [
+                                                 "Instala malla anti-insectos de 0.4 mm y doble puerta con cortina de aire en la entrada del cuarto",
+                                                 "Revisa semanalmente el envés de las hojas nuevas, donde suele empezar la infestación",
+                                                 "Retira el cultivo al final del ciclo y lava a fondo mesas, paredes y equipos antes de la siembra"
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "photoEvidence":  {
+                                                 "greenMin":  48,
+                                                 "trichomeMin":  15,
+                                                 "chlorosisMin":  14
+                                             }
+                       },
+                       {
+                           "id":  "thrips_silvering_streaks",
+                           "category":  "pest",
+                           "label_es":  "Trips con plateado y rayas",
+                           "short_es":  "Plateado con puntos negros fecales",
+                           "severity":  "moderada",
+                           "symptomWeights":  {
+                                                  "rayas_plateadas_argenteas_hojas":  1,
+                                                  "puntos_negros_fecales_petiolos":  1
+                                              },
+                           "cause_es":  "Los trips raspan la hoja para succionar savia y dejan plateado con puntos negros de heces, además de transmitir virus al picar",
+                           "actionPlan_es":  [
+                                                 "Coloca trampas azules pegajosas, que los atraen más que las amarillas, cada 5-10 plantas",
+                                                 "Retira las hojas más plateadas y bótalas en una bolsa sellada, sin arrastrar trips a otras plantas",
+                                                 "Aplica un plaguicida de contacto con efecto sistémico y residual, respetando dosis y periodo de seguridad",
+                                                 "Alterna plaguicidas de distinto modo de acción cada 7 días, porque los trips generan resistencia rápido",
+                                                 "Repite cada 5-7 días dos o tres veces, porque los huevos están protegidos dentro del tejido de la hoja"
+                                             ],
+                           "prevention_es":  [
+                                                 "Coloca mallas de 0.4 mm en ventanas y entradas de aire, porque los trips miden solo 1-2 mm",
+                                                 "Quita del cuarto las flores y ramilletes de otras plantas, que atraen y retienen trips durante días",
+                                                 "Haz un tratamiento preventivo al inicio de la floración, cuando la población de trips se dispara"
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "photoEvidence":  {
+                                                 "greenMin":  50,
+                                                 "trichomeMin":  10,
+                                                 "necrosisMin":  7,
+                                                 "chlorosisMin":  18
+                                             }
+                       },
+                       {
+                           "id":  "fungus_gnat_swarm_soil",
+                           "category":  "pest",
+                           "label_es":  "Mosca del sustrato alrededor del cultivo",
+                           "short_es":  "Moscas negras sobre el sustrato húmedo",
+                           "severity":  "leve",
+                           "symptomWeights":  {
+                                                  "moscas_negras_sobre_sustrato":  1,
+                                                  "sustrato_humedo_superficie_maceta":  1
+                                              },
+                           "cause_es":  "Los fungus gnat son hongos que se multiplican en sustrato húmedo, y sus larvas roen la corteza de la raíz hasta matarla",
+                           "actionPlan_es":  [
+                                                 "Cuelga trampas amarillas pegajosas en la base de las macetas para capturar los adultos voladores",
+                                                 "Seca la capa superior del sustrato o espolvorea perlita para bajar la humedad donde ponen los huevos",
+                                                 "Pasteuriza el sustrato con calor a 60-70 grados durante 30 minutos, o aplica un biofungicida de Trichoderma",
+                                                 "Riega menos y alarga el intervalo entre riegos, midiendo la humedad a 5 cm con un medidor",
+                                                 "Introduce nematodos entomopatógenos o Hypoaspis, y evita insecticidas de contacto que los destruyen"
+                                             ],
+                           "prevention_es":  [
+                                                 "Mantén la capa superior más seca que el fondo y ventila por debajo de las mesas para que seque",
+                                                 "Usa sustrato autoclavado o pasteurizado y macetas limpias en cada siembra nueva",
+                                                 "Lleva un registro semanal de trampas amarillas de seguimiento colgadas en cada sala"
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "photoEvidence":  {
+                                                 "greenMin":  55,
+                                                 "trichomeMin":  8,
+                                                 "chlorosisMin":  14
+                                             }
+                       },
+                       {
+                           "id":  "root_mealybug_white_cotton",
+                           "category":  "pest",
+                           "label_es":  "Cochinilla algodonosa en las raíces",
+                           "short_es":  "Algodón blanco en las raíces visibles",
+                           "severity":  "grave",
+                           "symptomWeights":  {
+                                                  "algodon_blanco_raices_maceta":  1,
+                                                  "hojas_amarillas_pequenas_pegajosas":  1
+                                              },
+                           "cause_es":  "La cochinilla algodonosa se esconde en las raíces dentro de un capullo de algodón, y succiona savia hasta que la planta colapsa",
+                           "actionPlan_es":  [
+                                                 "Saca la planta de la maceta, sacude el sustrato y localiza raíces con capullos blancos y zonas oscuras",
+                                                 "Recorta las raíces afectadas y aplica Bacillus subtilis o Trichoderma para recolonizar la zona",
+                                                 "Inmersa el bloque de raíces en insecticida sistémico o aceite hortícola al 2 %, según la etiqueta",
+                                                 "Cambia el sustrato por uno estéril y usa maceta nueva o desinfectada con lejía al 10 % y sol",
+                                                 "Repite cada 10-14 días durante cuatro aplicaciones, porque el capullo protege al insecto del rocío"
+                                             ],
+                           "prevention_es":  [
+                                                 "Mantén 30 días de cuarentena a toda planta traída de fuera y revisa el sustrato al trasplantar",
+                                                 "Usa sustrato estéril y lava macetas y bandejas con lejía al 10 % antes de cada siembra",
+                                                 "No reutilices sustrato ni agua de drenaje de plantas contaminadas, aunque la parte aérea parezca sana"
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "photoEvidence":  {
+                                                 "greenMin":  20,
+                                                 "trichomeMin":  16,
+                                                 "necrosisMin":  10,
+                                                 "chlorosisMin":  22
+                                             }
+                       },
+                       {
+                           "id":  "caterpillar_defoliation",
+                           "category":  "pest",
+                           "label_es":  "Orugas comiendo el borde de las hojas",
+                           "short_es":  "Bordes masticados y excrementos oscuros",
+                           "severity":  "grave",
+                           "symptomWeights":  {
+                                                  "bordes_masticados_hojas_transparentes":  1,
+                                                  "excrementos_oscuros_sobre_hojas":  1
+                                              },
+                           "cause_es":  "Las orugas devoran hojas y tallos jóvenes por la noche, y una sola larva puede comerse media planta en pocos días",
+                           "actionPlan_es":  [
+                                                 "Busca de noche con linterna y retira las orugas una a una, para eliminar la fuente principal del daño",
+                                                 "Sacude las plantas sobre una bandeja blanca para detectar las polillas adultas antes de que ovifiquen",
+                                                 "Recorta los tallos partidos y guarda el material en un bote, sin dejarlo caer sobre el sustrato",
+                                                 "Aplica Bacillus thuringiensis var. kurstaki de noche sobre el envés, que respeta la fauna auxiliar",
+                                                 "Si la infestación es alta, añade espinosado a la aplicación y repite a los siete días"
+                                             ],
+                           "prevention_es":  [
+                                                 "Cuelga trampas de feromonas o una luz UV en la entrada del cuarto para detectar mariposas adultas",
+                                                 "Revisa el cultivo una vez por semana buscando huevos y orugas pequeñas, y quítalas a tiempo",
+                                                 "Elimina la maleza dentro y fuera del cuarto, donde las mariposas ponen los huevos antes de entrar"
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "photoEvidence":  {
+                                                 "greenMin":  22,
+                                                 "necrosisMin":  20,
+                                                 "chlorosisMin":  20
+                                             }
+                       },
+                       {
+                           "id":  "bacterial_leaf_spot_watery",
+                           "category":  "bacterial",
+                           "label_es":  "Manchas bacterianas acuosas en hojas",
+                           "short_es":  "Manchas empapadas con halo amarillo",
+                           "severity":  "grave",
+                           "symptomWeights":  {
+                                                  "manchas_acuosas_humedas_hojas":  1,
+                                                  "halo_amarillo_alrededor_manchas":  1
+                                              },
+                           "cause_es":  "Las bacterias entran por heridas y necesitan agua en la hoja: con el follaje mojado muchas horas y calor húmedo se multiplican rápido",
+                           "actionPlan_es":  [
+                                                 "Retira las hojas con manchas acuosas y halo amarillo, y no las compostes dentro del cultivo",
+                                                 "Usa tijeras desinfectadas en alcohol entre planta y planta, y no manipules el cultivo con follaje mojado",
+                                                 "Aplica cobre, el bactericida de uso agrícola disponible, a la dosis y frecuencia de la etiqueta",
+                                                 "Cambia el riego por aspersión a goteo en la base, para eliminar las horas de hoja mojada",
+                                                 "Baja la humedad por debajo del 65 % y sube el aire, para que el follaje seque en menos de dos horas"
+                                             ],
+                           "prevention_es":  [
+                                                 "Riega siempre por la base y por la mañana, sin salpicar agua entre plantas",
+                                                 "No entres a trabajar con las manos mojadas ni con gotas de agua sobre el follaje",
+                                                 "Desinfecta herramientas, macetas y sustrato entre ciclos, y no reutilices restos de plantas enfermas"
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "photoEvidence":  {
+                                                 "greenMin":  26,
+                                                 "spotDensityMin":  12,
+                                                 "necrosisMin":  14,
+                                                 "chlorosisMin":  20
+                                             }
+                       },
+                       {
+                           "id":  "bacterial_blight_leaf_margin",
+                           "category":  "bacterial",
+                           "label_es":  "Tizón bacteriano en bordes de hojas",
+                           "short_es":  "Márgenes negros con franja húmeda",
+                           "severity":  "grave",
+                           "symptomWeights":  {
+                                                  "necrosis_marginal_marron_hojas":  1,
+                                                  "franja_oscura_humeda_borde_hoja":  1
+                                              },
+                           "cause_es":  "La bacteria del tizón vive en el sustrato salino y húmedo y asciende a las hojas por los bordes, con alta humedad y mala aireación",
+                           "actionPlan_es":  [
+                                                 "Recorta de inmediato hojas y ramas con el borde negro, usando tijeras desinfectadas en alcohol",
+                                                 "Saca las partes más afectadas y revisa el sistema radicular entero, en busca de zonas oscuras y blandas",
+                                                 "Riega solo a pH 5.8-6.2 y mejora el drenaje, porque la salinidad del sustrato dispara la enfermedad",
+                                                 "Reduce un 30 % la dosis de fertilizante, porque el exceso de sales en la base es el factor clave",
+                                                 "Aplica cobre en dos aplicaciones separadas por diez días, empezando por las hojas todavía verdes"
+                                             ],
+                           "prevention_es":  [
+                                                 "Usa sustrato con buena aireación y evita macetas sin drenaje, que retienen agua y sales",
+                                                 "Riega con agua de baja salinidad y abona en dosis repartidas, sin dejar sales en la base",
+                                                 "Sanitiza el cuarto entre ciclos, porque la bacteria sobrevive meses en restos y sustrato"
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "photoEvidence":  {
+                                                 "greenMin":  20,
+                                                 "spotDensityMin":  8,
+                                                 "necrosisMin":  20,
+                                                 "chlorosisMin":  18
+                                             }
+                       },
+                       {
+                           "id":  "bacterial_soft_rot_stem_base",
+                           "category":  "bacterial",
+                           "label_es":  "Podredumbre blanda en la base del tallo",
+                           "short_es":  "Tallo blando y colapsado en la base",
+                           "severity":  "grave",
+                           "symptomWeights":  {
+                                                  "tallo_blando_colapsa_al_tocarlo":  1,
+                                                  "pudricion_blanda_olor_desagradable":  1
+                                              },
+                           "cause_es":  "La podredumbre blanda entra por heridas de la base del tallo con agua y calor, y degrada el tejido hasta colapsarlo",
+                           "actionPlan_es":  [
+                                                 "Saca la planta de la maceta y descarta la parte blanda, y si la base está sana, corta por encima del daño",
+                                                 "Corta el tallo con bisturí o tijeras bien desinfectadas, hasta ver tejido firme, verde y sin olor",
+                                                 "Deja la herida al aire y espolvorea carbón activado, manteniendo el corte seco y sin humedad directa",
+                                                 "Cambia el sustrato por uno nuevo y estéril, y desinfecta la maceta con lejía al 10 % y sol",
+                                                 "Reduce el riego y aparta la planta de zonas frías y mojadas, y aísla hasta que cicatrice"
+                                             ],
+                           "prevention_es":  [
+                                                 "Escurre bien el sustrato y mantén la base del tallo por encima de cualquier agua encharcada",
+                                                 "Sujeta las plantas con tutor o aro, para que la base no quede tumbada sobre el sustrato",
+                                                 "Rota las plantas cada 3-4 días, para que el aire circule entre los tallos y seque la base"
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "photoEvidence":  {
+                                                 "greenMin":  18,
+                                                 "necrosisMin":  22,
+                                                 "chlorosisMin":  24
+                                             }
+                       },
+                       {
+                           "id":  "tobacco_mosaic_virus_mottling",
+                           "category":  "viral",
+                           "label_es":  "Mosaico viral con manchas amarillas",
+                           "short_es":  "Moteado irregular verde y amarillo",
+                           "severity":  "grave",
+                           "symptomWeights":  {
+                                                  "moteado_verde_amarillo_hojas":  1,
+                                                  "deformacion_mosaico_hojas_jovenes":  1
+                                              },
+                           "cause_es":  "El virus del mosaico del tabaco se propaga por contacto y herramientas, y no tiene cura: una planta infectada contamina el cultivo entero",
+                           "actionPlan_es":  [
+                                                 "No hay cura para el virus: aísla y elimina la planta entera con sus raíces, sin moverla por la sala",
+                                                 "Desinfecta manos, herramientas y ropa al salir de esa planta con lejía diluida o alcohol",
+                                                 "Tira el sustrato, los restos y la ropa de trabajo que tocaron la planta, y no los compostes",
+                                                 "Controla pulgones, trips y mosca blanca con aceite, jabón o control biológico, que son los vectores",
+                                                 "Vigila el resto del cultivo durante 3-4 semanas buscando moteado nuevo, y repite el protocolo si aparece"
+                                             ],
+                           "prevention_es":  [
+                                                 "No fumes ni manipules tabaco en el cuarto ni con las manos dentro del cultivo",
+                                                 "Lava las manos con jabón y ponte guantes limpios cada vez que entres a la zona de cultivo",
+                                                 "Cuarentena 30 días para plantas nuevas y descarta de inmediato cualquier planta con moteado"
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "photoEvidence":  {
+                                                 "greenMin":  30,
+                                                 "spotDensityMin":  6,
+                                                 "necrosisMin":  8,
+                                                 "chlorosisMin":  28
+                                             }
+                       },
+                       {
+                           "id":  "cucumber_mosaic_virus_deformity",
+                           "category":  "viral",
+                           "label_es":  "Mosaico del pepino con hojas deformes",
+                           "short_es":  "Ápices retorcidos y hojas filiformes",
+                           "severity":  "grave",
+                           "symptomWeights":  {
+                                                  "apices_retorcidos_hojas_filiformes":  1,
+                                                  "perdida_vigor_manchas_plantas":  1
+                                              },
+                           "cause_es":  "El mosaico del pepino lo transmiten sobre todo pulgones y ácaros, produce hojas filiformes y ápices retorcidos, y no se puede curar",
+                           "actionPlan_es":  [
+                                                 "Elimina la planta entera desde la raíz, séllala en una bolsa y tírala sin compostarla",
+                                                 "Desinfecta herramientas, guantes y ropa de trabajo, y lava las manos con lejía diluida",
+                                                 "Desinfesta sustrato, maceta y mesa de esa posición antes de volver a plantar en el mismo sitio",
+                                                 "Fumiga y elimina malezas, y controla pulgones y ácaros, que son los vectores principales",
+                                                 "Inspecciona el resto del cultivo cada dos días durante dos semanas y aísla cualquier planta sospechosa"
+                                             ],
+                           "prevention_es":  [
+                                                 "Cuarentena 30 días para plantas nuevas y herramientas exclusivas por zona, sin compartir entre plantas",
+                                                 "Controla pulgones y ácaros cada dos semanas de forma preventiva, aunque no veas plagas en el cultivo",
+                                                 "Elimina las malezas del cuarto y de sus alrededores, que son reservas naturales del virus"
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "photoEvidence":  {
+                                                 "greenMin":  26,
+                                                 "necrosisMin":  10,
+                                                 "chlorosisMin":  30
+                                             }
+                       },
+                       {
+                           "id":  "heat_stress_leaf_scorch",
+                           "category":  "abiotic",
+                           "label_es":  "Estrés térmico con quemadura foliar",
+                           "short_es":  "Puntas acartonadas con marchitez",
+                           "severity":  "grave",
+                           "symptomWeights":  {
+                                                  "margenes_acartonados_hojas_curvas":  1,
+                                                  "marchitez_por_calor_extremo":  1
+                                              },
+                           "cause_es":  "Por encima de 30 grados la planta cierra los estomas para no perder agua, deja de transpirar, se calienta y quema las puntas del follaje",
+                           "actionPlan_es":  [
+                                                 "Sube el caudal de ventilación y activa el aire acondicionado o el enfriador evaporativo de inmediato",
+                                                 "Apaga o sube la altura de las lámparas LED para bajar la temperatura del follaje a mediodía",
+                                                 "Lleva la temperatura a 24-26 grados y la humedad al 55-60 %, para que la planta pueda transpirar",
+                                                 "Riega algo más y con agua a temperatura ambiente, nunca fría, sobre todo en macetas pequeñas",
+                                                 "No fertilices hasta 5-7 días, y el verde vuelve en 3-5 días de hojas nuevas si baja la temperatura"
+                                             ],
+                           "prevention_es":  [
+                                                 "Registra temperatura y humedad con un termohigrómetro de datos y actúa al llegar a 28 grados",
+                                                 "Aísla térmicamente la sala, sombrea las ventanas y saca el aire caliente por la parte alta",
+                                                 "Riega temprano y a última hora de la tarde, y evita el riego en las horas de más calor"
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "photoEvidence":  {
+                                                 "greenMin":  34,
+                                                 "necrosisMin":  11,
+                                                 "chlorosisMin":  16
+                                             }
+                       },
+                       {
+                           "id":  "light_burn_bleached_patches",
+                           "category":  "abiotic",
+                           "label_es":  "Quemadura de luz con zonas blanqueadas",
+                           "short_es":  "Blanqueo en hojas cercanas a la lámpara",
+                           "severity":  "moderada",
+                           "symptomWeights":  {
+                                                  "blanqueo_hojas_cerca_lampara":  1,
+                                                  "zonas_blancas_secas_como_papel":  1
+                                              },
+                           "cause_es":  "La luz por encima de la que la planta puede usar daña el clorofilo en las hojas más cercanas a la lámpara y crea manchas blanqueadas",
+                           "actionPlan_es":  [
+                                                 "Sube las lámparas 10-15 cm o baja la potencia a 600-700 PPFD en floración, sin tocar el ciclo de luz",
+                                                 "Aleja las plantas de la luminaria y mide la PPFD con un fotómetro en el centro del cultivo",
+                                                 "Recorta solo las hojas totalmente blanqueadas, que no se recuperan, y deja intactas las demás",
+                                                 "Apaga la luz 2-3 días si la quemadura es extensa y luego sube la intensidad de forma progresiva",
+                                                 "Mantén la sala a 24-26 grados, porque el frío del cuarto agrava mucho la quemadura de luz"
+                                             ],
+                           "prevention_es":  [
+                                                 "Mide la PPFD en el centro del cultivo y a la altura del dosel, no junto a la lámpara",
+                                                 "Sube las lámparas 10-15 cm al entrar en floración, cuando las plantas crecen hacia arriba",
+                                                 "Usa reflectores y lentes para LED en la lámpara, que dirigen la luz al dosel sin derrames laterales"
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "photoEvidence":  {
+                                                 "greenMin":  36,
+                                                 "necrosisMin":  8,
+                                                 "chlorosisMin":  20
+                                             }
+                       },
+                       {
+                           "id":  "overwatering_root_rot_wilt",
+                           "category":  "abiotic",
+                           "label_es":  "Exceso de agua con pudrición de raíz",
+                           "short_es":  "Marchitez con sustrato saturado y oscuro",
+                           "severity":  "grave",
+                           "symptomWeights":  {
+                                                  "marchitez_con_sustrato_saturado":  1,
+                                                  "raiz_podrida_olor_desagradable":  1
+                                              },
+                           "cause_es":  "Con sustrato saturado desaparece el oxígeno, las raíces se pudren y ya no absorben agua, así que la planta se marchita con el suelo húmedo",
+                           "actionPlan_es":  [
+                                                 "Deja de regar hasta que los 5 primeros centímetros de sustrato estén completamente secos",
+                                                 "Saca la planta, desencoja las raíces y recorta a tijera las marrones, blandas y malolientes",
+                                                 "Cambia el sustrato por uno nuevo con más aireación, o mezcla un 30 % de perlita al que usas",
+                                                 "Eleva las macetas sobre pies o listones, y revisa que los agujeros de drenaje no estén obstruidos",
+                                                 "Fertiliza solo 5-7 días después de recuperar el color verde, porque el sustrato nuevo no tiene nutrientes"
+                                             ],
+                           "prevention_es":  [
+                                                 "Riega solo cuando los 3-4 cm superiores estén secos, y usa medidor o peso del sustrato",
+                                                 "Usa macetas con agujeros y bandeja con desagüe, sin dejar el agua de drenaje acumulada",
+                                                 "Mantén el sustrato con 40-60 % de porosidad total, la base para que las raíces respiren siempre"
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "photoEvidence":  {
+                                                 "greenMin":  20,
+                                                 "necrosisMin":  20,
+                                                 "chlorosisMin":  24
+                                             }
+                       },
+                       {
+                           "id":  "cold_stress_dark_purple_leaves",
+                           "category":  "abiotic",
+                           "label_es":  "Frío con hojas oscuras y púrpuras",
+                           "short_es":  "Purpurización y rigidez por frío",
+                           "severity":  "moderada",
+                           "symptomWeights":  {
+                                                  "hojas_oscuras_tono_purpura":  1,
+                                                  "rigidez_general_baja_temperatura":  1
+                                              },
+                           "cause_es":  "Con frío las raíces absorben menos fósforo y la fotosíntesis se ralentiza, así que se acumulan azúcares y la planta se pone rígida y púrpura",
+                           "actionPlan_es":  [
+                                                 "Sube la sala a 22-25 grados de día y a 18-20 de noche, con calefacción eléctrica o manta térmica",
+                                                 "Calienta el agua de riego a temperatura ambiente, porque el agua fría enfría también la raíz",
+                                                 "No abones durante el frío y espera 3-5 días tras subir la temperatura antes de fertilizar",
+                                                 "Reduce la diferencia entre día y noche a 6-8 grados, porque un desnivel grande agrava el estrés",
+                                                 "En 5-7 días el verde vuelve en el crecimiento nuevo, aunque el daño en hojas viejas no se recupera"
+                                             ],
+                           "prevention_es":  [
+                                                 "Usa un termostato con histéresis, no confíes en el termómetro del pasillo ni en el móvil",
+                                                 "Aísla paredes y ventanas, y evita que el aire acondicionado sople directo sobre las plantas",
+                                                 "Protege con manta térmica las macetas pequeñas, que se enfrían mucho más rápido que el resto"
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "photoEvidence":  {
+                                                 "greenMin":  32,
+                                                 "necrosisMin":  7,
+                                                 "chlorosisMin":  18
+                                             }
+                       },
+                       {
+                           "id":  "chemical_spray_burn_leaf_edge",
+                           "category":  "abiotic",
+                           "label_es":  "Quemadura por productos de pulverización",
+                           "short_es":  "Daños tras aplicar productos foliares",
+                           "severity":  "moderada",
+                           "symptomWeights":  {
+                                                  "manchas_tras_aplicar_productos":  1,
+                                                  "quemaduras_quimicas_bordes_hojas":  1
+                                              },
+                           "cause_es":  "Los productos de pulverización queman el follaje con calor, a pleno sol o mezclados entre sí, y el daño aparece en los bordes",
+                           "actionPlan_es":  [
+                                                 "Deja de aplicar productos en las horas de más calor y espera 48 horas antes de repetir",
+                                                 "Lava el follaje con agua potable abundante, sin presión fuerte, para arrastrar el producto residual",
+                                                 "Riega por la base y mantén el cultivo a la sombra parcial durante 24-48 horas",
+                                                 "Retira las hojas y cogollos quemados, que no se recuperan, y no fertilices hasta 5-7 días",
+                                                 "Prueba cada producto en una hoja sana y espera 24 horas antes de tratar el cultivo entero"
+                                             ],
+                           "prevention_es":  [
+                                                 "Pulveriza a la sombra, con luz indirecta, y con el follaje seco y la planta sin estrés hídrico",
+                                                 "Respeta la dosis de etiqueta, sin aumentarla, y anota marca, fecha y concentración de cada aplicación",
+                                                 "Mezcla un solo producto por aplicación, salvo indicación expresa, y usa agua a temperatura ambiente"
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "photoEvidence":  {
+                                                 "greenMin":  28,
+                                                 "necrosisMin":  13,
+                                                 "chlorosisMin":  24
+                                             }
+                       },
+                       {
+                           "id":  "nitrogen_deficiency",
+                           "category":  "deficiency",
+                           "label_es":  "Deficiencia de Nitrógeno",
+                           "short_es":  "",
+                           "severity":  "moderada",
+                           "cause_es":  "Niveles bajos de nitrógeno asimilable; pH extremo o lavado excesivo del sustrato.",
+                           "actionPlan_es":  [
+                                                 "Fertiliza con fuente de nitrógeno (orgánica o mineral) a dosis media.",
+                                                 "Ajusta el pH del riego entre 5.8 y 6.5.",
+                                                 "Revisa que el sustrato drene sin lavar nutrientes."
+                                             ],
+                           "prevention_es":  [
+                                                 "Mantén un calendario de fertilización equilibrado en fase vegetativa.",
+                                                 "Monitorea el EC de salida semanalmente."
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "symptomWeights":  {
+                                                  "yellowing_lower_leaves":  3,
+                                                  "stunted_growth":  2,
+                                                  "leaf_tip_burn":  1
+                                              }
+                       },
+                       {
+                           "id":  "phosphorus_deficiency",
+                           "category":  "deficiency",
+                           "label_es":  "Deficiencia de Fósforo",
+                           "short_es":  "",
+                           "severity":  "moderada",
+                           "cause_es":  "Baja disponibilidad de fósforo, sustrato frío o pH demasiado alto.",
+                           "actionPlan_es":  [
+                                                 "Aplica fertilizante rico en fósforo (PK) en floración.",
+                                                 "Mantén la temperatura de raíces sobre 18 °C.",
+                                                 "Ajusta el pH de riego a 6.0–6.5."
+                                             ],
+                           "prevention_es":  [
+                                                 "Usa microorganismos (micorrizas) que solubilizan fósforo.",
+                                                 "Evita encharcamientos prolongados."
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "symptomWeights":  {
+                                                  "purple_stems":  3,
+                                                  "dark_green_leaves":  2,
+                                                  "stunted_root":  2
+                                              }
+                       },
+                       {
+                           "id":  "potassium_deficiency",
+                           "category":  "deficiency",
+                           "label_es":  "Deficiencia de Potasio",
+                           "short_es":  "",
+                           "severity":  "moderada",
+                           "cause_es":  "Insuficiente potasio; exceso de calcio o magnesio que antagoniza su absorción.",
+                           "actionPlan_es":  [
+                                                 "Fertiliza con potasio (ej. sulfato de potasa).",
+                                                 "Revisa el balance Ca/Mg/K del programa.",
+                                                 "Asegura buen drenaje para evitar acumulación de sales."
+                                             ],
+                           "prevention_es":  [
+                                                 "Incluye potasio desde la pre-floración.",
+                                                 "Mide EC de salida para detectar bloqueos tempranos."
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "symptomWeights":  {
+                                                  "brown_leaf_edges":  3,
+                                                  "weak_stems":  2,
+                                                  "chlorosis":  1
+                                              }
+                       },
+                       {
+                           "id":  "calcium_deficiency",
+                           "category":  "deficiency",
+                           "label_es":  "Deficiencia de Calcio",
+                           "short_es":  "",
+                           "severity":  "moderada",
+                           "cause_es":  "Calcio insuficiente o transpiración baja que limita su transporte a los brotes.",
+                           "actionPlan_es":  [
+                                                 "Aplica calcio quelado o carbonato de calcio en riego.",
+                                                 "Mejora la ventilación y humedad para favorecer transpiración.",
+                                                 "No mezcles calcio con fosfatos en el mismo tanque."
+                                             ],
+                           "prevention_es":  [
+                                                 "Mantén humedad relativa 55–65% en vegetativa.",
+                                                 "Usa agua con dureza adecuada o suplementa calcio."
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "symptomWeights":  {
+                                                  "new_growth_distorted":  3,
+                                                  "tip_burn":  2,
+                                                  "young_leaves_curled":  2
+                                              }
+                       },
+                       {
+                           "id":  "magnesium_deficiency",
+                           "category":  "deficiency",
+                           "label_es":  "Deficiencia de Magnesio",
+                           "short_es":  "",
+                           "severity":  "moderada",
+                           "cause_es":  "Magnesio insuficiente o pH bajo que bloquea su absorción.",
+                           "actionPlan_es":  [
+                                                 "Aplica sulfato de magnesio (sales de Epsom) disuelto en riego.",
+                                                 "Sube el pH de riego a 6.0–6.5.",
+                                                 "Verifica el balance Ca/Mg."
+                                             ],
+                           "prevention_es":  [
+                                                 "Suplementa magnesio en riego cada 2–3 semanas.",
+                                                 "Mide el pH y EC del agua de entrada y salida."
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "symptomWeights":  {
+                                                  "interveinal_chlorosis":  3,
+                                                  "yellowing_between_veins":  2
+                                              }
+                       },
+                       {
+                           "id":  "iron_deficiency",
+                           "category":  "deficiency",
+                           "label_es":  "Deficiencia de Hierro",
+                           "short_es":  "",
+                           "severity":  "moderada",
+                           "cause_es":  "Hierro bloqueado por pH alto o exceso de fósforo; aparece primero en brotes nuevos.",
+                           "actionPlan_es":  [
+                                                 "Aplica hierro quelado (EDDHA) foliar o en raíz.",
+                                                 "Baja el pH del sustrato a 6.0–6.3.",
+                                                 "Evita sobre-fertilización con fósforo."
+                                             ],
+                           "prevention_es":  [
+                                                 "Usa quelatos estables en el rango de pH de tu sustrato.",
+                                                 "Controla la EC para evitar antagonismos."
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "symptomWeights":  {
+                                                  "young_leaves_yellow":  3,
+                                                  "interveinal_chlorosis_young":  2
+                                              }
+                       },
+                       {
+                           "id":  "nutrient_burn",
+                           "category":  "excess",
+                           "label_es":  "Quemadura por Nutrientes",
+                           "short_es":  "",
+                           "severity":  "moderada",
+                           "cause_es":  "Concentración de sales demasiado alta (EC elevada) o fertilización excesiva.",
+                           "actionPlan_es":  [
+                                                 "Lava el sustrato con agua a pH 6.0 (3× volumen de maceta).",
+                                                 "Reduce la dosis de fertilizante un 50% durante 1–2 semanas.",
+                                                 "Mide la EC de salida hasta que baje a valores normales."
+                                             ],
+                           "prevention_es":  [
+                                                 "Sube la EC gradualmente, no en saltos.",
+                                                 "Riega con al menos 15–20% de drenaje."
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "symptomWeights":  {
+                                                  "brown_tips":  3,
+                                                  "leaf_tip_burn":  2,
+                                                  "crooked_growing":  1
+                                              }
+                       },
+                       {
+                           "id":  "ph_lockout",
+                           "category":  "excess",
+                           "label_es":  "Bloqueo por pH",
+                           "short_es":  "",
+                           "severity":  "moderada",
+                           "cause_es":  "pH de riego o sustrato fuera del rango de absorción (5.5–6.5), impidiendo la asimilación de nutrientes.",
+                           "actionPlan_es":  [
+                                                 "Ajusta el pH de entrada con ácido/base a 6.0 para sustrato.",
+                                                 "Lava con agua tamponada y vuelve a medir el pH de salida.",
+                                                 "Aplica riego con pH correcto durante 3–4 días antes de re-fertilizar."
+                                             ],
+                           "prevention_es":  [
+                                                 "Calibra tu medidor de pH cada semana.",
+                                                 "Mide pH y EC del drenaje en cada riego."
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "symptomWeights":  {
+                                                  "ph_out_of_range":  3,
+                                                  "locked_nutrients":  2
+                                              }
+                       },
+                       {
+                           "id":  "thermal_stress",
+                           "category":  "excess",
+                           "label_es":  "Estrés Térmico",
+                           "short_es":  "",
+                           "severity":  "moderada",
+                           "cause_es":  "Temperaturas por encima de 28–30 °C o picos de calor con baja ventilación.",
+                           "actionPlan_es":  [
+                                                 "Ventila e introduce aire fresco (intake/extraction).",
+                                                 "Baja la intensidad de la lámpara o súbela de altura.",
+                                                 "Riega en horas frescas y mantén humedad 60% para mitigar el golpe de calor."
+                                             ],
+                           "prevention_es":  [
+                                                 "Controla la temperatura de copa, no solo la ambiental.",
+                                                 "Programa el encendido de luces en horas nocturnas durante el verano."
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "symptomWeights":  {
+                                                  "wilting":  2,
+                                                  "leaf_curl_heat":  2,
+                                                  "hot_spots":  1
+                                              }
+                       },
+                       {
+                           "id":  "light_stress",
+                           "category":  "excess",
+                           "label_es":  "Estrés Lumínico",
+                           "short_es":  "",
+                           "severity":  "moderada",
+                           "cause_es":  "PPFD demasiado alto o distancia de lámpara demasiado corta, blanqueando la clorofila.",
+                           "actionPlan_es":  [
+                                                 "Sube la lámpara 15–30 cm o baja la potencia (dimmer).",
+                                                 "Reduce el fotoperiodo temporalmente si es posible.",
+                                                 "Aumenta la ventilación en la copa."
+                                             ],
+                           "prevention_es":  [
+                                                 "Mide PPFD con aplicación o luxómetro (objetivo según etapa).",
+                                                 "Acostumbra a las plantas gradualmente a luz intensa."
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "symptomWeights":  {
+                                                  "bleached_leaves":  3,
+                                                  "light_burn":  2
+                                              }
+                       },
+                       {
+                           "id":  "powdery_mildew",
+                           "category":  "fungus",
+                           "label_es":  "Oídio",
+                           "short_es":  "",
+                           "severity":  "moderada",
+                           "cause_es":  "Hongo Erysiphe cichoracearum: humedad alta, poca ventilación y cambios bruscos de temperatura.",
+                           "actionPlan_es":  [
+                                                 "Elimina hojas afectadas y aísla la zona.",
+                                                 "Aplica fungicida aprobado (azufre en vegetativa, bicarbonato en floración con precaución).",
+                                                 "Mejora extracción y reduce humedad bajo 55%.",
+                                                 "NO lave los cogollos en floración tardía con azufre."
+                                             ],
+                           "prevention_es":  [
+                                                 "Mantén ventilación constante y flujo de aire bajo la copa.",
+                                                 "Inspecciona el envés de las hojas semanalmente.",
+                                                 "Controla los picos de humedad en el encendido/apagado."
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "symptomWeights":  {
+                                                  "white_powdery_residue":  3,
+                                                  "fuzzy_white_mold":  3
+                                              }
+                       },
+                       {
+                           "id":  "botrytis",
+                           "category":  "fungus",
+                           "label_es":  "Botrytis (Moho Gris)",
+                           "short_es":  "",
+                           "severity":  "moderada",
+                           "cause_es":  "Botrytis cinerea en cogollos densos con humedad \u003e60%, poca ventilación o flores húmedas.",
+                           "actionPlan_es":  [
+                                                 "Retira con guantes los cogollos afectados sin esparcir esporas.",
+                                                 "Reduce humedad al 45–50% en floración tardía.",
+                                                 "Mejora la extracción y el flujo de aire entre cogollos.",
+                                                 "Aplica tratamiento preventivo a base de Bacillus subtilis o cobre."
+                                             ],
+                           "prevention_es":  [
+                                                 "Deshoja el interior de la copa para evitar bolsas de humedad.",
+                                                 "Evita que las flores toquen agua o condensación.",
+                                                 "Chequea los cogollos más densos cada dos días en floración."
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "symptomWeights":  {
+                                                  "gray_mold":  3,
+                                                  "rotting_buds":  3
+                                              }
+                       },
+                       {
+                           "id":  "spider_mite",
+                           "category":  "pest",
+                           "label_es":  "Araña Roja",
+                           "short_es":  "",
+                           "severity":  "moderada",
+                           "cause_es":  "Tetranychus urticae prolifera en ambientes cálidos y secos; coloniza rápidamente el envés.",
+                           "actionPlan_es":  [
+                                                 "Aplica acaricida específico rotando principios activos.",
+                                                 "Usa depredadores naturales (Phytoseiulus persimilis).",
+                                                 "Sube la humedad al 65% para frenar su reproducción.",
+                                                 "Limpia carpa y herramientas para evitar reinfestación."
+                                             ],
+                           "prevention_es":  [
+                                                 "Introduce plantas de cuarentena antes de entrar a la sala.",
+                                                 "Revisa el envés con lupa 10–20× semanalmente.",
+                                                 "Mantén polvo y polen fuera de la zona de cultivo."
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "symptomWeights":  {
+                                                  "tiny_spiders":  3,
+                                                  "webbing":  3,
+                                                  "stippled_leaves":  2
+                                              }
+                       },
+                       {
+                           "id":  "thrips",
+                           "category":  "pest",
+                           "label_es":  "Trips",
+                           "short_es":  "",
+                           "severity":  "moderada",
+                           "cause_es":  "Insectos Frankliniella occidentalis que raspan la superficie foliar y dejan puntos negros fecales.",
+                           "actionPlan_es":  [
+                                                 "Aplica insecticida sistémico o jabón potásico en ciclos de 5–7 días.",
+                                                 "Coloca trampas cromáticas azules.",
+                                                 "Introduce depredadores (Orius laevigatus)."
+                                             ],
+                           "prevention_es":  [
+                                                 "Controla malas hierbas cerca del invernadero.",
+                                                 "Inspecciona flores y hojas nuevas al recibir esquejes."
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "symptomWeights":  {
+                                                  "silvering":  3,
+                                                  "black_dots":  2
+                                              }
+                       },
+                       {
+                           "id":  "fungus_gnat",
+                           "category":  "pest",
+                           "label_es":  "Mosca del Sustrato",
+                           "short_es":  "",
+                           "severity":  "moderada",
+                           "cause_es":  "Sciaridae: sustrato constantemente húmedo y materia orgánica en descomposición.",
+                           "actionPlan_es":  [
+                                                 "Deja secar la capa superior del sustrato entre riegos.",
+                                                 "Aplica Bacillus thuringiensis israelensis al agua de riego.",
+                                                 "Coloca trampas amarillas adhesivas.",
+                                                 "Cubre el sustrato con arena o perlita para bloquear la puesta."
+                                             ],
+                           "prevention_es":  [
+                                                 "Evita el exceso de riego y acumulación de agua en bandejas.",
+                                                 "Usa sustratos compostados correctamente."
+                                             ],
+                           "affectedPlants":  [
+
+                                              ],
+                           "symptomWeights":  {
+                                                  "tiny_black_flies":  3,
+                                                  "larvae_in_soil":  2
+                                              }
+                       }
+                   ],
+    "symptoms":  [
+                     {
+                         "id":  "yellowing_lower_leaves",
+                         "label_es":  "Amarillamiento en hojas inferiores",
+                         "icon":  "🟡",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "stunted_growth",
+                         "label_es":  "Crecimiento atrofiado",
+                         "icon":  "📉",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "leaf_tip_burn",
+                         "label_es":  "Puntas de hojas quemadas",
+                         "icon":  "🔥",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "purple_stems",
+                         "label_es":  "Tallos y pecíolos morados",
+                         "icon":  "🟣",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "dark_green_leaves",
+                         "label_es":  "Hojas verde oscuro azulado",
+                         "icon":  "🟢",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "stunted_root",
+                         "label_es":  "Raíces poco desarrolladas",
+                         "icon":  "🌱",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "brown_leaf_edges",
+                         "label_es":  "Bordes de hojas marrones",
+                         "icon":  "🟤",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "weak_stems",
+                         "label_es":  "Tallos débiles y doblados",
+                         "icon":  "🥀",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "chlorosis",
+                         "label_es":  "Clorosis general",
+                         "icon":  "🟨",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "new_growth_distorted",
+                         "label_es":  "Nuevo crecimiento deformado",
+                         "icon":  "🌀",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "tip_burn",
+                         "label_es":  "Quemadura de brotes jóvenes",
+                         "icon":  "🌰",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "young_leaves_curled",
+                         "label_es":  "Hojas jóvenes enrolladas",
+                         "icon":  "🍃",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "interveinal_chlorosis",
+                         "label_es":  "Clorosis entre nervaduras",
+                         "icon":  "🟨",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "yellowing_between_veins",
+                         "label_es":  "Amarillamiento entre venas",
+                         "icon":  "🟡",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "young_leaves_yellow",
+                         "label_es":  "Hojas jóvenes amarillas",
+                         "icon":  "🌼",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "interveinal_chlorosis_young",
+                         "label_es":  "Clorosis intervenal en crecimiento nuevo",
+                         "icon":  "🟨",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "brown_tips",
+                         "label_es":  "Puntas marrones secas",
+                         "icon":  "🤎",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "crooked_growing",
+                         "label_es":  "Crecimiento torcido",
+                         "icon":  "🌀",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "ph_out_of_range",
+                         "label_es":  "pH fuera de rango 5.5–6.5",
+                         "icon":  "⚗️",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "locked_nutrients",
+                         "label_es":  "Nutrientes bloqueados",
+                         "icon":  "🔒",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "wilting",
+                         "label_es":  "Marchitamiento",
+                         "icon":  "🥀",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "leaf_curl_heat",
+                         "label_es":  "Hojas enrolladas por calor",
+                         "icon":  "🌡️",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "hot_spots",
+                         "label_es":  "Zonas calientes en la copa",
+                         "icon":  "🔥",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "bleached_leaves",
+                         "label_es":  "Hojas blanqueadas",
+                         "icon":  "⚪",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "light_burn",
+                         "label_es":  "Quemadura lumínica",
+                         "icon":  "💡",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "white_powdery_residue",
+                         "label_es":  "Residuo blanco en polvo",
+                         "icon":  "🤍",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "fuzzy_white_mold",
+                         "label_es":  "Moho blanco algodonoso",
+                         "icon":  "☁️",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "gray_mold",
+                         "label_es":  "Moho gris",
+                         "icon":  "🌫️",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "rotting_buds",
+                         "label_es":  "Cogollos podridos",
+                         "icon":  "🧟",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "tiny_spiders",
+                         "label_es":  "Ácaros diminutos (araña roja)",
+                         "icon":  "🕷️",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "webbing",
+                         "label_es":  "Telarañas finas",
+                         "icon":  "🕸️",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "stippled_leaves",
+                         "label_es":  "Hojas punteadas",
+                         "icon":  "🔴",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "silvering",
+                         "label_es":  "Plateado en hojas",
+                         "icon":  "🥈",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "black_dots",
+                         "label_es":  "Puntos negros (excrementos)",
+                         "icon":  "⚫",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "tiny_black_flies",
+                         "label_es":  "Moscas negras diminutas",
+                         "icon":  "🪰",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "larvae_in_soil",
+                         "label_es":  "Larvas en el sustrato",
+                         "icon":  "🐛",
+                         "category":  "general"
+                     },
+                     {
+                         "id":  "hojas_inferiores_amarillas",
+                         "label_es":  "Amarillamiento en las hojas inferiores",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "marchitez_sequedad_hojas_bajas",
+                         "label_es":  "Marchitez y secado en hojas bajas",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "crecimiento_lento_planta_entera",
+                         "label_es":  "Crecimiento lento de toda la planta",
+                         "icon":  "",
+                         "category":  "whole"
+                     },
+                     {
+                         "id":  "nervios_verdes_hojas_amarillas",
+                         "label_es":  "Nervaduras verdes sobre limbo amarillo",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "brotes_jovenes_dorados_blanqueados",
+                         "label_es":  "Brotes jóvenes dorados y blanqueados",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "clorosis_intensa_hojas_jovenes",
+                         "label_es":  "Clorosis intensa en las hojas jóvenes",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "tallos_petiolos_tono_purpura",
+                         "label_es":  "Tallos y pecíolos con tono púrpura",
+                         "icon":  "",
+                         "category":  "stem"
+                     },
+                     {
+                         "id":  "hojas_verde_oscuro_azulado",
+                         "label_es":  "Hojas verde oscuro con brillo azulado",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "raices_finas_cortas_marrones",
+                         "label_es":  "Raíces finas, cortas y marrones",
+                         "icon":  "",
+                         "category":  "root"
+                     },
+                     {
+                         "id":  "amarillamiento_entre_nervaduras",
+                         "label_es":  "Amarillamiento entre las nervaduras",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "necrosis_entre_venas_hojas_medias",
+                         "label_es":  "Necrosis entre venas en hojas medias",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "caida_premura_hojas_bajas",
+                         "label_es":  "Caída prematura de hojas bajas",
+                         "icon":  "",
+                         "category":  "whole"
+                     },
+                     {
+                         "id":  "cogollos_tiernos_deformados_rigidos",
+                         "label_es":  "Cogollos tiernos deformados y rígidos",
+                         "icon":  "",
+                         "category":  "flower"
+                     },
+                     {
+                         "id":  "hojas_curvas_torcidas_vertice",
+                         "label_es":  "Hojas curvas y torcidas en el vértice",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "aborto_floral_caida_cogollos",
+                         "label_es":  "Abortos florales y caída de cogollos",
+                         "icon":  "",
+                         "category":  "flower"
+                     },
+                     {
+                         "id":  "punta_brote_quemada_seca",
+                         "label_es":  "Puntas de brotes quemadas y secas",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "margenes_secos_color_tostado",
+                         "label_es":  "Márgenes secos con color tostado",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "tallos_debiles_dobladizos",
+                         "label_es":  "Tallos débiles y dobladizos",
+                         "icon":  "",
+                         "category":  "stem"
+                     },
+                     {
+                         "id":  "hojas_nuevas_pequenas_reducidas",
+                         "label_es":  "Hojas nuevas pequeñas y reducidas",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "manchas_blancas_bronceadas_hoja",
+                         "label_es":  "Manchas blancas y bronceadas en la hoja",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "manchas_herrumbrosas_tostadas",
+                         "label_es":  "Manchas herrumbrosas y tostadas",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "tono_herrumbrroso_uniforme_hoja",
+                         "label_es":  "Tono herrumbroso uniforme en la hoja",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "raiz_negra_descompuesta",
+                         "label_es":  "Raíces negras y descompuestas",
+                         "icon":  "",
+                         "category":  "root"
+                     },
+                     {
+                         "id":  "desarrollo_planta_estancado",
+                         "label_es":  "Desarrollo de la planta estancado",
+                         "icon":  "",
+                         "category":  "whole"
+                     },
+                     {
+                         "id":  "polvo_blanco_talco_hojas",
+                         "label_es":  "Polvo blanco de talco sobre las hojas",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "moho_algodonoso_enves",
+                         "label_es":  "Moho algodonoso en el envés",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "manchas_blancas_extendidas_copa",
+                         "label_es":  "Manchas blancas extendidas por la copa",
+                         "icon":  "",
+                         "category":  "whole"
+                     },
+                     {
+                         "id":  "pudricion_babosa_cogollos_humedos",
+                         "label_es":  "Pudrición babosa en cogollos húmedos",
+                         "icon":  "",
+                         "category":  "flower"
+                     },
+                     {
+                         "id":  "velo_gris_sobre_las_flores",
+                         "label_es":  "Velo gris sobre las flores",
+                         "icon":  "",
+                         "category":  "flower"
+                     },
+                     {
+                         "id":  "marchitez_rapida_copa_densa",
+                         "label_es":  "Marchitez rápida en copa densa",
+                         "icon":  "",
+                         "category":  "whole"
+                     },
+                     {
+                         "id":  "vello_gris_aterciopelado_enves",
+                         "label_es":  "Vello gris aterciopelado en el envés",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "angulos_amarillos_limitados_venas",
+                         "label_es":  "Ángulos amarillados limitados por venas",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "manchas_marrones_puntos_negros",
+                         "label_es":  "Manchas marrones con puntos negros",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "hojas_inferiores_secan_desprenden",
+                         "label_es":  "Hojas inferiores secan y se desprenden",
+                         "icon":  "",
+                         "category":  "whole"
+                     },
+                     {
+                         "id":  "manchas_anillos_concentricos",
+                         "label_es":  "Manchas con anillos concéntricos",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "manchas_oscuras_halo_amarillo",
+                         "label_es":  "Manchas oscuras con halo amarillo",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "marchitez_general_tras_riego",
+                         "label_es":  "Marchitez general después del riego",
+                         "icon":  "",
+                         "category":  "whole"
+                     },
+                     {
+                         "id":  "corte_tallo_venas_oscurecidas",
+                         "label_es":  "Corte del tallo con venas oscurecidas",
+                         "icon":  "",
+                         "category":  "stem"
+                     },
+                     {
+                         "id":  "pudricion_oscura_base_tallo",
+                         "label_es":  "Pudrición oscura en la base del tallo",
+                         "icon":  "",
+                         "category":  "stem"
+                     },
+                     {
+                         "id":  "cabellos_negros_en_cogollos",
+                         "label_es":  "Cabellos negros en los cogollos",
+                         "icon":  "",
+                         "category":  "flower"
+                     },
+                     {
+                         "id":  "mohos_negros_cabellos_cogollos",
+                         "label_es":  "Mohos negros entre los cabellos",
+                         "icon":  "",
+                         "category":  "flower"
+                     },
+                     {
+                         "id":  "pustulas_naranjas_redondas",
+                         "label_es":  "Pústulas naranjas y redondeadas",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "clorosis_amarilla_alrededor_manchas",
+                         "label_es":  "Clorosis amarilla alrededor de las manchas",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "telaranas_finas_entre_hojas",
+                         "label_es":  "Telarañas finas entre hojas y tallos",
+                         "icon":  "",
+                         "category":  "pest"
+                     },
+                     {
+                         "id":  "punteado_blanco_superficie_foliar",
+                         "label_es":  "Punteado blanco en la superficie foliar",
+                         "icon":  "",
+                         "category":  "pest"
+                     },
+                     {
+                         "id":  "baba_pegajosa_suciedad_hojas",
+                         "label_es":  "Baba pegajosa y suciedad en las hojas",
+                         "icon":  "",
+                         "category":  "pest"
+                     },
+                     {
+                         "id":  "hojas_arrugadas_cogollos_tiernos",
+                         "label_es":  "Hojas arrugadas en cogollos tiernos",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "terminales_oscurecidos_bronceados",
+                         "label_es":  "Terminales oscurecidos y bronceados",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "pulgones_agrupados_brotes_nuevos",
+                         "label_es":  "Pulgones agrupados en brotes nuevos",
+                         "icon":  "",
+                         "category":  "pest"
+                     },
+                     {
+                         "id":  "melaza_pegajosa_hormigas_hojas",
+                         "label_es":  "Melaza pegajosa con hormigas en hojas",
+                         "icon":  "",
+                         "category":  "pest"
+                     },
+                     {
+                         "id":  "nube_aleteo_al_tocar_planta",
+                         "label_es":  "Nube de moscas al tocar la planta",
+                         "icon":  "",
+                         "category":  "pest"
+                     },
+                     {
+                         "id":  "mosca_blanca_adherida_enves",
+                         "label_es":  "Mosca blanca adherida al envés",
+                         "icon":  "",
+                         "category":  "pest"
+                     },
+                     {
+                         "id":  "rayas_plateadas_argenteas_hojas",
+                         "label_es":  "Rayas plateadas y argenteas en hojas",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "puntos_negros_fecales_petiolos",
+                         "label_es":  "Puntos negros fecales en los pecíolos",
+                         "icon":  "",
+                         "category":  "pest"
+                     },
+                     {
+                         "id":  "moscas_negras_sobre_sustrato",
+                         "label_es":  "Moscas negras revoloteando sobre el sustrato",
+                         "icon":  "",
+                         "category":  "pest"
+                     },
+                     {
+                         "id":  "sustrato_humedo_superficie_maceta",
+                         "label_es":  "Sustrato húmedo en la superficie de la maceta",
+                         "icon":  "",
+                         "category":  "root"
+                     },
+                     {
+                         "id":  "algodon_blanco_raices_maceta",
+                         "label_es":  "Algodón blanco en las raíces de la maceta",
+                         "icon":  "",
+                         "category":  "root"
+                     },
+                     {
+                         "id":  "hojas_amarillas_pequenas_pegajosas",
+                         "label_es":  "Hojas amarillas, pequeñas y pegajosas",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "bordes_masticados_hojas_transparentes",
+                         "label_es":  "Bordes de hojas masticados y transparentes",
+                         "icon":  "",
+                         "category":  "pest"
+                     },
+                     {
+                         "id":  "excrementos_oscuros_sobre_hojas",
+                         "label_es":  "Excrementos oscuros sobre las hojas",
+                         "icon":  "",
+                         "category":  "pest"
+                     },
+                     {
+                         "id":  "manchas_acuosas_humedas_hojas",
+                         "label_es":  "Manchas acuosas y húmedas en las hojas",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "halo_amarillo_alrededor_manchas",
+                         "label_es":  "Halo amarillo alrededor de las manchas",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "necrosis_marginal_marron_hojas",
+                         "label_es":  "Necrosis marginal marrón en las hojas",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "franja_oscura_humeda_borde_hoja",
+                         "label_es":  "Franja oscura y húmeda en el borde",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "tallo_blando_colapsa_al_tocarlo",
+                         "label_es":  "Tallo blando que colapsa al tocarlo",
+                         "icon":  "",
+                         "category":  "stem"
+                     },
+                     {
+                         "id":  "pudricion_blanda_olor_desagradable",
+                         "label_es":  "Pudrición blanda con olor desagradable",
+                         "icon":  "",
+                         "category":  "whole"
+                     },
+                     {
+                         "id":  "moteado_verde_amarillo_hojas",
+                         "label_es":  "Moteado irregular verde y amarillo",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "deformacion_mosaico_hojas_jovenes",
+                         "label_es":  "Deformación y mosaico en hojas jóvenes",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "apices_retorcidos_hojas_filiformes",
+                         "label_es":  "Ápices retorcidos y hojas filiformes",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "perdida_vigor_manchas_plantas",
+                         "label_es":  "Pérdida de vigor y manchas en plantas",
+                         "icon":  "",
+                         "category":  "whole"
+                     },
+                     {
+                         "id":  "margenes_acartonados_hojas_curvas",
+                         "label_es":  "Márgenes acartonados y hojas curvadas",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "marchitez_por_calor_extremo",
+                         "label_es":  "Marchitez por calor extremo",
+                         "icon":  "",
+                         "category":  "whole"
+                     },
+                     {
+                         "id":  "blanqueo_hojas_cerca_lampara",
+                         "label_es":  "Blanqueo de hojas cerca de la lámpara",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "zonas_blancas_secas_como_papel",
+                         "label_es":  "Zonas blancas y secas como papel",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "marchitez_con_sustrato_saturado",
+                         "label_es":  "Marchitez con sustrato saturado de agua",
+                         "icon":  "",
+                         "category":  "whole"
+                     },
+                     {
+                         "id":  "raiz_podrida_olor_desagradable",
+                         "label_es":  "Raíz podrida con olor desagradable",
+                         "icon":  "",
+                         "category":  "root"
+                     },
+                     {
+                         "id":  "hojas_oscuras_tono_purpura",
+                         "label_es":  "Hojas oscuras con tono púrpura",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "rigidez_general_baja_temperatura",
+                         "label_es":  "Rigidez general por baja temperatura",
+                         "icon":  "",
+                         "category":  "whole"
+                     },
+                     {
+                         "id":  "manchas_tras_aplicar_productos",
+                         "label_es":  "Manchas tras aplicar productos foliares",
+                         "icon":  "",
+                         "category":  "leaf"
+                     },
+                     {
+                         "id":  "quemaduras_quimicas_bordes_hojas",
+                         "label_es":  "Quemaduras químicas en los bordes",
+                         "icon":  "",
+                         "category":  "leaf"
+                     }
+                 ]
 }

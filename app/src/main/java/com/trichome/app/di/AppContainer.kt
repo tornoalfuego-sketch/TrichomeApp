@@ -3,6 +3,8 @@ package com.trichome.app.di
 import android.app.Application
 import com.trichome.app.data.database.AppDatabase
 import com.trichome.app.data.prefs.AppearanceSettingsRepository
+import com.trichome.app.data.prefs.OnboardingRepository
+import com.trichome.app.data.prefs.TerpeneProgressRepository
 import com.trichome.app.data.repository.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -17,6 +19,8 @@ interface AppContainer {
     val application: Application
     val database: AppDatabase
     val appearanceSettings: AppearanceSettingsRepository
+    val terpeneProgress: TerpeneProgressRepository
+    val onboarding: OnboardingRepository
     val coroutineScope: CoroutineScope
 
     val growRepository: GrowRepository
@@ -33,6 +37,9 @@ interface AppContainer {
     val terpenesRepository: TerpenesRepository
     val breedingContentRepository: BreedingContentRepository
     val diagnosisContentRepository: DiagnosisContentRepository
+
+    /** Short alias used by the diagnosis ViewModel. */
+    val diagnosisContent: DiagnosisContentRepository
 }
 
 class DefaultAppContainer(app: Application) : AppContainer {
@@ -44,6 +51,12 @@ class DefaultAppContainer(app: Application) : AppContainer {
     override val appearanceSettings: AppearanceSettingsRepository by lazy {
         AppearanceSettingsRepository(app)
     }
+
+    override val terpeneProgress: TerpeneProgressRepository by lazy {
+        TerpeneProgressRepository(app)
+    }
+
+    override val onboarding: OnboardingRepository by lazy { OnboardingRepository(app) }
 
     override val coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -62,6 +75,7 @@ class DefaultAppContainer(app: Application) : AppContainer {
     override val terpenesRepository: TerpenesRepository by lazy { TerpenesRepository(app) }
     override val breedingContentRepository: BreedingContentRepository by lazy { BreedingContentRepository(app) }
     override val diagnosisContentRepository: DiagnosisContentRepository by lazy { DiagnosisContentRepository(app) }
+    override val diagnosisContent: DiagnosisContentRepository get() = diagnosisContentRepository
 
     override val growRepository: GrowRepository by lazy {
         GrowRepository(

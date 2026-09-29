@@ -1,5 +1,7 @@
 package com.trichome.app.ui.screens.diagnosis
 
+import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -21,10 +23,12 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.trichome.app.data.repository.DiagnosisCondition
+import com.trichome.app.domain.vision.PhotoAnalyzer
 import com.trichome.app.data.repository.DiagnosisResult
 import com.trichome.app.data.repository.DiagnosisSymptom
 import com.trichome.app.ui.components.FloatingOrbBackground
 import com.trichome.app.ui.components.GlassCard
+import com.trichome.app.ui.components.GlassmorphicBottomBar
 import com.trichome.app.ui.theme.TrichomeThemeState
 import com.trichome.app.viewmodel.DiagnosisViewModel
 import com.trichome.app.viewmodel.appViewModel
@@ -49,6 +53,7 @@ fun DiagnosisScreen(
     val context = LocalContext.current
     val container = container()
     val accent = themeState.colorScheme().primary
+    val plants by vm.plants.collectAsState()
 
     var symptoms by remember { mutableStateOf<List<DiagnosisSymptom>>(emptyList()) }
     var selectedPlantId by remember { mutableStateOf<Long?>(null) }
@@ -56,6 +61,8 @@ fun DiagnosisScreen(
     var registered by remember { mutableStateOf(false) }
 
     var currentImage by remember { mutableStateOf<Uri?>(null) }
+/** Non-null when the last capture/import attempt failed. */
+var currentImageError by remember { mutableStateOf<String?>(null) }
     var reportCondition by remember { mutableStateOf<DiagnosisCondition?>(null) }
 
     LaunchedEffect(Unit) {
@@ -69,21 +76,55 @@ fun DiagnosisScreen(
     }
 
     val galleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        if (uri != null) {
-            currentImage = uri
-            vm.setImagePath(uri.toString())
+        if (uri == null) return@rememberLauncherForActivityResult
+        // A content:// URI is not a file path: copy it into the cache first so
+        // the analyser can open it with the same code as a camera capture.
+        val copied = context.copyUriToCache(uri, "gallery_${System.currentTimeMillis()}.jpg")
+        if (copied == null) {
+            currentImageError = "No se pudo leer la imagen seleccionada."
+        } else {
+            currentImage = Uri.fromFile(copied)
+            currentImageError = null
+            vm.setImagePath(copied.absolutePath)
         }
     }
 
-    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap ->
-        if (bitmap != null) {
-            val file = File(context.cacheDir, "diagnosis_${System.currentTimeMillis()}.jpg")
-            FileOutputStream(file).use { out ->
-                bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 85, out)
+    // TakePicturePreview crashed on every press: the implicit intent resolved to
+    // no activity (ActivityNotFoundException) and the camera permission was
+    // never requested, so the SecurityException surfaced synchronously. CameraX
+    // captures in-process and asks for the permission first.
+    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        when {
+            result.resultCode == android.app.Activity.RESULT_OK -> {
+                val path = result.data?.getStringExtra(CameraCaptureActivity.EXTRA_OUTPUT)
+                if (path.isNullOrBlank()) {
+                    currentImageError = "La cámara no devolvió ninguna imagen."
+                } else {
+                    currentImage = Uri.fromFile(File(path))
+                    currentImageError = null
+                    vm.setImagePath(path)
+                }
             }
-            currentImage = Uri.fromFile(file)
-            vm.setImagePath(file.absolutePath)
+            else -> {
+                val reason = result.data?.getStringExtra(CameraCaptureActivity.EXTRA_ERROR)
+                if (!reason.isNullOrBlank()) currentImageError = reason
+            }
         }
+    }
+
+    fun openCamera() {
+        currentImageError = null
+        runCatching {
+            cameraLauncher.launch(Intent(context, CameraCaptureActivity::class.java))
+        }.onFailure {
+            currentImageError = "No se pudo abrir la cámara en este dispositivo."
+        }
+    }
+
+    fun openGallery() {
+        currentImageError = null
+        runCatching { galleryLauncher.launch("image/*") }
+            .onFailure { currentImageError = "No se pudo abrir la galería." }
     }
 
     Box {
@@ -100,6 +141,9 @@ fun DiagnosisScreen(
                         }
                     }
                 )
+            },
+            bottomBar = {
+                GlassmorphicBottomBar("diagnosis", { navController.navigate(it) }, themeState)
             }
         ) { padding ->
             Column(
@@ -113,14 +157,83 @@ fun DiagnosisScreen(
                 // ── Photo capture / selection ────────────────────────────
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Button(
-                        onClick = { cameraLauncher.launch(null) },
+                        onClick = { openCamera() },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = accent)
                     ) { Text("📷 Cámara") }
                     Button(
-                        onClick = { galleryLauncher.launch("image/*") },
+                        onClick = { openGallery() },
                         modifier = Modifier.weight(1f)
                     ) { Text("🖼️ Galería") }
+                }
+
+                currentImageError?.let { reason ->
+                    Text(
+                        text = reason,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+
+                // Analysis state and what the photo actually measured. Without
+                // this the verdict looked identical whether or not a picture was
+                // taken, which is why the feature read as a no-op.
+                when {
+                    vm.analyzing -> {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                            Spacer(Modifier.width(10.dp))
+                            Text("Analizando la imagen…", style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+
+                    vm.photoFeatures != null -> {
+                        GlassCard(
+                            accentColor = accent,
+                            glassOpacity = themeState.glassTokens.glassOpacity
+                        ) {
+                            Column(Modifier.padding(12.dp)) {
+                                Text("Lectura de la foto", style = MaterialTheme.typography.titleSmall)
+                                Spacer(Modifier.height(6.dp))
+                                PhotoAnalyzer.describe(vm.photoFeatures!!).forEach { (label, value) ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 2.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(
+                                            label,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Text(value, style = MaterialTheme.typography.bodySmall)
+                                    }
+                                }
+                                if (vm.photoMatches.isNotEmpty()) {
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(
+                                        "Coincide con:",
+                                        style = MaterialTheme.typography.labelLarge
+                                    )
+                                    vm.photoMatches.take(3).forEach { match ->
+                                        Text(
+                                            "· ${match.condition.labelEs} — ${(match.evidenceFit * 100).toInt()}%",
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    vm.photoError != null -> {
+                        Text(
+                            text = vm.photoError.orEmpty(),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
 
                 if (currentImage != null) {
@@ -179,7 +292,7 @@ fun DiagnosisScreen(
                     GlassCard(accentColor = accent, glassOpacity = themeState.glassTokens.glassOpacity) {
                         Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Text("Registrar en Bitácora", style = MaterialTheme.typography.titleMedium)
-                            vm.plants.value.forEach { p ->
+                            plants.forEach { p ->
                                 FilterChip(
                                     selected = selectedPlantId == p.id,
                                     onClick = { selectedPlantId = p.id; registerError = false; registered = false },
@@ -290,3 +403,17 @@ private fun DiagnosisReport(
         }
     }
 }
+/**
+ * Copies a picked `content://` image into the cache and returns the local file.
+ *
+ * `ActivityResultContracts.GetContent` hands back a URI, not a path. Feeding it
+ * straight to the file-based decoder always failed, so gallery picks silently
+ * produced no analysis.
+ */
+private fun Context.copyUriToCache(uri: Uri, fileName: String): File? = runCatching {
+    val target = File(cacheDir, fileName)
+    contentResolver.openInputStream(uri)?.use { input ->
+        FileOutputStream(target).use { output -> input.copyTo(output) }
+    } ?: return null
+    target.takeIf { it.length() > 0L }
+}.getOrNull()

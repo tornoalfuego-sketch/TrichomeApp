@@ -28,6 +28,15 @@
     <string name="active">Activo</string>
     <string name="inactive">Inactivo</string>
 
+    <!-- Cámara -->
+    <string name="camera_permission_required">Se necesita permiso de cámara para tomar la foto. Puedes concederlo desde los Ajustes del sistema.</string>
+    <string name="camera_capture_failed">No se pudo tomar la foto. Inténtalo de nuevo.</string>
+    <string name="camera_unavailable">No hay ninguna cámara disponible en este dispositivo.</string>
+    <string name="camera_hint">Encuadra la hoja afectada y llena el encuadre para mejorar el diagnóstico.</string>
+    <string name="take_photo">Tomar foto</string>
+    <string name="from_gallery">Desde la galería</string>
+    <string name="photo_analysis_failed">No se pudo analizar la imagen. Prueba con otra foto.</string>
+
     <!-- Navigation -->
     <string name="home">Inicio</string>
     <string name="tents">Carpas</string>
