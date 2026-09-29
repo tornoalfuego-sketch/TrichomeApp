@@ -17,7 +17,9 @@ data class AppearanceSettings(
     val blurRadius: Float = 12f,
     val themeIndex: Int = ThemeIndex.GREEN,
     val fontScale: Float = 1.0f,
-    val accentArgb: Int = 0xFF2E7D32.toInt()
+    val accentArgb: Int = 0xFF2E7D32.toInt(),
+    val fontFamilyIndex: Int = 0,
+    val fontWeightIndex: Int = 1
 )
 
 /**
@@ -31,6 +33,8 @@ class AppearanceSettingsRepository(private val context: Context) {
         val THEME_INDEX = intPreferencesKey("theme_index")
         val FONT_SCALE = floatPreferencesKey("font_scale")
         val ACCENT_ARGB = intPreferencesKey("accent_argb")
+        val FONT_FAMILY = intPreferencesKey("font_family")
+        val FONT_WEIGHT = intPreferencesKey("font_weight")
     }
 
     val settings: Flow<AppearanceSettings> = context.appearanceDataStore.data.map { prefs ->
@@ -39,7 +43,9 @@ class AppearanceSettingsRepository(private val context: Context) {
             blurRadius = prefs[Keys.BLUR_RADIUS] ?: 12f,
             themeIndex = prefs[Keys.THEME_INDEX] ?: ThemeIndex.GREEN,
             fontScale = prefs[Keys.FONT_SCALE] ?: 1.0f,
-            accentArgb = prefs[Keys.ACCENT_ARGB] ?: 0xFF2E7D32.toInt()
+            accentArgb = prefs[Keys.ACCENT_ARGB] ?: 0xFF2E7D32.toInt(),
+            fontFamilyIndex = prefs[Keys.FONT_FAMILY] ?: 0,
+            fontWeightIndex = prefs[Keys.FONT_WEIGHT] ?: 1
         )
     }
 
@@ -63,5 +69,13 @@ class AppearanceSettingsRepository(private val context: Context) {
 
     suspend fun setAccentArgb(argb: Int) {
         context.appearanceDataStore.edit { it[Keys.ACCENT_ARGB] = argb }
+    }
+
+    suspend fun setFontFamilyIndex(index: Int) {
+        context.appearanceDataStore.edit { it[Keys.FONT_FAMILY] = index.coerceIn(0, 3) }
+    }
+
+    suspend fun setFontWeightIndex(index: Int) {
+        context.appearanceDataStore.edit { it[Keys.FONT_WEIGHT] = index.coerceIn(0, 4) }
     }
 }

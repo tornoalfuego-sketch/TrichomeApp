@@ -1,32 +1,55 @@
 package com.trichome.app.ui.screens.settings
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.trichome.app.data.repository.UiLabels
 import com.trichome.app.ui.components.FloatingOrbBackground
 import com.trichome.app.ui.components.GlassCard
 import com.trichome.app.ui.components.GlassSlider
-import com.trichome.app.ui.theme.ThemeIndex
+import com.trichome.app.ui.components.GlassmorphicBottomBar
+import com.trichome.app.ui.theme.AppFontFamily
+import com.trichome.app.ui.theme.AppFontWeight
+import com.trichome.app.ui.theme.AppTheme
 import com.trichome.app.ui.theme.TrichomeThemeState
+import com.trichome.app.ui.theme.toArgbHex
+
+/** Accent palette offered in Settings. */
+private val AccentSwatches = listOf(
+    "Verde" to Color(0xFF2E7D32),
+    "Lima" to Color(0xFF7CB342),
+    "Ámbar" to Color(0xFFFFC107),
+    "Naranja" to Color(0xFFE65100),
+    "Cian" to Color(0xFF00ACC1),
+    "Violeta" to Color(0xFF7C4DFF),
+    "Rosa" to Color(0xFFEC407A),
+    "Rojo" to Color(0xFFE53935)
+)
 
 /**
- * Glassmorphism appearance engine: theme chips, glass opacity/blur sliders,
- * accent color swatches and font scale. Persistence handled by
- * [TrichomeThemeState].
+ * Appearance engine: theme, accent, typography and glass parameters.
+ *
+ * Every control here writes through [TrichomeThemeState] to DataStore and is
+ * applied to the running composition immediately, so each change is visible
+ * without leaving the screen.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,170 +57,349 @@ fun SettingsScreen(
     navController: NavHostController,
     themeState: TrichomeThemeState
 ) {
-    val accent = themeState.colorScheme().primary
-
-    val accentSwatches = remember {
-        listOf(
-            "Verde" to Color(0xFF2E7D32),
-            "Ámbar" to Color(0xFFFFC107),
-            "Naranja" to Color(0xFFE65100),
-            "Cian" to Color(0xFF00BCD4),
-            "Violeta" to Color(0xFF7C4DFF),
-            "Rosa" to Color(0xFFE91E63)
-        )
-    }
+    val scheme = themeState.colorScheme()
+    val accent = scheme.primary
+    val glass = themeState.glassTokens
 
     Box {
-        FloatingOrbBackground(accentColor1 = accent, accentColor2 = themeState.accentColor)
+        FloatingOrbBackground(accentColor1 = accent, accentColor2 = scheme.tertiary)
 
         Scaffold(
             containerColor = Color.Transparent,
-            topBar = {
-                TopAppBar(
-                    title = { Text("⚙️ Ajustes de Apariencia") },
-                    navigationIcon = {
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
-                        }
-                    }
-                )
+            bottomBar = {
+                GlassmorphicBottomBar("settings", { navController.navigate(it) }, themeState)
             }
         ) { padding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                // ── Theme ───────────────────────────────────────────────
-                GlassCard(accentColor = accent, glassOpacity = themeState.glassTokens.glassOpacity) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        Text("🎨 Tema", style = MaterialTheme.typography.titleMedium)
-                        Spacer(Modifier.height(10.dp))
-                        listOf(
-                            ThemeIndex.GREEN to "🌿 Brote Verde",
-                            ThemeIndex.AUTUMN to "🍂 Cosecha de Otoño",
-                            ThemeIndex.NIGHT to "🌙 Cuidado Nocturno",
-                            ThemeIndex.SUNNY to "☀️ Invernadero Soleado"
-                        ).forEach { (index, label) ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(MaterialTheme.shapes.small)
-                                    .clickable { themeState.selectColor(index) }
-                                    .padding(vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                RadioButton(
-                                    selected = themeState.selectedColorIndex == index,
-                                    onClick = { themeState.selectColor(index) }
-                                )
-                                Text(label, style = MaterialTheme.typography.bodyLarge)
-                            }
-                        }
-                    }
+                IconButton(onClick = { navController.popBackStack() }) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                 }
+                Text("Ajustes", style = MaterialTheme.typography.headlineSmall)
+            }
 
-                // ── Glass opacity ───────────────────────────────────────
-                GlassCard(accentColor = accent, glassOpacity = themeState.glassTokens.glassOpacity) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        Text(
-                            "🧊 Opacidad del Vidrio (${(themeState.glassTokens.glassOpacity * 100).toInt()}%)",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        GlassSlider(
-                            value = themeState.glassTokens.glassOpacity,
-                            onValueChange = { themeState.setGlassOpacity(it) },
-                            valueRange = 0.05f..0.50f,
-                            steps = 43,
-                            accentColor = accent
-                        )
-                    }
-                }
+            /* ── Tema ─────────────────────────────────────────────────── */
+            GlassCard(
+                glassOpacity = glass.glassOpacity,
+                blurRadius = glass.blurRadius,
+                accentColor = accent,
+                contentColor = scheme.onSurface
+            ) {
+                Column(Modifier.padding(16.dp)) {
+                    Text("🎨 Tema de la aplicación", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "El fondo y las tarjetas usan tonos distintos para que el texto siempre tenga contraste.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = scheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(12.dp))
 
-                // ── Blur ────────────────────────────────────────────────
-                GlassCard(accentColor = accent, glassOpacity = themeState.glassTokens.glassOpacity) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        Text(
-                            "💨 Intensidad de Desenfoque (${themeState.glassTokens.blurRadius.toInt()} dp)",
-                            style = MaterialTheme.typography.titleMedium
+                    AppTheme.ALL.forEach { candidate ->
+                        ThemeOption(
+                            theme = candidate,
+                            selected = themeState.selectedColorIndex == candidate.index,
+                            onClick = { themeState.selectColor(candidate.index) }
                         )
-                        GlassSlider(
-                            value = themeState.glassTokens.blurRadius,
-                            onValueChange = { themeState.setBlurRadius(it) },
-                            valueRange = 0f..32f,
-                            steps = 31,
-                            accentColor = accent
-                        )
-                    }
-                }
-
-                // ── Accent color ────────────────────────────────────────
-                GlassCard(accentColor = accent, glassOpacity = themeState.glassTokens.glassOpacity) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        Text("🎯 Color de Acento", style = MaterialTheme.typography.titleMedium)
-                        Spacer(Modifier.height(10.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                            accentSwatches.forEach { (name, color) ->
-                                val selected = themeState.accentColor.value == color.value
-                                Box(
-                                    modifier = Modifier
-                                        .size(40.dp)
-                                        .clip(CircleShape)
-                                        .background(color)
-                                        .clickable { themeState.updateAccentColor(color) },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    if (selected) {
-                                        Text("✓", color = Color.White, style = MaterialTheme.typography.titleMedium)
-                                    }
-                                }
-                            }
-                        }
                         Spacer(Modifier.height(8.dp))
-                        Text(
-                            "Acento actual: ${themeState.accentColor.toArgbHex()}",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                }
-
-                // ── Font scale ──────────────────────────────────────────
-                GlassCard(accentColor = accent, glassOpacity = themeState.glassTokens.glassOpacity) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        Text(
-                            "🔠 Escala de Fuente (${String.format("%.2f", themeState.fontScale)})",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        GlassSlider(
-                            value = themeState.fontScale,
-                            onValueChange = { themeState.updateFontScale(it) },
-                            valueRange = 0.85f..1.30f,
-                            steps = 44,
-                            accentColor = accent
-                        )
-                    }
-                }
-
-                // ── About ───────────────────────────────────────────────
-                GlassCard(accentColor = accent, glassOpacity = themeState.glassTokens.glassOpacity) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        Text("🌿 Trichome App", style = MaterialTheme.typography.titleMedium)
-                        Text(
-                            "Versión 1.0.0\nGestión y diagnóstico inteligente de cultivos de cannabis.\n" +
-                                "Motor de apariencia Glassmorphism · SuperCycle · Bitácora · Breeding.",
-                            style = MaterialTheme.typography.bodySmall
-                        )
                     }
                 }
             }
+
+            /* ── Color de acento ──────────────────────────────────────── */
+            GlassCard(
+                glassOpacity = glass.glassOpacity,
+                blurRadius = glass.blurRadius,
+                accentColor = accent,
+                contentColor = scheme.onSurface
+            ) {
+                Column(Modifier.padding(16.dp)) {
+                    Text("💧 Color de acento", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Se aplica a botones, iconos activos y bordes de tarjeta.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = scheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    FlowRowSimple(AccentSwatches.chunked(4)) { row ->
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier.padding(bottom = 10.dp)
+                        ) {
+                            row.forEach { (name, color) ->
+                                AccentSwatch(
+                                    color = color,
+                                    name = name,
+                                    selected = themeState.accentColor.value == color.value,
+                                    onClick = { themeState.updateAccentColor(color) }
+                                )
+                            }
+                        }
+                    }
+                    Text(
+                        "Acento actual: #${themeState.accentColor.toArgbHex()}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = scheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            /* ── Tipografía ───────────────────────────────────────────── */
+            GlassCard(
+                glassOpacity = glass.glassOpacity,
+                blurRadius = glass.blurRadius,
+                accentColor = accent,
+                contentColor = scheme.onSurface
+            ) {
+                Column(Modifier.padding(16.dp)) {
+                    Text("🔠 Tipografía", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(12.dp))
+
+                    Text("Familia", style = MaterialTheme.typography.labelLarge)
+                    Spacer(Modifier.height(6.dp))
+                    OptionRow(
+                        options = AppFontFamily.entries,
+                        selectedIndex = themeState.fontFamilyIndex,
+                        label = { it.label },
+                        onSelect = themeState::updateFontFamily
+                    )
+
+                    Spacer(Modifier.height(14.dp))
+                    Text("Grosor", style = MaterialTheme.typography.labelLarge)
+                    Spacer(Modifier.height(6.dp))
+                    OptionRow(
+                        options = AppFontWeight.entries,
+                        selectedIndex = themeState.fontWeightIndex,
+                        label = { it.label },
+                        onSelect = themeState::updateFontWeight
+                    )
+
+                    Spacer(Modifier.height(14.dp))
+                    Text(
+                        "Tamaño · ${"%.2f".format(themeState.fontScale)}×",
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                    GlassSlider(
+                        value = themeState.fontScale,
+                        onValueChange = themeState::updateFontScale,
+                        valueRange = 0.85f..1.30f,
+                        accentColor = accent,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(Modifier.height(12.dp))
+                    // Live specimen: the grower sees the real rendered style.
+                    Text(
+                        "Muestra de texto · El mirceno y el limoneno dominan este cultivar",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = scheme.onSurface,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(scheme.surfaceVariant.copy(alpha = 0.5f))
+                            .padding(12.dp)
+                    )
+                }
+            }
+
+            /* ── Cristal ─────────────────────────────────────────────── */
+            GlassCard(
+                glassOpacity = glass.glassOpacity,
+                blurRadius = glass.blurRadius,
+                accentColor = accent,
+                contentColor = scheme.onSurface
+            ) {
+                Column(Modifier.padding(16.dp)) {
+                    Text("🧊 Panel de cristal", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(10.dp))
+
+                    Text(
+                        "Opacidad · ${(glass.glassOpacity * 100).toInt()} %",
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                    GlassSlider(
+                        value = glass.glassOpacity,
+                        onValueChange = themeState::setGlassOpacity,
+                        valueRange = 0.05f..0.55f,
+                        accentColor = accent,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Difuminado · ${glass.blurRadius.toInt()} dp",
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                    GlassSlider(
+                        value = glass.blurRadius,
+                        onValueChange = themeState::setBlurRadius,
+                        valueRange = 0f..32f,
+                        accentColor = accent,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "El difuminado afecta a la profundidad visual del panel; el texto nunca se difumina para mantenerlo legible.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = scheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            /* ── Sobre la app ────────────────────────────────────────── */
+            GlassCard(
+                glassOpacity = glass.glassOpacity,
+                blurRadius = glass.blurRadius,
+                accentColor = accent,
+                contentColor = scheme.onSurface
+            ) {
+                Column(Modifier.padding(16.dp)) {
+                    Text("ℹ️ Acerca de", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(8.dp))
+                    InfoRow("Versión", "1.0.1")
+                    InfoRow("Datos", "100 % locales y sin conexión")
+                    InfoRow("Base de datos", "Room v${2}")
+                }
+            }
+
+            Spacer(Modifier.height(80.dp))
+        }
         }
     }
 }
 
-private fun Color.toArgbHex(): String =
-    "#%08X".format(this.toArgb())
+@Composable
+private fun ThemeOption(
+    theme: AppTheme,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val shape = RoundedCornerShape(14.dp)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(theme.background)
+            .border(
+                width = if (selected) 2.dp else 1.dp,
+                color = if (selected) theme.secondaryBase else theme.outline,
+                shape = shape
+            )
+            .clickable(onClick = onClick)
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Two swatches prove the background/surface separation at a glance.
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(theme.background)
+                .border(1.dp, theme.outline, CircleShape)
+        )
+        Box(
+            modifier = Modifier
+                .size(22.dp)
+                .clip(CircleShape)
+                .background(theme.surface)
+                .border(1.dp, theme.outline, CircleShape)
+        )
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                "${theme.emoji}  ${theme.label}",
+                style = MaterialTheme.typography.titleSmall,
+                color = theme.onBackground
+            )
+            Text(
+                if (theme.isDark) "Tema oscuro" else "Tema claro",
+                style = MaterialTheme.typography.labelSmall,
+                color = theme.onSurfaceVariant
+            )
+        }
+        if (selected) {
+            Icon(Icons.Filled.Check, contentDescription = "Seleccionado", tint = theme.secondaryBase)
+        }
+    }
+}
 
-private fun Color.toArgb(): Int = (this.value).toLong().toInt()
+@Composable
+private fun AccentSwatch(
+    color: Color,
+    name: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            modifier = Modifier
+                .size(46.dp)
+                .clip(CircleShape)
+                .background(color)
+                .border(
+                    width = if (selected) 3.dp else 1.dp,
+                    color = if (selected) MaterialTheme.colorScheme.onBackground
+                    else Color.White.copy(alpha = 0.4f),
+                    shape = CircleShape
+                )
+                .clickable(onClick = onClick)
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            name,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+/** Horizontal chip row that wraps onto a second line when needed. */
+@Composable
+private fun <T> OptionRow(
+    options: List<T>,
+    selectedIndex: Int,
+    label: (T) -> String,
+    onSelect: (Int) -> Unit
+) {
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        items(options.size) { index ->
+            FilterChip(
+                selected = index == selectedIndex,
+                onClick = { onSelect(index) },
+                label = { Text(label(options[index])) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun InfoRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(label, style = MaterialTheme.typography.bodyMedium)
+        Text(
+            value,
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+/** Minimal chunked layout: avoids pulling in the experimental FlowRow API. */
+@Composable
+private fun <T> FlowRowSimple(chunks: List<List<T>>, content: @Composable (List<T>) -> Unit) {
+    Column { chunks.forEach { content(it) } }
+}

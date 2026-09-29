@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -13,7 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -25,8 +26,25 @@ import androidx.compose.ui.unit.sp
 import kotlin.math.sin
 
 /**
- * Glassmorphism container: translucent surface + dynamic blur + 1dp gradient
- * border that simulates a glass edge highlight.
+ * Translucency of a glass panel, derived from the user "opacity" preference.
+ *
+ * The preference range is 0.05–0.55, but a panel alpha below ~0.35 makes the
+ * text unreadable against the animated background, so the raw value is remapped
+ * onto a legible window instead of being used verbatim.
+ */
+fun panelAlphaFor(glassOpacity: Float): Float =
+    (0.35f + glassOpacity.coerceIn(0f, 1f) * 1.05f).coerceIn(0.40f, 0.94f)
+
+/**
+ * Glassmorphism container: a translucent, tinted surface with a gradient edge
+ * highlight that simulates a glass bevel.
+ *
+ * IMPORTANT: this composable deliberately does **not** apply a `blur` modifier.
+ * In Compose, `Modifier.blur` renders the whole subtree of the node into a
+ * blurred layer, so putting it on a card destroys the text. A true backdrop
+ * blur is not expressible with a `Modifier.blur` on a panel; the frosted depth
+ * is instead produced by the tinted surface plus the edge gradient, which keeps
+ * every label legible at any blur preference.
  */
 @Composable
 fun GlassCard(
@@ -39,23 +57,38 @@ fun GlassCard(
     cornerRadius: Int = 16,
     content: @Composable () -> Unit
 ) {
-    val base = if (MaterialTheme.colorScheme.background.luminance() < 0.5f) Color.Black else Color.White
+    val scheme = MaterialTheme.colorScheme
     val shape = RoundedCornerShape(cornerRadius.dp)
+    val alpha = panelAlphaFor(glassOpacity)
+
+    // A shallower tint means less depth: nudge the panel towards the background
+    // colour so the transparency is still perceivable without losing contrast.
+    val depthFactor = (blurRadius / 32f).coerceIn(0f, 1f)
+    val panelTop = lerpColor(scheme.surface, scheme.surfaceVariant, depthFactor * 0.6f)
+    val panelBottom = lerpColor(scheme.surface, scheme.background, depthFactor * 0.35f)
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(color = base.copy(alpha = glassOpacity), shape = shape)
-            .blur(if (blurRadius > 0f) blurRadius.dp else 0.dp)
+            .clip(shape)
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        panelTop.copy(alpha = alpha),
+                        panelBottom.copy(alpha = alpha)
+                    )
+                ),
+                shape = shape
+            )
             .then(
                 if (borderEnabled) {
                     Modifier.border(
                         width = 1.dp,
                         brush = Brush.linearGradient(
                             colors = listOf(
-                                accentColor.copy(alpha = 0.55f),
-                                accentColor.copy(alpha = 0.08f),
-                                accentColor.copy(alpha = 0.55f)
+                                accentColor.copy(alpha = 0.75f),
+                                accentColor.copy(alpha = 0.18f),
+                                accentColor.copy(alpha = 0.75f)
                             )
                         ),
                         shape = shape
@@ -63,8 +96,37 @@ fun GlassCard(
                 } else Modifier
             )
     ) {
-        content()
+        // Top inner highlight: the specular reflection of a glass edge.
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = if (scheme.background.luminance() < 0.5f) 0.07f else 0.0f),
+                            Color.Transparent
+                        ),
+                        startY = 0f,
+                        endY = 120f
+                    )
+                )
+        )
+        CompositionLocalProvider(
+            LocalContentColor provides contentColor,
+            content = content
+        )
     }
+}
+
+/** Linear interpolation between two opaque colours. */
+private fun lerpColor(from: Color, to: Color, fraction: Float): Color {
+    val f = fraction.coerceIn(0f, 1f)
+    return Color(
+        red = from.red + (to.red - from.red) * f,
+        green = from.green + (to.green - from.green) * f,
+        blue = from.blue + (to.blue - from.blue) * f,
+        alpha = 1f
+    )
 }
 
 /**
