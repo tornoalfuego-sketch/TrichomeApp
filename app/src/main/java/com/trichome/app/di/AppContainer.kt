@@ -3,6 +3,7 @@ package com.trichome.app.di
 import android.app.Application
 import com.trichome.app.data.database.AppDatabase
 import com.trichome.app.data.prefs.AppearanceSettingsRepository
+import com.trichome.app.data.prefs.BreedingProgressRepository
 import com.trichome.app.data.prefs.OnboardingRepository
 import com.trichome.app.data.prefs.TerpeneProgressRepository
 import com.trichome.app.data.repository.*
@@ -19,7 +20,15 @@ interface AppContainer {
     val application: Application
     val database: AppDatabase
     val appearanceSettings: AppearanceSettingsRepository
+    /**
+     * The terpenes encyclopedia progression. Separate from [breedingProgress]:
+     * a terpene streak and a breeding medal are different achievements, and
+     * merging them would let one system's reset revoke the other's rewards.
+     */
     val terpeneProgress: TerpeneProgressRepository
+
+    /** The breeding theory progression: quiz medals, per chapter. */
+    val breedingProgress: BreedingProgressRepository
     val onboarding: OnboardingRepository
     val coroutineScope: CoroutineScope
 
@@ -54,6 +63,10 @@ class DefaultAppContainer(app: Application) : AppContainer {
 
     override val terpeneProgress: TerpeneProgressRepository by lazy {
         TerpeneProgressRepository(app)
+    }
+
+    override val breedingProgress: BreedingProgressRepository by lazy {
+        BreedingProgressRepository(app)
     }
 
     override val onboarding: OnboardingRepository by lazy { OnboardingRepository(app) }
