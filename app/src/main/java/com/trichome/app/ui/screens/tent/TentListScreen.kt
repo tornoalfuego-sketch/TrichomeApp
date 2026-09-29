@@ -22,6 +22,8 @@ import com.trichome.app.ui.components.FloatingOrbBackground
 import com.trichome.app.ui.components.GlassCard
 import com.trichome.app.ui.components.GlassmorphicBottomBar
 import com.trichome.app.ui.components.rememberDestructiveConfirmation
+import com.trichome.app.ui.screens.plant.PlantDeletionNotice
+import com.trichome.app.ui.screens.plant.PlantEditDialog
 import com.trichome.app.ui.theme.TrichomeThemeState
 import com.trichome.app.viewmodel.TentViewModel
 import com.trichome.app.viewmodel.appViewModel
@@ -39,6 +41,7 @@ fun TentListScreen(
     val plants by vm.plants.collectAsState()
     var showAddTent by remember { mutableStateOf(false) }
     var editingTent by remember { mutableStateOf<GrowTent?>(null) }
+    var editingPlant by remember { mutableStateOf<Plant?>(null) }
 
     // Both deletes here used to fire on a single tap. The dialog names the row
     // so the user can see which tent or plant they are about to lose.
@@ -53,10 +56,9 @@ fun TentListScreen(
     )
     val deletePlantConfirmation = rememberDestructiveConfirmation<Plant>(
         title = { "Eliminar planta" },
-        message = { plant ->
-            "Se eliminará la planta «${plant.name}» y todo su historial de la bitácora. " +
-                "Esta acción no se puede deshacer."
-        },
+        // One copy for both delete sites, so the app cannot tell the user two
+        // different things about what a plant delete removes.
+        message = { plant -> PlantDeletionNotice.message(plant) },
         confirmLabel = { "Eliminar" },
         onConfirmed = { plant -> vm.deletePlant(plant) }
     )
@@ -127,6 +129,7 @@ fun TentListScreen(
                                 onDelete = { deleteTentConfirmation.request(tent) },
                                 onMoveUp = { p -> vm.moveUp(p) },
                                 onMoveDown = { p -> vm.moveDown(p) },
+                                onEditPlant = { p -> editingPlant = p },
                                 onDeletePlant = { p -> deletePlantConfirmation.request(p) },
                                 onAddPlant = { name ->
                                     vm.addPlant(name, tent.id, "", "seedling", System.currentTimeMillis())
@@ -154,6 +157,18 @@ fun TentListScreen(
             }
         )
     }
+
+    editingPlant?.let { plant ->
+        PlantEditDialog(
+            plant = plant,
+            accent = accent,
+            onDismiss = { editingPlant = null },
+            onSave = { updated ->
+                vm.updatePlant(updated)
+                editingPlant = null
+            }
+        )
+    }
 }
 
 @Composable
@@ -167,6 +182,7 @@ private fun TentCard(
     onDelete: () -> Unit,
     onMoveUp: (Plant) -> Unit,
     onMoveDown: (Plant) -> Unit,
+    onEditPlant: (Plant) -> Unit,
     onDeletePlant: (Plant) -> Unit,
     onAddPlant: (String) -> Unit
 ) {
@@ -213,6 +229,12 @@ private fun TentCard(
                             onClick = { onMoveDown(plant) },
                             enabled = index < plants.size - 1
                         ) { Icon(Icons.Default.KeyboardArrowDown, "Bajar") }
+                        // Opens the same editor the plant detail screen uses, so
+                        // the row is seeded from the stored plant instead of the
+                        // create-time defaults this list used to hardcode.
+                        IconButton(onClick = { onEditPlant(plant) }) {
+                            Icon(Icons.Default.Edit, "Editar planta")
+                        }
                         IconButton(onClick = { onDeletePlant(plant) }) {
                             Icon(Icons.Default.Close, null, tint = MaterialTheme.colorScheme.error)
                         }
