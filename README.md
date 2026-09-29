@@ -6,17 +6,20 @@ Gestión y diagnóstico inteligente de cultivos de cannabis — Android nativo e
 
 ## ✨ Funcionalidades
 
-- **Carpas y plantas**: CRUD de carpas, plantas por carpa con reordenamiento, días de cultivo (hoy = **Día 1**) y métricas.
+- **Carpas y plantas**: alta de carpas y plantas desde la propia pantalla, reordenamiento dentro de la carpa, días de cultivo (hoy = **Día 1**) y métricas.
 - **Protocolos por bloques**: editor de protocolos definidos como bloques de etapas ordenadas con fotoperiodo.
 - **Motor SuperCycle**: cálculo de súper-días, fase luz/oscuridad, % restante y re-siembra con presets 18/6 · 12/12 · 24/0 · custom.
-- **Bitácora (16 tipos de evento)**: riego, fertilización, poda, trasplante, entrenamiento, control de plagas, altura, distancia de lámpara, flush, defoliación, VPD, revisión de tricomas, temp/humedad, cosecha, cría y diagnóstico. Formularios dinámicos y registro multi-planta (grupo).
-- **Recordatorios recurrentes**: recordatorios semanales/cada N días re-encolados automáticamente por WorkManager.
-- **Calendario mensual**: marcadores por día, filtro por planta y detalle diario.
-- **Biblias**: terpenos (aroma, efectos, punto de ebullición, cepas) y breeding (generaciones, técnicas, glosario) cargadas desde `assets/data/*.json`.
-- **Diagnóstico inteligente**: motor de reglas local (15 condiciones + saludable) con foto (cámara/galería), selección de síntomas, reporte glassmorphic y registro directo en la bitácora.
+- **Bitácora (16 tipos de evento)**: riego, fertilización, poda, trasplante, entrenamiento, control de plagas, altura, distancia de lámpara, flush, defoliación, VPD, revisión de tricomas, temp/humedad, cosecha, cría y diagnóstico. Formularios dinámicos y registro multi-planta (grupo). Si no hay ninguna planta, el guardado se bloquea con un aviso explícito en lugar de descartarse en silencio.
+- **Recordatorios recurrentes**: alarmas **reales del sistema** (`AlarmManager.setAlarmClock`), re-armado tras cada disparo, re-armado tras reiniciar el dispositivo y `setAndAllowWhileIdle` como fallback. WorkManager queda como barrido periódico de seguridad.
+- **Calendario mensual**: marcadores por día, filtro por planta, detalle diario y **alta de eventos y recordatorios** desde la propia pantalla.
+- **Biblia de terpenos**: **158 compuestos** con aroma, sabor, efectos, propiedades médicas, **mecanismo farmacológico, biosíntesis, toxicidad**, punto de ebullición, cepas, fuentes vegetales, nivel de acumulación y enlaces de sinergia (*entourage*). Incluye ficha de detalle, trivia con XP y gamificación de la enciclopedia (niveles, rangos e insignias).
+- **Breeding**: generaciones (F1–F5, IBL, feminizada, retrocruce), técnicas y glosario; proyectos y cruces con scoring fenotípico.
+- **Diagnóstico inteligente (49 condiciones)**: captura con CameraX o galería, análisis de imagen determinista que muestra las mediciones tomadas, motor de reglas local, selección de síntomas, **ficha de la enfermedad con causa, plan de acción y prevención**, y registro directo en la bitácora.
 - **Gráficas nativas en Canvas**: pH, EC, temperatura, humedad y altura a lo largo del cultivo.
-- **Gamificación**: XP por evento, niveles, racha de registro diario y logros.
-- **Apariencia Glassmorphism**: 4 temas, paneles translúcidos con blur, bordes de gradiente, orbes flotantes animados, opacidad (0.05–0.50), blur (0–32dp), acento personalizable y escala de fuente (0.85–1.30), persistida con DataStore.
+- **Gamificación de cultivo**: XP por evento, niveles, racha de registro diario y logros.
+- **Apariencia Glassmorphism**: 4 temas, paneles translúcidos con blur en el fondo (nunca sobre el texto), bordes de gradiente, orbes flotantes animados, tipografía configurable (familia, peso, escala), color de texto / fondo / borde y acento personalizables, todo persistido con DataStore.
+- **Onboarding** que desaparece a la tercera apertura.
+- **7 pestañas** en la barra inferior: Inicio, Carpas, Bitácora, Terpenos, Calendario, Diagnóstico, Ajustes.
 
 ## 🛠️ Tecnologías
 
@@ -24,21 +27,30 @@ Gestión y diagnóstico inteligente de cultivos de cannabis — Android nativo e
 | --- | --- |
 | UI | Jetpack Compose (Material 3) + Navigation Compose |
 | Persistencia | Room 2.6 (migración explícita v1→v2, `exportSchema = true`) |
-| Preferencias | DataStore Preferences |
-| Tareas en segundo plano | WorkManager (factory propia, re-encolado de recordatorios) |
-| Imágenes | Coil |
-| Visión local | CameraX + MLKit + TensorFlow Lite (fallback a motor de reglas) |
+| Preferencias | DataStore Preferences (apariencia, progreso de terpenos, onboarding) |
+| Tareas en segundo plano | WorkManager (factory propia) + `AlarmManager` para recordatorios |
+| Imágenes | Coil, CameraX |
+| Visión local | `PhotoAnalyzer`: extracción de features en HSV sobre el bitmap, sin ML |
 | DI | Manual (`AppContainer` + `viewModelFactory { initializer { ... } }`) — sin Hilt/Koin |
+
+> **No hay modelo TFLite en este build.** No existe ningún `.tflite` en
+> `assets`, así que el diagnóstico fotográfico es determinista: se extraen
+> medidas del fotograma y se comparan contra los umbrales `photoEvidence` del
+> catálogo. La pantalla muestra las mediciones, no solo el veredicto. Un modelo
+> puede conectarse detrás de `PhotoAnalyzer` sin tocar el pipeline.
 
 ## 📦 Construcción
 
 ```powershell
 $env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-17.0.20.101-hotspot"
-.\gradlew.bat :app:testDebugUnitTest :app:assembleDebug :app:assembleRelease --console=plain
+.\gradlew.bat :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleRelease --console=plain
 ```
 
 > Ejecuta los tasks de Gradle de uno en uno: dos builds simultáneos sobre el
 > mismo proyecto fallan con `Cannot access output property 'destinationDirectory'`.
+
+Los cuatro tasks deben pasar antes de cerrar una entrega: **75 tests JVM**,
+**0 errores de lint**, y ambos APKs generados.
 
 APKs de salida: `app/build/outputs/apk/debug/app-debug.apk` y
 `app/build/outputs/apk/release/app-release.apk`.
@@ -48,15 +60,38 @@ versionado, ver [docs/PUBLISHING.md](docs/PUBLISHING.md)). Sin ese archivo el
 release sigue compilando pero produce un APK **sin firmar**, que Android rechaza
 instalar.
 
+### Catálogos de contenido
+
+`app/src/main/assets/data/*.json` es la fuente de verdad que se distribuye. Se
+regeneran con los scripts de `tools/`, que son re-ejecutables y se autovalidan:
+
+```powershell
+.\tools\convert_terpenes.ps1
+.\tools\convert_diagnostics.ps1
+```
+
+Ambos scripts **fallan con error** si el JSON resultante no cumple el esquema
+que la app deserializa, en vez de reportar éxito sobre un archivo roto.
+
+## 🧪 Tests
+
+75 tests JVM, todos ejecutables sin dispositivo:
+
+`SuperCycleEngineTest` · `StageProgressEngineTest` · `DiagnosisEngineTest` · `EventTypeTest` · `GamificationTest` · `WorkManagerInitTest` · `PhotoAnalyzerTest` · `PhotoDiagnosisEngineTest` · `ReminderAlarmSchedulerTest` · `TerpeneProgressionTest` · `AssetCatalogTest`
+
+`AssetCatalogTest` deserializa ambos catálogos **con las mismas clases
+`@Serializable` que usa la app**, de modo que un campo renombrado rompe el
+build en lugar de publicar una enciclopedia que se renderiza vacía en silencio.
+
 ## 📚 Documentación
 
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — arquitectura, DI, workers y flujo de datos
-- [docs/DATA_MODEL.md](docs/DATA_MODEL.md) — modelo de datos Room y migración v1→v2
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — arquitectura, DI, workers, alarmas reales y pipeline de diagnóstico
+- [docs/DATA_MODEL.md](docs/DATA_MODEL.md) — modelo de datos Room, migración v1→v2 y esquemas de los catálogos
 - [docs/FEATURES.md](docs/FEATURES.md) — catálogo de funcionalidades
 - [docs/GLASSMORPHISM_DESIGN.md](docs/GLASSMORPHISM_DESIGN.md) — motor de apariencia
-- [docs/ROADMAP.md](docs/ROADMAP.md) — roadmap post-1.0.0
+- [docs/ROADMAP.md](docs/ROADMAP.md) — roadmap
 - [docs/PUBLISHING.md](docs/PUBLISHING.md) — publicación del APK como GitHub Release
 
 ## 🔒 Privacidad
 
-La app funciona 100% offline: las fotos de diagnóstico se procesan localmente (reglas + clasificador TFLite local). No se envían datos a ningún servidor.
+La app funciona 100% offline: las fotos de diagnóstico se procesan localmente y no se envían a ningún servidor. No hay backend, ni analítica, ni cuenta de usuario.
