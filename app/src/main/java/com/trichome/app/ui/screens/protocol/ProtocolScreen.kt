@@ -17,10 +17,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.trichome.app.data.entity.Protocol
+import com.trichome.app.data.entity.ProtocolStage
 import com.trichome.app.model.SuperCycleEngine
 import com.trichome.app.ui.components.FloatingOrbBackground
 import com.trichome.app.ui.components.GlassCard
 import com.trichome.app.ui.components.formatTime
+import com.trichome.app.ui.components.rememberDestructiveConfirmation
 import com.trichome.app.ui.theme.TrichomeThemeState
 import com.trichome.app.viewmodel.ProtocolViewModel
 import com.trichome.app.viewmodel.appViewModel
@@ -44,6 +46,18 @@ fun ProtocolScreen(
 
     var showEditor by remember { mutableStateOf(false) }
     var editingProtocol by remember { mutableStateOf<Protocol?>(null) }
+
+    // A tap only arms the dialog; the row is deleted inside the repository call
+    // the user confirms.
+    val deleteConfirmation = rememberDestructiveConfirmation<Protocol>(
+        title = { "Eliminar protocolo" },
+        message = { protocol ->
+            "Se eliminará el protocolo «${protocol.name}» y todas sus etapas. " +
+                "Esta acción no se puede deshacer."
+        },
+        confirmLabel = { "Eliminar" },
+        onConfirmed = { protocol -> scope.launch { vm.deleteProtocol(protocol) } }
+    )
 
     LaunchedEffect(plantId) { vm.loadProtocols(plantId) }
 
@@ -107,9 +121,7 @@ fun ProtocolScreen(
                                 accent = accent,
                                 glassOpacity = themeState.glassTokens.glassOpacity,
                                 onEdit = { editingProtocol = protocol; showEditor = true },
-                                onDelete = {
-                                    scope.launch { vm.deleteProtocol(protocol) }
-                                },
+                                onDelete = { deleteConfirmation.request(protocol) },
                                 onLogStage = { stageName ->
                                     scope.launch {
                                         vm.logStageTransition(plantId, protocol.id, stageName)
@@ -126,6 +138,7 @@ fun ProtocolScreen(
     if (showEditor) {
         ProtocolEditorDialog(
             protocol = editingProtocol,
+            stages = editingProtocol?.let { vm.blocks[it.id].orEmpty() }.orEmpty(),
             plantId = plantId,
             accent = accent,
             onDismiss = { showEditor = false; editingProtocol = null },
@@ -242,24 +255,21 @@ private fun ProtocolCard(
 @Composable
 private fun ProtocolEditorDialog(
     protocol: Protocol?,
+    stages: List<ProtocolStage>,
     plantId: Long,
     accent: Color,
     onDismiss: () -> Unit,
     onSave: (name: String, lightHours: Int, darkHours: Int, presetType: String, blocks: List<Pair<String, Int>>) -> Unit
 ) {
-    var name by remember { mutableStateOf(protocol?.name.orEmpty()) }
-    var lightHours by remember { mutableStateOf(protocol?.lightHours ?: 18) }
-    var darkHours by remember { mutableStateOf(protocol?.darkHours ?: 6) }
-    var presetType by remember { mutableStateOf(protocol?.presetType ?: "18/6") }
-    var blocks by remember {
-        mutableStateOf(
-            listOf(
-                "Germinación" to 7,
-                "Vegetativa" to 35,
-                "Floración" to 56
-            )
-        )
-    }
+    // The dialog is reused across protocols, so every field seeded from the
+    // protocol is keyed on its id: without the key Compose would keep the first
+    // protocol's values — and its blocks — forever.
+    val seedKey = editorSeedKey(protocol)
+    var name by remember(seedKey) { mutableStateOf(protocol?.name.orEmpty()) }
+    var lightHours by remember(seedKey) { mutableStateOf(protocol?.lightHours ?: 18) }
+    var darkHours by remember(seedKey) { mutableStateOf(protocol?.darkHours ?: 6) }
+    var presetType by remember(seedKey) { mutableStateOf(protocol?.presetType ?: "18/6") }
+    var blocks by remember(seedKey) { mutableStateOf(initialBlocks(protocol, stages)) }
     var nameError by remember { mutableStateOf(false) }
 
     // Local editable blocks
