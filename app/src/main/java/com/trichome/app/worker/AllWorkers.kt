@@ -60,17 +60,37 @@ class ReminderSchedulerWorker(
     companion object {
         const val KEY_REMINDER_ID = "reminder_id"
 
+        /**
+         * Template of the unique work name carrying a reminder's one-shot job.
+         *
+         * This string was written out literally in three places — the enqueue,
+         * the rescheduler's lookup and (once delete existed) the cancel — so
+         * the job and its cancel could drift apart and a deleted reminder would
+         * keep firing. Every other worker in this file publishes a `WORK_NAME`;
+         * this is the per-row equivalent.
+         */
+        const val WORK_NAME_TEMPLATE = "reminder_due_%d"
+
+        /** WorkManager tag identifying the jobs of one reminder. */
+        const val TAG_TEMPLATE = "reminder_%d"
+
+        /** Unique work name of [reminderId]'s one-shot job. */
+        fun workNameFor(reminderId: Long): String = WORK_NAME_TEMPLATE.format(reminderId)
+
+        /** Tag carried by [reminderId]'s one-shot job. */
+        fun tagFor(reminderId: Long): String = TAG_TEMPLATE.format(reminderId)
+
         /** Schedules (or reschedules) the one-time worker for a reminder. */
         fun scheduleNext(context: Context, reminderId: Long, fireAtMillis: Long) {
             val delay = (fireAtMillis - System.currentTimeMillis()).coerceAtLeast(0L)
             val request = OneTimeWorkRequestBuilder<ReminderSchedulerWorker>()
                 .setInputData(workDataOf(KEY_REMINDER_ID to reminderId))
                 .setInitialDelay(delay, TimeUnit.MILLISECONDS)
-                .addTag("reminder_$reminderId")
+                .addTag(tagFor(reminderId))
                 .build()
 
             WorkManager.getInstance(context).enqueueUniqueWork(
-                "reminder_due_$reminderId",
+                workNameFor(reminderId),
                 ExistingWorkPolicy.REPLACE,
                 request
             )
@@ -104,7 +124,9 @@ class ReminderReschedulerWorker(
             val now = System.currentTimeMillis()
             reminders.forEach { reminder ->
                 val workManager = WorkManager.getInstance(applicationContext)
-                val existing = workManager.getWorkInfosForUniqueWork("reminder_due_${reminder.id}").get()
+                val existing = workManager
+                    .getWorkInfosForUniqueWork(ReminderSchedulerWorker.workNameFor(reminder.id))
+                    .get()
                 val pending = existing.any { info ->
                     info.state == WorkInfo.State.ENQUEUED || info.state == WorkInfo.State.RUNNING
                 }

@@ -201,6 +201,8 @@ fun ReminderQuickCard(
                         steps = 58
                     )
                 }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text("Hora: %02d:%02d".format(hour, minute), style = MaterialTheme.typography.bodySmall)
                     Slider(
@@ -208,6 +210,18 @@ fun ReminderQuickCard(
                         onValueChange = { hour = it.toInt().coerceIn(0, 23) },
                         valueRange = 0f..23f,
                         steps = 23
+                    )
+                }
+                // `minute` used to be declared and printed but never bound to a
+                // control, so every reminder this card created fired on the hour
+                // no matter what the grower believed they had picked.
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Minuto: %02d".format(minute), style = MaterialTheme.typography.bodySmall)
+                    Slider(
+                        value = minute.toFloat(),
+                        onValueChange = { minute = it.toInt().coerceIn(0, 59) },
+                        valueRange = 0f..59f,
+                        steps = 58
                     )
                 }
             }

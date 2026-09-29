@@ -86,19 +86,23 @@ object ReminderAlarmScheduler {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-    private fun firePendingIntent(context: Context, reminderId: Long): PendingIntent =
-        PendingIntent.getBroadcast(
+    private fun firePendingIntent(context: Context, reminderId: Long): PendingIntent {
+        // Built from the same plan a cancel uses, so scheduling and cancelling
+        // can never end up addressing two different alarms.
+        val plan = ReminderCancellation.planFor(reminderId)
+        return PendingIntent.getBroadcast(
             context,
-            reminderId.toInt(),
+            plan.pendingIntentRequestCode,
             Intent(context, ReminderAlarmReceiver::class.java).apply {
-                action = ACTION_FIRE
+                action = plan.alarmAction
                 putExtra(EXTRA_REMINDER_ID, reminderId)
                 // The data URI keeps the extras distinct per reminder; without it
                 // PendingIntent treats every alarm as the same one and extras leak.
-                data = android.net.Uri.parse("trichome://reminder/$reminderId")
+                data = android.net.Uri.parse(plan.alarmDataUri)
             },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+    }
 
     /**
      * Next fire time as an absolute epoch-millis instant.

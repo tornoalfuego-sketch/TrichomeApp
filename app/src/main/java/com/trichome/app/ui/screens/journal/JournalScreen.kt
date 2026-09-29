@@ -27,6 +27,7 @@ import com.trichome.app.ui.components.GlassmorphicBottomBar
 import com.trichome.app.ui.components.rememberDestructiveConfirmation
 import com.trichome.app.ui.theme.TrichomeThemeState
 import com.trichome.app.viewmodel.JournalViewModel
+import com.trichome.app.viewmodel.ReminderViewModel
 import com.trichome.app.viewmodel.appViewModel
 import com.trichome.app.worker.ReminderSchedulerWorker
 import kotlinx.coroutines.launch
@@ -44,6 +45,7 @@ fun JournalScreen(
     plantId: Long? = null
 ) {
     val vm = appViewModel { JournalViewModel(it) }
+    val reminderVm = appViewModel { ReminderViewModel(it) }
     val accent = themeState.colorScheme().primary
     val scope = rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -53,6 +55,23 @@ fun JournalScreen(
     // Collected as state so the plant list reacts to the database instead of
     // being sampled once during composition.
     val plants by vm.plants.collectAsState()
+    val plantNames = remember(plants) { plants.associate { it.id to it.name } }
+
+    // Observed, not a snapshot: an edit or a delete has to be visible on the
+    // same screen that caused it.
+    val activeReminders by reminderVm.activeReminders.collectAsState()
+    var editingReminder by remember { mutableStateOf<Reminder?>(null) }
+
+    val deleteReminderConfirmation = rememberDestructiveConfirmation<Reminder>(
+        title = { "Eliminar recordatorio" },
+        message = { reminder ->
+            "Se eliminará el recordatorio «${reminder.title}» y se cancelarán su alarma " +
+                "y su tarea programada, así que dejará de avisarte. " +
+                "Esta acción no se puede deshacer."
+        },
+        confirmLabel = { "Eliminar" },
+        onConfirmed = { reminder -> scope.launch { reminderVm.deleteReminder(reminder) } }
+    )
 
     var selectedType by remember { mutableStateOf(EventType.IRRIGATION) }
     // Multi-plant selection (enabled in global mode)
@@ -202,6 +221,35 @@ fun JournalScreen(
                     }
                 )
 
+                // ── Active reminders (the only place they can be changed) ──
+                // The create card above was the only reminder surface in the
+                // app, and it could not even list what it had created:
+                // `ReminderDao.updateReminder` / `deleteReminder` had no
+                // callers at all. The journal is where a reminder is created,
+                // so it is where it is edited and removed.
+                if (activeReminders.isNotEmpty()) {
+                    Text("Recordatorios activos", style = MaterialTheme.typography.titleMedium)
+                    activeReminders.forEach { reminder ->
+                        ReminderRow(
+                            reminder = reminder,
+                            plantName = reminder.plantId?.let { plantNames[it] },
+                            accent = accent,
+                            onEdit = { editingReminder = reminder },
+                            onDelete = { deleteReminderConfirmation.request(reminder) }
+                        )
+                    }
+                }
+
+                // A refused edit is saved but will not ring, and a failed delete
+                // leaves the reminder armed. Both are silent otherwise.
+                reminderVm.saveError?.let {
+                    Text(
+                        it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+
                 // ── List ─────────────────────────────────────────────────
                 Text("Registro de eventos", style = MaterialTheme.typography.titleMedium)
                 if (vm.events.isEmpty()) {
@@ -220,6 +268,19 @@ fun JournalScreen(
                 }
             }
         }
+    }
+
+    // Armed by a tap, confirmed by the shared dialog: the row is only written
+    // once the grower has seen which reminder they picked.
+    editingReminder?.let { reminder ->
+        EditReminderDialog(
+            reminder = reminder,
+            accent = accent,
+            onDismiss = { editingReminder = null },
+            onSave = { edited ->
+                scope.launch { reminderVm.updateReminder(edited) { editingReminder = null } }
+            }
+        )
     }
 }
 
