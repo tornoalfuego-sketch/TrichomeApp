@@ -49,7 +49,7 @@ $env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-17.0.20.101-hotspot"
 > Ejecuta los tasks de Gradle de uno en uno: dos builds simultáneos sobre el
 > mismo proyecto fallan con `Cannot access output property 'destinationDirectory'`.
 
-Los cuatro tasks deben pasar antes de cerrar una entrega: **137 tests JVM**,
+Los cuatro tasks deben pasar antes de cerrar una entrega: **398 tests JVM**,
 **0 errores de lint**, y ambos APKs generados.
 
 APKs de salida: `app/build/outputs/apk/debug/app-debug.apk` y
@@ -75,9 +75,9 @@ que la app deserializa, en vez de reportar éxito sobre un archivo roto.
 
 ## 🧪 Tests
 
-137 tests JVM, todos ejecutables sin dispositivo:
+398 tests JVM, todos ejecutables sin dispositivo:
 
-`SuperCycleEngineTest` · `StageProgressEngineTest` · `DiagnosisEngineTest` · `EventTypeTest` · `GamificationTest` · `WorkManagerInitTest` · `PhotoAnalyzerTest` · `PhotoDiagnosisEngineTest` · `ReminderAlarmSchedulerTest` · `TerpeneProgressionTest` · `AssetCatalogTest` · `PlantDetailStateTest` · `TentNavigationTest` · `GlassConfigTest` · `DestructiveConfirmationTest` · `ProtocolBlocksTest` · `AboutInfoTest`
+`SuperCycleEngineTest` · `StageProgressEngineTest` · `DiagnosisEngineTest` · `EventTypeTest` · `GamificationTest` · `WorkManagerInitTest` · `PhotoAnalyzerTest` · `PhotoDiagnosisEngineTest` · `ReminderAlarmSchedulerTest` · `TerpeneProgressionTest` · `AssetCatalogTest` · `PlantDetailStateTest` · `TentNavigationTest` · `GlassConfigTest` · `DestructiveConfirmationTest` · `ProtocolBlocksTest` · `AboutInfoTest` · `CalendarWindowTest` · `ReminderCancellationTest` · `ReminderEditingTest` · `PlantEditFormTest` · `BreedingFormTest` · `TerpeneQuizTest` · `TerpeneXpTest` · `TerpeneBlenderTest` · `PunnettSquareTest` · `BreedingChapterTest` · `BreedingProgressTest` · `AccentPaletteTest` · `AppTopBarTest` · `HomeStatTileTest` · `AppNavigationRouteTest`
 
 `AssetCatalogTest` deserializa ambos catálogos **con las mismas clases
 `@Serializable` que usa la app**, de modo que un campo renombrado rompe el
