@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.FilterAltOff
 import androidx.compose.material.icons.filled.Quiz
+import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
@@ -57,6 +58,7 @@ fun TerpenesScreen(
     val glass = themeState.glassTokens
     var showQuiz by remember { mutableStateOf(false) }
     var showBadges by remember { mutableStateOf(false) }
+    var showBlender by remember { mutableStateOf(false) }
 
     Box {
         FloatingOrbBackground(accentColor1 = accent, accentColor2 = scheme.tertiary)
@@ -89,6 +91,9 @@ fun TerpenesScreen(
                         style = MaterialTheme.typography.labelSmall,
                         color = scheme.onSurfaceVariant
                     )
+                }
+                IconButton(onClick = { showBlender = true }) {
+                    Icon(Icons.Filled.Science, contentDescription = "Master Blender", tint = accent)
                 }
                 IconButton(onClick = { showBadges = true }) {
                     Icon(Icons.Filled.Star, contentDescription = "Medallas", tint = accent)
@@ -185,12 +190,21 @@ fun TerpenesScreen(
         TerpeneQuizDialog(
             pool = vm.terpenes.ifEmpty { emptyList() },
             onDismiss = { showQuiz = false },
-            onAnswer = vm::recordQuiz
+            onAnswer = vm::recordQuiz,
+            onCompleted = vm::recordQuizCompleted
         )
     }
 
     if (showBadges) {
         BadgesDialog(badges = vm.badges, onDismiss = { showBadges = false })
+    }
+
+    if (showBlender) {
+        MasterBlenderDialog(
+            catalog = vm.terpenes,
+            themeState = themeState,
+            onDismiss = { showBlender = false }
+        )
     }
 }
 
