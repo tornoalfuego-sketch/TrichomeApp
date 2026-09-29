@@ -49,6 +49,10 @@ fun JournalScreen(
 
     LaunchedEffect(plantId) { vm.loadEvents(plantId) }
 
+    // Collected as state so the plant list reacts to the database instead of
+    // being sampled once during composition.
+    val plants by vm.plants.collectAsState()
+
     var selectedType by remember { mutableStateOf(EventType.IRRIGATION) }
     // Multi-plant selection (enabled in global mode)
     var multiSelection by remember { mutableStateOf(plantId == null) }
@@ -101,7 +105,7 @@ fun JournalScreen(
                                         onClick = { selectedPlantIds = emptySet() }
                                     )
                                 }
-                                items(vm.plants.value, key = { it.id }) { p ->
+                                items(plants, key = { it.id }) { p ->
                                     GlassChip(
                                         (if (multiSelection) "☑️ " else "") + p.name,
                                         selected = selectedPlantIds.contains(p.id),
@@ -119,6 +123,13 @@ fun JournalScreen(
                     }
                 }
 
+                // Resolved once, above both cards: `resolveTargets` is a composable
+                // so it cannot be called from the lambdas below, and an empty
+                // result is the silent-save trap (nothing gets written).
+                val targetPlants = resolveTargets(
+                    plants, plantId, multiSelection, selectedPlantIds
+                )
+
                 // ── Dynamic event form (horizontal carousel of types) ───
                 GlassCard(accentColor = accent, glassOpacity = themeState.glassTokens.glassOpacity) {
                     Column(modifier = Modifier.padding(12.dp)) {
@@ -134,10 +145,14 @@ fun JournalScreen(
                         }
                         Spacer(Modifier.height(8.dp))
 
-                        val targetPlants = resolveTargets(vm.plants.value, plantId, multiSelection, selectedPlantIds)
                         Text(
-                            "Aplica a: " + targetPlants.joinToString { it.name }.ifBlank { "—" },
-                            style = MaterialTheme.typography.bodySmall
+                            text = if (targetPlants.isEmpty()) {
+                                "⚠ Sin planta seleccionada: elige una planta arriba para poder guardar"
+                            } else {
+                                "Aplica a: " + targetPlants.joinToString { it.name }
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (targetPlants.isEmpty()) accent else MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
                         DynamicEventForm(
@@ -145,14 +160,18 @@ fun JournalScreen(
                             accent = accent,
                             backdrop = themeState.glassTokens.glassOpacity,
                             onSave = { form ->
+                                if (targetPlants.isEmpty()) {
+                                    scope.launch { vm.reportSaveError("No hay ninguna planta seleccionada. Elige una antes de guardar el evento.") }
+                                    return@DynamicEventForm
+                                }
                                 val groupId = if (targetPlants.size > 1) UUID.randomUUID().toString() else null
                                 scope.launch {
                                     targetPlants.forEach { p ->
                                         vm.addEvent(form.toGrowEvent(p.id, groupId))
                                     }
+                                    // Refresh only after the writes are queued.
+                                    vm.loadEvents(plantId)
                                 }
-                                // keep the journal fresh
-                                scope.launch { vm.loadEvents(plantId) }
                             }
                         )
                     }
@@ -161,11 +180,12 @@ fun JournalScreen(
                 // ── Reminder quick-create ────────────────────────────────
                 ReminderQuickCard(
                     accent = accent,
-                    targetPlants = resolveTargets(vm.plants.value, plantId, multiSelection, selectedPlantIds),
-                    onCreated = {
-                        ReminderSchedulerWorker.syncNow(context)
-                    },
-                    onPersist = { r -> scope.launch { vm.persistReminder(r) } }
+                    targetPlants = targetPlants,
+                    onCreated = { ReminderSchedulerWorker.syncNow(context) },
+                    onPersist = { r ->
+                        val targets = targetPlants.map { it.id }
+                        scope.launch { vm.persistReminder(r, targets) }
+                    }
                 )
 
                 // ── List ─────────────────────────────────────────────────

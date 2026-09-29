@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
@@ -25,10 +26,22 @@ private val MainTabItems = listOf(
     BottomBarItem("home", "Inicio", Icons.Filled.Home, Icons.Filled.Home),
     BottomBarItem("tents", "Carpas", Icons.Filled.Festival, Icons.Filled.Festival),
     BottomBarItem("journal", "Bitácora", Icons.Filled.Book, Icons.AutoMirrored.Filled.MenuBook),
+    // Terpenes and the calendar were reachable only by deep link, so two of the
+    // app's main destinations looked like they did not exist at all.
+    BottomBarItem("terpenes", "Terpenos", Icons.Filled.Science, Icons.Filled.Science),
+    BottomBarItem("calendar", "Calendario", Icons.Filled.CalendarMonth, Icons.Filled.CalendarMonth),
     BottomBarItem("diagnosis", "Diagnóstico", Icons.Filled.MedicalServices, Icons.Filled.MedicalServices),
     BottomBarItem("settings", "Ajustes", Icons.Filled.Settings, Icons.Filled.Settings)
 )
 
+/**
+ * Floating, translucent bottom navigation.
+ *
+ * The container is derived from the active colour scheme instead of a hardcoded
+ * black, so the bar keeps its contrast on both the dark and the light theme.
+ * A hairline top border plus a bottom content inset keep it visually detached
+ * from the scrolling content behind it.
+ */
 @Composable
 fun GlassmorphicBottomBar(
     currentRoute: String,
@@ -36,30 +49,51 @@ fun GlassmorphicBottomBar(
     themeState: TrichomeThemeState,
     modifier: Modifier = Modifier
 ) {
-    val accent = themeState.colorScheme().primary
+    val scheme = themeState.colorScheme()
+    val accent = scheme.primary
+    val alpha = panelAlphaFor(themeState.glassTokens.glassOpacity)
 
-    NavigationBar(
-        modifier = modifier.fillMaxWidth(),
-        containerColor = Color.Black.copy(alpha = (themeState.glassTokens.glassOpacity + 0.25f).coerceAtMost(0.9f))
-    ) {
-        MainTabItems.forEach { item ->
-            val selected = currentRoute.startsWith(item.route)
-            NavigationBarItem(
-                selected = selected,
-                onClick = { onNavigate(item.route) },
-                icon = {
-                    Icon(
-                        imageVector = if (selected) item.selectedIcon else item.icon,
-                        contentDescription = item.label
+    Column(modifier = modifier.fillMaxWidth()) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(
+                            accent.copy(alpha = 0f),
+                            accent.copy(alpha = 0.45f),
+                            accent.copy(alpha = 0f)
+                        )
                     )
-                },
-                label = { Text(item.label, style = MaterialTheme.typography.labelSmall) },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = accent,
-                    selectedTextColor = accent,
-                    indicatorColor = accent.copy(alpha = 0.18f)
                 )
-            )
+        )
+        NavigationBar(
+            modifier = Modifier.fillMaxWidth(),
+            containerColor = scheme.surface.copy(alpha = alpha),
+            tonalElevation = 0.dp
+        ) {
+            MainTabItems.forEach { item ->
+                val selected = currentRoute.startsWith(item.route)
+                NavigationBarItem(
+                    selected = selected,
+                    onClick = { onNavigate(item.route) },
+                    icon = {
+                        Icon(
+                            imageVector = if (selected) item.selectedIcon else item.icon,
+                            contentDescription = item.label
+                        )
+                    },
+                    label = { Text(item.label, style = MaterialTheme.typography.labelSmall) },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = accent,
+                        selectedTextColor = scheme.onSurface,
+                        indicatorColor = accent.copy(alpha = 0.20f),
+                        unselectedIconColor = scheme.onSurfaceVariant,
+                        unselectedTextColor = scheme.onSurfaceVariant
+                    )
+                )
+            }
         }
     }
 }

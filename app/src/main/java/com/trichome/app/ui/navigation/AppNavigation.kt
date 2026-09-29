@@ -17,6 +17,7 @@ import com.trichome.app.ui.screens.plant.PlantDetailScreen
 import com.trichome.app.ui.screens.protocol.ProtocolScreen
 import com.trichome.app.ui.screens.settings.SettingsScreen
 import com.trichome.app.ui.screens.tent.TentListScreen
+import com.trichome.app.ui.screens.terpenes.TerpeneDetailScreen
 import com.trichome.app.ui.screens.terpenes.TerpenesScreen
 import com.trichome.app.ui.theme.TrichomeThemeState
 
@@ -77,6 +78,12 @@ fun AppNavigation(
         }
         composable("terpenes") {
             TerpenesScreen(navController, themeState)
+        }
+        composable(
+            "terpene/{terpeneId}"
+        ) { backStackEntry ->
+            val terpeneId = backStackEntry.arguments?.getString("terpeneId").orEmpty()
+            TerpeneDetailScreen(terpeneId, navController, themeState)
         }
         composable("breeding") {
             BreedingScreen(navController, themeState)

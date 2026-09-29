@@ -9,9 +9,13 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.trichome.app.data.entity.*
 import com.trichome.app.data.repository.*
 import com.trichome.app.di.AppContainer
+import com.trichome.app.domain.vision.PhotoAnalyzer
 import com.trichome.app.model.*
+import com.trichome.app.worker.ReminderAlarmScheduler
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /** Factory helper: `viewModelFactory { initializer { ... } }` (per architecture rules). */
 @Composable
@@ -300,11 +304,16 @@ class JournalViewModel(container: AppContainer) : ViewModel() {
     private val eventRepo = container.eventRepository
     private val plantRepo = container.plantRepository
     private val reminderRepo = container.reminderRepository
+    private val appContext = container.application.applicationContext
 
     val plants: StateFlow<List<Plant>> = plantRepo.getAllPlants()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     var events by mutableStateOf<List<GrowEvent>>(emptyList())
+        private set
+
+    /** Non-null when the last save attempt was rejected. */
+    var saveError by mutableStateOf<String?>(null)
         private set
 
     fun loadEvents(plantId: Long? = null) {
@@ -322,8 +331,45 @@ class JournalViewModel(container: AppContainer) : ViewModel() {
         viewModelScope.launch { eventRepo.deleteEvent(event) }
     }
 
-    fun persistReminder(reminder: Reminder) {
-        viewModelScope.launch { reminderRepo.insertReminder(reminder) }
+    fun clearSaveError() {
+        saveError = null
+    }
+
+    /** Lets the UI report a rejected save (for example: no plant selected). */
+    fun reportSaveError(message: String) {
+        saveError = message
+    }
+
+    /**
+     * Persists a reminder for every target plant and arms a real system alarm.
+     *
+     * The number of rows actually written is reported through [saveError]: with
+     * no target selected this used to insert nothing while still looking saved.
+     */
+    fun persistReminder(reminder: Reminder, plantIds: List<Long>) {
+        viewModelScope.launch {
+            if (plantIds.isEmpty()) {
+                saveError = "Selecciona al menos una planta para guardar el recordatorio."
+                return@launch
+            }
+            var written = 0
+            var armedAll = true
+            plantIds.forEach { plantId ->
+                val draft = reminder.copy(id = 0L, plantId = plantId)
+                val id = runCatching { reminderRepo.insertReminder(draft) }.getOrNull() ?: return@forEach
+                written++
+                if (id > 0) {
+                    if (!ReminderAlarmScheduler.schedule(appContext, draft.copy(id = id))) {
+                        armedAll = false
+                    }
+                }
+            }
+            saveError = when {
+                written == 0 -> "No se pudo guardar el recordatorio."
+                !armedAll -> "Recordatorio guardado, pero el sistema no permitio programar la alarma exacta. Revisa los permisos de Ajustes."
+                else -> null
+            }
+        }
     }
 }
 
@@ -333,6 +379,7 @@ class CalendarViewModel(container: AppContainer) : ViewModel() {
     private val eventRepo = container.eventRepository
     private val reminderRepo = container.reminderRepository
     private val plantRepo = container.plantRepository
+    private val appContext = container.application.applicationContext
 
     val plants: StateFlow<List<Plant>> = plantRepo.getAllPlants()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -342,11 +389,64 @@ class CalendarViewModel(container: AppContainer) : ViewModel() {
     var reminders by mutableStateOf<List<Reminder>>(emptyList())
         private set
 
+    /** Day currently expanded in the detail list, in epoch millis. */
+    var selectedDay by mutableStateOf<Long?>(null)
+        private set
+
+    var saveError by mutableStateOf<String?>(null)
+        private set
+
+    fun selectDay(millis: Long?) {
+        selectedDay = millis
+    }
+
+    fun clearSaveError() {
+        saveError = null
+    }
+
     fun loadMonth(from: Long, to: Long) {
         viewModelScope.launch {
             events = eventRepo.getEventsBetween(from, to)
             reminders = reminderRepo.getActiveRemindersSnapshot()
         }
+    }
+
+    /**
+     * Writes an event on a specific day.
+     *
+     * [onSaved] receives the real outcome so the calendar sheet only closes on a
+     * successful write instead of pretending an insert happened.
+     */
+    fun addEvent(event: GrowEvent, onSaved: (Boolean) -> Unit = {}) {
+        viewModelScope.launch {
+            val id = runCatching { eventRepo.insertEvent(event) }.getOrNull()
+            if (id != null && id > 0) {
+                saveError = null
+                onSaved(true)
+            } else {
+                saveError = "No se pudo guardar el evento en el calendario."
+                onSaved(false)
+            }
+        }
+    }
+
+    /** Writes a reminder and arms its exact alarm. */
+    fun addReminder(reminder: Reminder, onSaved: (Boolean) -> Unit = {}) {
+        viewModelScope.launch {
+            val id = runCatching { reminderRepo.insertReminder(reminder) }.getOrNull()
+            if (id != null && id > 0) {
+                ReminderAlarmScheduler.schedule(appContext, reminder.copy(id = id))
+                saveError = null
+                onSaved(true)
+            } else {
+                saveError = "No se pudo guardar el recordatorio."
+                onSaved(false)
+            }
+        }
+    }
+
+    fun deleteEvent(event: GrowEvent) {
+        viewModelScope.launch { eventRepo.deleteEvent(event) }
     }
 
     /** Fake task markers: recurring reminders mapped onto the month window. */
@@ -369,27 +469,142 @@ class CalendarViewModel(container: AppContainer) : ViewModel() {
 
 class TerpenesViewModel(container: AppContainer) : ViewModel() {
     private val repo = container.terpenesRepository
+    private val progress = container.terpeneProgress
 
     var terpenes by mutableStateOf<List<Terpene>>(emptyList())
         private set
     var query by mutableStateOf("")
         private set
+    var favoritesOnly by mutableStateOf(false)
+        private set
+    var familyFilter by mutableStateOf<String?>(null)
+        private set
+    var effectFilter by mutableStateOf<String?>(null)
+        private set
+    var aromaFilter by mutableStateOf<String?>(null)
+        private set
+
+    var families by mutableStateOf<List<String>>(emptyList())
+        private set
+    var effectGroups by mutableStateOf<List<String>>(emptyList())
+        private set
+    var aromaFamilies by mutableStateOf<List<String>>(emptyList())
+        private set
+
+    /* Progression */
+    var discovered by mutableStateOf<Set<String>>(emptySet())
+        private set
+    var xp by mutableStateOf(0)
+        private set
+    var streak by mutableStateOf(0)
+        private set
+    var quizzesCorrect by mutableStateOf(0)
+        private set
+
+    val level: Int get() = TerpeneProgression.levelFor(xp)
+    val levelProgress: Float get() = TerpeneProgression.levelProgress(xp)
+    val rankTitle: String get() = TerpeneProgression.rankTitle(level)
+
+    val badges: List<Badge>
+        get() {
+            val completedFamilies = terpenes
+                .filter { it.family.isNotBlank() }
+                .groupBy { it.family }
+                .count { (_, group) -> group.all { it.id in discovered } }
+            return TerpeneProgression.badges(
+                discoveredCount = discovered.size,
+                familiesCompleted = completedFamilies,
+                favorites = terpenes.count { it.isFavorite },
+                streak = streak,
+                quizzesCorrect = quizzesCorrect
+            )
+        }
 
     init {
-        viewModelScope.launch { terpenes = repo.getTerpenes() }
+        viewModelScope.launch {
+            val all = repo.getTerpenes()
+            families = all.map { it.family }.filter { it.isNotBlank() }.distinct().sorted()
+            effectGroups = all.map { it.effectGroup }.distinct().sorted()
+            aromaFamilies = all.map { it.aromaFamily }.distinct().sorted()
+            refresh()
+        }
+        viewModelScope.launch {
+            progress.progress.collect { p ->
+                discovered = p.discovered
+                streak = p.streak
+                quizzesCorrect = p.quizCorrect
+                xp = TerpeneProgression.XP_PER_DISCOVERY * p.discovered.size +
+                    TerpeneProgression.XP_PER_QUIZ_CORRECT * p.quizCorrect
+            }
+        }
+    }
+
+    /** Re-applies every active filter over the cached catalog. */
+    private suspend fun refresh() {
+        var list = repo.search(query)
+        if (favoritesOnly) list = list.filter { it.isFavorite }
+        familyFilter?.let { f -> list = list.filter { it.family == f } }
+        effectFilter?.let { f -> list = list.filter { it.effectGroup == f } }
+        aromaFilter?.let { f -> list = list.filter { it.aromaFamily == f } }
+        terpenes = list
     }
 
     fun updateQuery(q: String) {
         query = q
-        viewModelScope.launch { terpenes = repo.search(q) }
+        viewModelScope.launch { refresh() }
+    }
+
+    fun toggleFavoritesOnly() {
+        favoritesOnly = !favoritesOnly
+        viewModelScope.launch { refresh() }
+    }
+
+    fun toggleFamilyFilter(family: String?) {
+        familyFilter = if (familyFilter == family) null else family
+        viewModelScope.launch { refresh() }
+    }
+
+    fun toggleEffectFilter(group: String?) {
+        effectFilter = if (effectFilter == group) null else group
+        viewModelScope.launch { refresh() }
+    }
+
+    fun toggleAromaFilter(family: String?) {
+        aromaFilter = if (aromaFilter == family) null else family
+        viewModelScope.launch { refresh() }
+    }
+
+    fun clearFilters() {
+        query = ""
+        favoritesOnly = false
+        familyFilter = null
+        effectFilter = null
+        aromaFilter = null
+        viewModelScope.launch { refresh() }
     }
 
     fun toggleFavorite(terpene: Terpene) {
         viewModelScope.launch {
             repo.toggleFavorite(terpene)
-            terpenes = repo.search(query)
+            refresh()
         }
     }
+
+    /**
+     * Registers that the full card of [terpene] was opened.
+     *
+     * @return true the first time it is seen, i.e. when experience was awarded.
+     */
+    suspend fun markDiscovered(terpene: Terpene): Boolean =
+        progress.discover(terpene.id, java.time.LocalDate.now().toEpochDay())
+
+    fun recordQuiz(correct: Boolean) {
+        viewModelScope.launch { progress.recordQuiz(correct) }
+    }
+
+    suspend fun detail(id: String): Terpene? = repo.getTerpene(id)
+
+    suspend fun partners(terpene: Terpene): List<Terpene> = repo.resolve(terpene.pairsWith)
 }
 
 /* ─────────────────────────── Breeding ─────────────────────────────────── */
@@ -434,6 +649,7 @@ class BreedingViewModel(container: AppContainer) : ViewModel() {
 
 class DiagnosisViewModel(container: AppContainer) : ViewModel() {
     private val grow = container.growRepository
+    private val content = container.diagnosisContent
 
     val plants: StateFlow<List<Plant>> = grow.allPlants()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -445,16 +661,101 @@ class DiagnosisViewModel(container: AppContainer) : ViewModel() {
     var latestImagePath by mutableStateOf<String?>(null)
         private set
 
+    /* Photo analysis */
+    var photoFeatures by mutableStateOf<PhotoAnalyzer.Features?>(null)
+        private set
+    var photoMatches by mutableStateOf<List<PhotoDiagnosisEngine.Match>>(emptyList())
+        private set
+    var analyzing by mutableStateOf(false)
+        private set
+    var photoError by mutableStateOf<String?>(null)
+        private set
+
+    /* Encyclopedia */
+    var conditions by mutableStateOf<List<DiagnosisCondition>>(emptyList())
+        private set
+
+    init {
+        viewModelScope.launch { conditions = content.getConditions() }
+    }
+
     fun toggleSymptom(id: String) {
         selectedSymptoms = if (selectedSymptoms.contains(id)) selectedSymptoms - id else selectedSymptoms + id
     }
 
+    /**
+     * Stores the photo and analyses it.
+     *
+     * The previous implementation only remembered the file path and never read
+     * it, so the verdict came only from the ticked symptoms and the picture was
+     * decorative.
+     */
     fun setImagePath(path: String?) {
         latestImagePath = path
+        photoError = null
+        if (path == null) {
+            photoFeatures = null
+            photoMatches = emptyList()
+            return
+        }
+        analyze(path)
+    }
+
+    fun analyze(path: String) {
+        viewModelScope.launch {
+            analyzing = true
+            photoError = null
+            val features = withContext(Dispatchers.Default) {
+                runCatching { measure(path) }.getOrNull()
+            }
+            analyzing = false
+            if (features == null) {
+                photoFeatures = null
+                photoMatches = emptyList()
+                photoError = "No se pudo leer la imagen. Prueba con otra foto."
+                return@launch
+            }
+            photoFeatures = features
+            if (features.isUsable) {
+                photoMatches = PhotoDiagnosisEngine.rank(features, conditions)
+            } else {
+                photoMatches = emptyList()
+                photoError =
+                    "La imagen no muestra suficiente planta. Acercate a la hoja y vuelve a intentarlo."
+            }
+            if (result != null) recompute()
+        }
+    }
+
+    /** Decodes, down-samples and measures the photo. */
+    private fun measure(path: String): PhotoAnalyzer.Features? {
+        val bitmap = com.trichome.app.ui.screens.diagnosis.CameraCaptureActivity
+            .decodeSampled(path) ?: return null
+        val longest = maxOf(bitmap.width, bitmap.height)
+        val scaled = if (longest > ANALYSIS_EDGE) {
+            val ratio = ANALYSIS_EDGE.toFloat() / longest
+            android.graphics.Bitmap.createScaledBitmap(
+                bitmap,
+                (bitmap.width * ratio).toInt().coerceAtLeast(1),
+                (bitmap.height * ratio).toInt().coerceAtLeast(1),
+                true
+            )
+        } else bitmap
+        val pixels = IntArray(scaled.width * scaled.height)
+        scaled.getPixels(pixels, 0, scaled.width, 0, 0, scaled.width, scaled.height)
+        if (scaled !== bitmap) scaled.recycle()
+        bitmap.recycle()
+        return PhotoAnalyzer.analyze(pixels, scaled.width, scaled.height)
     }
 
     fun diagnose() {
-        result = DiagnosisEngine.diagnose(selectedSymptoms)
+        recompute()
+    }
+
+    /** Merges the symptom engine with the photographic evidence. */
+    private fun recompute() {
+        val symptoms = DiagnosisEngine.diagnose(selectedSymptoms)
+        result = PhotoDiagnosisEngine.combine(photoMatches, symptoms, conditions)
     }
 
     fun reset() {
@@ -469,12 +770,18 @@ class DiagnosisViewModel(container: AppContainer) : ViewModel() {
             grow.addEvent(
                 plantId = plantId,
                 type = type,
-                notes = notes?.takeIf { it.isNotBlank() } ?: "Diagnóstico: ${diag.condition} (${(diag.confidence * 100).toInt()}%)",
+                notes = notes?.takeIf { it.isNotBlank() }
+                    ?: "Diagnóstico: ${diag.condition} (${(diag.confidence * 100).toInt()}%)",
                 diagnosisResult = diag.condition,
                 diagnosisCertainty = diag.confidence,
                 imagePath = latestImagePath
             )
         }
+    }
+
+    private companion object {
+        /** Longest edge fed to the analyser; the measures are ratio based. */
+        const val ANALYSIS_EDGE = 512
     }
 }
 
