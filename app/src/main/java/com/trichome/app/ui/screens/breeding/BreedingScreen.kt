@@ -43,6 +43,7 @@ fun BreedingScreen(
     val vm = appViewModel { BreedingViewModel(it) }
     val scope = rememberCoroutineScope()
     val accent = themeState.colorScheme().primary
+    val projects by vm.projects.collectAsState()
     val container = container()
 
     var tab by remember { mutableIntStateOf(1) } // 0 = teoría, 1 = proyectos
@@ -103,7 +104,7 @@ fun BreedingScreen(
                 when (tab) {
                     0 -> TheoryTab(generations, techniques, glossary, accent, themeState.glassTokens.glassOpacity)
                     else -> ProjectsTab(
-                        projects = vm.projects.value,
+                        projects = projects,
                         crosses = vm.crosses.groupBy { it.projectId },
                         accent = accent,
                         glassOpacity = themeState.glassTokens.glassOpacity,

@@ -37,6 +37,7 @@ fun ChartsScreen(
 ) {
     val vm = appViewModel { ChartsViewModel(it) }
     val accent = themeState.colorScheme().primary
+    val plants by vm.plants.collectAsState()
 
     var metric by remember { mutableStateOf("ph") }
     val level = Gamification.levelFromXp(vm.xp)
@@ -112,7 +113,7 @@ fun ChartsScreen(
                         item {
                             GlassChip("🌱 Todas", selected = vm.selectedPlantId == null, onClick = { vm.selectPlant(null) })
                         }
-                        items(vm.plants.value, key = { it.id }) { p ->
+                        items(plants, key = { it.id }) { p ->
                             GlassChip(p.name, selected = vm.selectedPlantId == p.id, onClick = { vm.selectPlant(p.id) })
                         }
                     }

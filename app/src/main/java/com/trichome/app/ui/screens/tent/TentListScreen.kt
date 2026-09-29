@@ -32,6 +32,10 @@ fun TentListScreen(
 ) {
     val vm = appViewModel { TentViewModel(it) }
     val accent = themeState.colorScheme().primary
+    // Collected as state: reading `.value` in composition would freeze the
+    // tent and plant lists at their first value and never update.
+    val tents by vm.tents.collectAsState()
+    val plants by vm.plants.collectAsState()
     var showAddTent by remember { mutableStateOf(false) }
     var editingTent by remember { mutableStateOf<GrowTent?>(null) }
 
@@ -61,12 +65,12 @@ fun TentListScreen(
                 Text("🏕️ Carpas de Cultivo", style = MaterialTheme.typography.headlineMedium)
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    vm.tents.value.count { it.isActive }.let { "$it carpa(s) activa(s) · ${vm.plants.value.size} planta(s)" },
+                    tents.count { it.isActive }.let { "$it carpa(s) activa(s) · ${plants.size} planta(s)" },
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Spacer(Modifier.height(16.dp))
 
-                if (vm.tents.value.isEmpty()) {
+                if (tents.isEmpty()) {
                     GlassCard(accentColor = accent) {
                         Column(
                             modifier = Modifier.padding(32.dp).fillMaxWidth(),
@@ -82,14 +86,14 @@ fun TentListScreen(
                     }
                 } else {
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        items(vm.tents.value, key = { it.id }) { tent ->
+                        items(tents, key = { it.id }) { tent ->
                             TentCard(
                                 tent = tent,
-                                plants = vm.plants.value.filter { it.tentId == tent.id }.sortedBy { it.sortOrder },
+                                plants = plants.filter { it.tentId == tent.id }.sortedBy { it.sortOrder },
                                 accent = accent,
                                 glassOpacity = themeState.glassTokens.glassOpacity,
                                 onOpen = {
-                                    navController.navigate("plant_detail/${vm.plants.value.firstOrNull { p -> p.tentId == tent.id }?.id ?: -1}")
+                                    navController.navigate("plant_detail/${plants.firstOrNull { p -> p.tentId == tent.id }?.id ?: -1}")
                                 },
                                 onEdit = { editingTent = tent },
                                 onDelete = { vm.deleteTent(tent) },

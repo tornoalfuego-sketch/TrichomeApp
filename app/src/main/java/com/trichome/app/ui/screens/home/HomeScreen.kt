@@ -30,13 +30,20 @@ fun HomeScreen(
 ) {
     val vm = appViewModel { HomeViewModel(it) }
     val accent = themeState.colorScheme().primary
-    val todayCount = remember(vm.events.value) {
+    // Read as state, not as `.value`: sampling the flow during composition would
+    // capture whatever happened to be there when the screen was first drawn and
+    // never recompose when the database emits a change.
+    val events by vm.events.collectAsState()
+    val plants by vm.plants.collectAsState()
+    val tents by vm.tents.collectAsState()
+    val reminders by vm.reminders.collectAsState()
+    val todayCount = remember(events) {
         val todayStart = java.time.LocalDate.now()
             .atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
-        vm.events.value.count { it.timestamp >= todayStart }
+        events.count { it.timestamp >= todayStart }
     }
-    val activePlants = vm.plants.value.count { it.isActive }
-    val activeTents = vm.tents.value.count { it.isActive }
+    val activePlants = plants.count { it.isActive }
+    val activeTents = tents.count { it.isActive }
 
     Box {
         FloatingOrbBackground(accentColor1 = accent, accentColor2 = themeState.accentColor)
@@ -103,7 +110,7 @@ fun HomeScreen(
                 GlassCard(accentColor = accent, glassOpacity = themeState.glassTokens.glassOpacity) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("⏰ Próximos recordatorios", style = MaterialTheme.typography.titleMedium)
-                        val next = vm.reminders.value.sortedBy { it.reminderTime }.take(3)
+                        val next = reminders.sortedBy { it.reminderTime }.take(3)
                         if (next.isEmpty()) {
                             Text("Sin recordatorios activos", style = MaterialTheme.typography.bodyMedium)
                         } else {
