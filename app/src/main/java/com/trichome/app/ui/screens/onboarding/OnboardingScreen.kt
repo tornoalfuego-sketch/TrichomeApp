@@ -27,6 +27,7 @@ import com.trichome.app.ui.components.accentButtonColors
 import com.trichome.app.ui.components.SolidPanel
 import com.trichome.app.ui.theme.TrichomeThemeState
 import kotlinx.coroutines.launch
+import com.trichome.app.ui.theme.LocalTertiaryText
 
 private data class OnboardingPage(
     val emoji: String,
@@ -140,7 +141,7 @@ fun OnboardingScreen(
                         .clip(CircleShape)
                         .background(
                             if (active) scheme.primary
-                            else scheme.onSurfaceVariant.copy(alpha = 0.3f)
+                            else LocalTertiaryText.current
                         )
                 )
             }

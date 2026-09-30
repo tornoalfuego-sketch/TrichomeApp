@@ -360,10 +360,15 @@ private fun DiagnosisReport(
                     Text(
                         condition.labelEs,
                         style = MaterialTheme.typography.headlineSmall,
-                        // The accent as ink is unreadable on several theme pairs
-                        // (1.57:1 for amber on the light theme); the helper keeps
-                        // it where it carries and falls back where it does not.
-                        color = accentLabelOn(MaterialTheme.colorScheme, accent)
+                        // This label is drawn inside a SolidPanel, so the
+                        // backdrop is `surface` rather than the page background.
+                        // Measuring against the wrong one is how an accent that
+                        // reads 4.94:1 on the page renders at 1.60:1 here.
+                        color = accentLabelOn(
+                            MaterialTheme.colorScheme,
+                            accent,
+                            MaterialTheme.colorScheme.surface
+                        )
                     )
                     Text("Categoría: $categoryLabel", style = MaterialTheme.typography.bodySmall)
                     Text(

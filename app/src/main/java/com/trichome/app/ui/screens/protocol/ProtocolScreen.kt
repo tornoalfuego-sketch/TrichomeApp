@@ -28,6 +28,7 @@ import com.trichome.app.ui.theme.TrichomeThemeState
 import com.trichome.app.viewmodel.ProtocolViewModel
 import com.trichome.app.viewmodel.appViewModel
 import kotlinx.coroutines.launch
+import com.trichome.app.ui.theme.LocalTertiaryText
 
 /**
  * Protocol block editor. Each protocol is a header (name, photoperiod) plus an
@@ -89,7 +90,7 @@ fun ProtocolScreen(
             Text(
                 "Cada protocolo define etapas ordenadas; su progreso se aplica a la planta.",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                color = LocalTertiaryText.current
             )
             Spacer(Modifier.height(14.dp))
 
@@ -236,7 +237,7 @@ private fun ProtocolCard(
             Text(
                 "Preset: ${protocol.presetType} · Inicio: ${formatTime(protocol.lightHours * 60)} / ${formatTime(protocol.darkHours * 60)}",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                color = LocalTertiaryText.current
             )
         }
     }
