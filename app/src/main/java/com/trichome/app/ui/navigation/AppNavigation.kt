@@ -2,10 +2,13 @@ package com.trichome.app.ui.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.trichome.app.ui.screens.breeding.BreedingScreen
 import com.trichome.app.ui.screens.calendar.CalendarScreen
 import com.trichome.app.ui.screens.charts.ChartsScreen
@@ -33,9 +36,39 @@ import com.trichome.app.ui.theme.TrichomeThemeState
 val DECLARED_ROUTES: Set<String> = setOf(
     "home", "tents", "journal", "diagnosis", "settings",
     "calendar", "charts", "terpenes", "breeding",
-    "plant_detail/{plantId}", "protocol/{plantId}",
-    "super_cycle/{plantId}", "journal/{plantId}", "terpene/{terpeneId}"
+    PLANT_ID_ROUTE, PROTOCOL_ID_ROUTE, SUPER_CYCLE_ID_ROUTE, JOURNAL_ID_ROUTE,
+    TERPENE_ID_ROUTE
 )
+
+/** Argument name shared by every plant-scoped route. */
+const val PLANT_ID_ARG: String = "plantId"
+
+/** Argument name for the terpene encyclopedia detail. */
+const val TERPENE_ID_ARG: String = "terpeneId"
+
+const val PLANT_ID_ROUTE: String = "plant_detail/{$PLANT_ID_ARG}"
+const val PROTOCOL_ID_ROUTE: String = "protocol/{$PLANT_ID_ARG}"
+const val SUPER_CYCLE_ID_ROUTE: String = "super_cycle/{$PLANT_ID_ARG}"
+const val JOURNAL_ID_ROUTE: String = "journal/{$PLANT_ID_ARG}"
+const val TERPENE_ID_ROUTE: String = "terpene/{$TERPENE_ID_ARG}"
+
+/**
+ * Reads a `Long` path argument, tolerating a value that arrived as a String.
+ *
+ * Declaring `NavType.LongType` is what makes the argument a Long in the first
+ * place. This is the fallback for a route reached with a hand-built string: the
+ * accessor would throw on a non-numeric segment, and a plant detail is not worth
+ * killing the process over.
+ *
+ * @return the id, or [MISSING_LONG_ARG] when it is absent or unparseable — the
+ *   same sentinel the destinations already treat as "no such plant".
+ */
+const val MISSING_LONG_ARG: Long = 0L
+
+fun NavBackStackEntry.longArg(name: String): Long =
+    arguments?.getLong(name)
+        ?: arguments?.getString(name)?.toLongOrNull()
+        ?: MISSING_LONG_ARG
 
 /**
  * App navigation graph with all routes:
@@ -64,30 +97,46 @@ fun AppNavigation(
         composable("tents") {
             TentListScreen(navController, themeState)
         }
+
+        // A path argument with no `navArgument` block reaches the destination as
+        // a String, so `getLong("plantId")` returned 0 for every plant and the
+        // detail screen reported "No encontramos esta planta" for rows that were
+        // sitting right there in the list. Verified on a device: plant id 1
+        // existed in Room and the screen still refused to open it.
+        //
+        // Declaring the type is the fix. `toLongOrNull()` is also applied as a
+        // belt-and-braces read, because a hand-built route with a non-numeric
+        // segment should not crash the argument accessor.
         composable(
-            "plant_detail/{plantId}"
+            route = PLANT_ID_ROUTE,
+            arguments = listOf(navArgument(PLANT_ID_ARG) { type = NavType.LongType })
         ) { backStackEntry ->
-            val plantId = backStackEntry.arguments?.getLong("plantId") ?: 0L
+            val plantId = backStackEntry.longArg(PLANT_ID_ARG)
             PlantDetailScreen(plantId, navController, themeState)
         }
+        // Same defect as plant_detail: an untyped path argument is a String, so
+        // getLong returned 0. Protocol, supercycle and the plant journal were all
+        // opening plant 0 or nothing at all.
         composable(
-            "protocol/{plantId}"
+            route = PROTOCOL_ID_ROUTE,
+            arguments = listOf(navArgument(PLANT_ID_ARG) { type = NavType.LongType })
         ) { backStackEntry ->
-            val plantId = backStackEntry.arguments?.getLong("plantId") ?: 0L
-            ProtocolScreen(plantId, navController, themeState)
+            ProtocolScreen(backStackEntry.longArg(PLANT_ID_ARG), navController, themeState)
         }
         composable(
-            "super_cycle/{plantId}"
+            route = SUPER_CYCLE_ID_ROUTE,
+            arguments = listOf(navArgument(PLANT_ID_ARG) { type = NavType.LongType })
         ) { backStackEntry ->
-            val plantId = backStackEntry.arguments?.getLong("plantId") ?: 0L
-            SuperCycleScreen(plantId, navController, themeState)
+            SuperCycleScreen(backStackEntry.longArg(PLANT_ID_ARG), navController, themeState)
         }
         composable("journal") {
             JournalScreen(navController, themeState, plantId = null)
         }
-        composable("journal/{plantId}") { backStackEntry ->
-            val plantId = backStackEntry.arguments?.getLong("plantId") ?: 0L
-            JournalScreen(navController, themeState, plantId)
+        composable(
+            route = JOURNAL_ID_ROUTE,
+            arguments = listOf(navArgument(PLANT_ID_ARG) { type = NavType.LongType })
+        ) { backStackEntry ->
+            JournalScreen(navController, themeState, backStackEntry.longArg(PLANT_ID_ARG))
         }
         composable("calendar") {
             CalendarScreen(navController, themeState)
@@ -99,9 +148,10 @@ fun AppNavigation(
             TerpenesScreen(navController, themeState)
         }
         composable(
-            "terpene/{terpeneId}"
+            route = TERPENE_ID_ROUTE,
+            arguments = listOf(navArgument(TERPENE_ID_ARG) { type = NavType.StringType })
         ) { backStackEntry ->
-            val terpeneId = backStackEntry.arguments?.getString("terpeneId").orEmpty()
+            val terpeneId = backStackEntry.arguments?.getString(TERPENE_ID_ARG).orEmpty()
             TerpeneDetailScreen(terpeneId, navController, themeState)
         }
         composable("breeding") {
