@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -23,7 +22,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -43,6 +41,8 @@ import com.trichome.app.model.requiredCorrectFor
 import com.trichome.app.model.scoreBreedingQuiz
 import com.trichome.app.ui.components.SolidPanel
 import kotlinx.coroutines.launch
+import com.trichome.app.ui.theme.LocalTertiaryText
+import androidx.compose.runtime.remember
 
 /**
  * Theory tab: the chapters, their quizzes, and the medals they award.
@@ -55,6 +55,15 @@ import kotlinx.coroutines.launch
  *
  * Every chapter is open. See [BreedingChapters.ALL_CHAPTERS_OPEN] for why the
  * medals are the gate rather than the text.
+ *
+ * It does not scroll. [com.trichome.app.ui.screens.breeding.TheoryTab] -- the
+ * host that swaps between chapters, the Punnett square and the library -- already
+ * owns the vertical scroll, and a second one inside a scrollable is measured with
+ * an infinite maximum height, which Compose rejects at runtime. Verified on a
+ * device: tapping "Teoría" killed the process with
+ * `IllegalStateException: Vertically scrollable component was measured with an
+ * infinity maximum height constraints`. The Punnett square had the same defect
+ * and the same crash.
  */
 @Composable
 fun TheoryChaptersTab(
@@ -65,9 +74,7 @@ fun TheoryChaptersTab(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .verticalScroll(rememberScrollState()),
+        modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text("📖 Teoría de breeding", style = MaterialTheme.typography.titleMedium)
@@ -75,7 +82,7 @@ fun TheoryChaptersTab(
             "Cada capítulo termina con un cuestionario corto. Las medallas no caducan: " +
                 "repetir el cuestionario nunca te quita lo que ya ganaste.",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
+            color = LocalTertiaryText.current
         )
 
         if (chapters.isEmpty()) {
@@ -124,7 +131,7 @@ private fun ChapterCard(
             Text(
                 chapter.summaryEs,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
+                color = LocalTertiaryText.current
             )
 
             Row(
@@ -141,7 +148,7 @@ private fun ChapterCard(
                     Text(
                         "${progress.totalMedals} medallas",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        color = LocalTertiaryText.current
                     )
                 }
             }
@@ -154,7 +161,7 @@ private fun ChapterCard(
                 Text(
                     "Este capítulo aún no está disponible.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    color = LocalTertiaryText.current
                 )
             }
 
@@ -245,7 +252,7 @@ private fun ProvenanceBadge(chapter: BreedingChapter, accent: Color) {
         Text(
             label,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+            color = LocalTertiaryText.current
         )
     }
 }
@@ -267,7 +274,7 @@ private fun MedalChip(tier: BreedingMedalTier, banked: Boolean, accent: Color) {
         Text(
             tier.labelEs,
             style = MaterialTheme.typography.labelSmall,
-            color = if (banked) scheme.onSurface else scheme.onSurface.copy(alpha = 0.5f)
+            color = if (banked) scheme.onSurface else LocalTertiaryText.current
         )
     }
 }
@@ -300,7 +307,7 @@ private fun QuizSection(
                 "$question preguntas · ${requiredCorrectFor(BreedingMedalTier.BRONZE, question)} para bronce, " +
                     "$silverBar para plata, $question para oro",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                color = LocalTertiaryText.current
             )
 
             chapter.questions.forEachIndexed { index, q ->
@@ -358,7 +365,7 @@ private fun QuizSection(
                     Text(
                         "Tu mejor medalla en este capítulo sigue siendo ${bestTier.labelEs}.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        color = LocalTertiaryText.current
                     )
                 }
             }
@@ -411,7 +418,7 @@ private fun QuestionBlock(
             Text(
                 explanation,
                 style = MaterialTheme.typography.bodySmall,
-                color = scheme.onSurface.copy(alpha = 0.75f)
+                color = LocalTertiaryText.current
             )
         }
     }

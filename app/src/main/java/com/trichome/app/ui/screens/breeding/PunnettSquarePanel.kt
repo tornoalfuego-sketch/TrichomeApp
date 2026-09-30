@@ -14,13 +14,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,6 +34,8 @@ import com.trichome.app.model.PunnettSquare
 import com.trichome.app.model.genotypeLabelEs
 import com.trichome.app.model.percentLabelEs
 import com.trichome.app.ui.components.SolidPanel
+import com.trichome.app.ui.theme.LocalTertiaryText
+import androidx.compose.runtime.remember
 
 /**
  * Interactive Punnett square.
@@ -48,6 +48,10 @@ import com.trichome.app.ui.components.SolidPanel
  * model has exactly three genotypes, so offering anything else would be offering
  * an input the parser can only reject. [Punnett.square] still validates, because
  * a stale or restored state must not be able to render a nonsense square.
+ *
+ * It does not scroll: the hosting tab owns the vertical scroll, and a second
+ * scrollable nested inside one is measured with an infinite maximum height,
+ * which Compose rejects at runtime. It was the same crash as the theory tab.
  */
 @Composable
 fun PunnettSquarePanel(
@@ -60,16 +64,14 @@ fun PunnettSquarePanel(
     val result = remember(first, second) { Punnett.square(first.notation, second.notation) }
 
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .verticalScroll(rememberScrollState()),
+        modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text("🧬 Simulador de herencia (cuadro de Punnett)", style = MaterialTheme.typography.titleMedium)
         Text(
             "Elige el genotipo de cada progenitor y mira cómo se reparte el rasgo en la descendencia.",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
+            color = LocalTertiaryText.current
         )
 
         ParentPicker(
@@ -125,7 +127,7 @@ private fun ParentPicker(
         Text(
             genotypeLabelEs(selected),
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+            color = LocalTertiaryText.current
         )
     }
 }
@@ -183,12 +185,12 @@ private fun SquareResult(
                 Text(
                     "Fenotipo ${square.phenotypeRatioEs()} · Genotipo ${square.genotypeRatioEs()}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
+                    color = LocalTertiaryText.current
                 )
                 Text(
                     "Estas son medias de población, no un resultado garantizado para cada planta.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    color = LocalTertiaryText.current
                 )
             }
         }
@@ -257,7 +259,7 @@ private fun PunnettGrid(square: PunnettSquare, accent: Color) {
                             Text(
                                 percentLabelEs(cell.probability),
                                 style = MaterialTheme.typography.labelSmall,
-                                color = scheme.onSurface.copy(alpha = 0.7f)
+                                color = LocalTertiaryText.current
                             )
                         }
                     }
