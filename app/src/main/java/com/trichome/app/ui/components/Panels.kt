@@ -11,6 +11,7 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -78,11 +79,23 @@ fun SolidPanel(
     content: @Composable () -> Unit
 ) {
     val scheme = MaterialTheme.colorScheme
+    // `Color.Unspecified` is Material's "decide for me" sentinel, and `Surface`
+    // does not decide: it publishes whatever it is handed straight into
+    // `LocalContentColor`. So a panel that omitted `contentColor` handed its
+    // whole subtree an *undefined* content colour, and everything inside that
+    // resolved its colour from it -- icons, chevrons, unstyled text -- was painted
+    // black. On a dark panel that is invisible.
+    //
+    // It surfaced as several unrelated reports at once: the tent card's edit and
+    // delete icons, the Master Blender buttons, the reminder text, the plant edit
+    // control. One line in a shared component, not eight patches at the call sites.
+    val resolvedContentColor =
+        if (contentColor == Color.Unspecified) LocalContentColor.current else contentColor
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(cornerRadius.dp),
         color = scheme.surface,
-        contentColor = contentColor,
+        contentColor = resolvedContentColor,
         // Shadow only. Tonal elevation would tint the panel towards `primary`,
         // which is the user-chosen accent, and that is exactly the large tinted
         // surface this component refuses to paint.
