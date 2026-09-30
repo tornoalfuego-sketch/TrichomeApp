@@ -28,10 +28,10 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.trichome.app.data.repository.Terpene
 import com.trichome.app.model.TerpeneProgression
-import com.trichome.app.ui.components.FloatingOrbBackground
-import com.trichome.app.ui.components.GlassCard
-import com.trichome.app.ui.components.GlassChip
-import com.trichome.app.ui.components.GlassmorphicBottomBar
+import com.trichome.app.ui.components.MainBottomBar
+import com.trichome.app.ui.components.accentLabelOn
+import com.trichome.app.ui.components.SelectableChip
+import com.trichome.app.ui.components.SolidPanel
 import com.trichome.app.ui.theme.TrichomeThemeState
 import com.trichome.app.viewmodel.TerpenesViewModel
 import com.trichome.app.viewmodel.appViewModel
@@ -55,135 +55,133 @@ fun TerpenesScreen(
     val scope = rememberCoroutineScope()
     val scheme = themeState.colorScheme()
     val accent = scheme.primary
-    val glass = themeState.glassTokens
     var showQuiz by remember { mutableStateOf(false) }
     var showBadges by remember { mutableStateOf(false) }
     var showBlender by remember { mutableStateOf(false) }
 
-    Box {
-        FloatingOrbBackground(accentColor1 = accent, accentColor2 = scheme.tertiary)
-
-        Scaffold(
-            containerColor = Color.Transparent,
-            bottomBar = {
-                GlassmorphicBottomBar("terpenes", { navController.navigate(it) }, themeState)
-            }
-        ) { padding ->
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(padding)
+    Scaffold(
+        bottomBar = {
+            MainBottomBar("terpenes", { navController.navigate(it) }, themeState)
+        }
+    ) { padding ->
+    Column(
+        Modifier
+            .fillMaxSize()
+            .padding(padding)
+    ) {
+        /* ── Cabecera ─────────────────────────────────────────────── */
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            /* ── Cabecera ─────────────────────────────────────────────── */
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
+            IconButton(onClick = { navController.popBackStack() }) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+            }
+            Column(Modifier.weight(1f)) {
+                Text("📖 Biblia de Terpenos", style = MaterialTheme.typography.titleLarge)
+                Text(
+                    "${vm.terpenes.size} compuestos · ${vm.discovered.size} descubiertos",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = scheme.onSurfaceVariant
+                )
+            }
+            // Header icons carry the accent only where it stays legible; on a
+            // light theme with a pale accent the glyph would otherwise sink into
+            // the surface. The fallback is the theme's own onSurface.
+            val iconTint = accentLabelOn(MaterialTheme.colorScheme, accent)
+            IconButton(onClick = { showBlender = true }) {
+                Icon(Icons.Filled.Science, contentDescription = "Master Blender", tint = iconTint)
+            }
+            IconButton(onClick = { showBadges = true }) {
+                Icon(Icons.Filled.Star, contentDescription = "Medallas", tint = iconTint)
+            }
+            IconButton(onClick = { showQuiz = true }) {
+                Icon(Icons.Filled.Quiz, contentDescription = "Trivia", tint = iconTint)
+            }
+        }
+
+        /* ── Progresión ───────────────────────────────────────────── */
+        ProgressionCard(
+            level = vm.level,
+            rank = vm.rankTitle,
+            progress = vm.levelProgress,
+            xp = vm.xp,
+            streak = vm.streak,
+            discovered = vm.discovered.size,
+            total = vm.terpenes.size,
+            themeState = themeState
+        )
+
+        /* ── Buscador ────────────────────────────────────────────── */
+        OutlinedTextField(
+            value = vm.query,
+            onValueChange = vm::updateQuery,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            singleLine = true,
+            label = { Text("Buscar por nombre, efecto, aroma o cepa") },
+            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+            trailingIcon = {
+                if (vm.query.isNotEmpty()) {
+                    IconButton(onClick = { vm.updateQuery("") }) {
+                        Icon(Icons.Filled.FilterAltOff, contentDescription = "Limpiar búsqueda")
+                    }
+                }
+            },
+            shape = RoundedCornerShape(16.dp)
+        )
+
+        /* ── Filtros ─────────────────────────────────────────────── */
+        Column(Modifier.padding(top = 8.dp)) {
+            FilterRow(
+                label = "Familia",
+                options = vm.families,
+                selected = vm.familyFilter,
+                onToggle = vm::toggleFamilyFilter
+            )
+            FilterRow(
+                label = "Efecto",
+                options = vm.effectGroups,
+                selected = vm.effectFilter,
+                onToggle = vm::toggleEffectFilter
+            )
+            FilterRow(
+                label = "Aroma",
+                options = vm.aromaFamilies,
+                selected = vm.aromaFilter,
+                onToggle = vm::toggleAromaFilter
+            )
+        }
+
+        /* ── Lista ───────────────────────────────────────────────── */
+        if (vm.terpenes.isEmpty()) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(
+                    "Ningún terpeno coincide con los filtros.",
+                    color = scheme.onSurfaceVariant
+                )
+            }
+        } else {
+            LazyColumn(
+                contentPadding = PaddingValues(16.dp, 8.dp, 16.dp, 96.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxSize()
             ) {
-                IconButton(onClick = { navController.popBackStack() }) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
-                }
-                Column(Modifier.weight(1f)) {
-                    Text("📖 Biblia de Terpenos", style = MaterialTheme.typography.titleLarge)
-                    Text(
-                        "${vm.terpenes.size} compuestos · ${vm.discovered.size} descubiertos",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = scheme.onSurfaceVariant
+                items(vm.terpenes, key = { it.id }) { terpene ->
+                    TerpeneRow(
+                        terpene = terpene,
+                        discovered = terpene.id in vm.discovered,
+                        themeState = themeState,
+                        onClick = { navController.navigate("terpene/${terpene.id}") },
+                        onToggleFavorite = { vm.toggleFavorite(terpene) }
                     )
-                }
-                IconButton(onClick = { showBlender = true }) {
-                    Icon(Icons.Filled.Science, contentDescription = "Master Blender", tint = accent)
-                }
-                IconButton(onClick = { showBadges = true }) {
-                    Icon(Icons.Filled.Star, contentDescription = "Medallas", tint = accent)
-                }
-                IconButton(onClick = { showQuiz = true }) {
-                    Icon(Icons.Filled.Quiz, contentDescription = "Trivia", tint = accent)
-                }
-            }
-
-            /* ── Progresión ───────────────────────────────────────────── */
-            ProgressionCard(
-                level = vm.level,
-                rank = vm.rankTitle,
-                progress = vm.levelProgress,
-                xp = vm.xp,
-                streak = vm.streak,
-                discovered = vm.discovered.size,
-                total = vm.terpenes.size,
-                themeState = themeState
-            )
-
-            /* ── Buscador ────────────────────────────────────────────── */
-            OutlinedTextField(
-                value = vm.query,
-                onValueChange = vm::updateQuery,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                singleLine = true,
-                label = { Text("Buscar por nombre, efecto, aroma o cepa") },
-                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
-                trailingIcon = {
-                    if (vm.query.isNotEmpty()) {
-                        IconButton(onClick = { vm.updateQuery("") }) {
-                            Icon(Icons.Filled.FilterAltOff, contentDescription = "Limpiar búsqueda")
-                        }
-                    }
-                },
-                shape = RoundedCornerShape(16.dp)
-            )
-
-            /* ── Filtros ─────────────────────────────────────────────── */
-            Column(Modifier.padding(top = 8.dp)) {
-                FilterRow(
-                    label = "Familia",
-                    options = vm.families,
-                    selected = vm.familyFilter,
-                    onToggle = vm::toggleFamilyFilter
-                )
-                FilterRow(
-                    label = "Efecto",
-                    options = vm.effectGroups,
-                    selected = vm.effectFilter,
-                    onToggle = vm::toggleEffectFilter
-                )
-                FilterRow(
-                    label = "Aroma",
-                    options = vm.aromaFamilies,
-                    selected = vm.aromaFilter,
-                    onToggle = vm::toggleAromaFilter
-                )
-            }
-
-            /* ── Lista ───────────────────────────────────────────────── */
-            if (vm.terpenes.isEmpty()) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(
-                        "Ningún terpeno coincide con los filtros.",
-                        color = scheme.onSurfaceVariant
-                    )
-                }
-            } else {
-                LazyColumn(
-                    contentPadding = PaddingValues(16.dp, 8.dp, 16.dp, 96.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    items(vm.terpenes, key = { it.id }) { terpene ->
-                        TerpeneRow(
-                            terpene = terpene,
-                            discovered = terpene.id in vm.discovered,
-                            themeState = themeState,
-                            onClick = { navController.navigate("terpene/${terpene.id}") },
-                            onToggleFavorite = { vm.toggleFavorite(terpene) }
-                        )
-                    }
                 }
             }
         }
-        }
+    }
     }
 
     if (showQuiz) {
@@ -220,10 +218,8 @@ private fun ProgressionCard(
     themeState: TrichomeThemeState
 ) {
     val scheme = themeState.colorScheme()
-    GlassCard(
+    SolidPanel(
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-        glassOpacity = themeState.glassTokens.glassOpacity,
-        blurRadius = themeState.glassTokens.blurRadius,
         accentColor = scheme.primary,
         contentColor = scheme.onSurface
     ) {
@@ -307,7 +303,7 @@ private fun FilterRow(
             )
         }
         items(options) { option ->
-            GlassChip(
+            SelectableChip(
                 text = option,
                 selected = selected == option,
                 onClick = { onToggle(option) }
@@ -329,9 +325,7 @@ private fun TerpeneRow(
     onToggleFavorite: () -> Unit
 ) {
     val scheme = themeState.colorScheme()
-    GlassCard(
-        glassOpacity = themeState.glassTokens.glassOpacity,
-        blurRadius = themeState.glassTokens.blurRadius,
+    SolidPanel(
         accentColor = scheme.primary,
         contentColor = scheme.onSurface,
         modifier = Modifier.clickable(onClick = onClick)

@@ -35,7 +35,7 @@ import com.trichome.app.model.PunnettResult
 import com.trichome.app.model.PunnettSquare
 import com.trichome.app.model.genotypeLabelEs
 import com.trichome.app.model.percentLabelEs
-import com.trichome.app.ui.components.GlassCard
+import com.trichome.app.ui.components.SolidPanel
 
 /**
  * Interactive Punnett square.
@@ -52,7 +52,6 @@ import com.trichome.app.ui.components.GlassCard
 @Composable
 fun PunnettSquarePanel(
     accent: Color,
-    glassOpacity: Float,
     modifier: Modifier = Modifier
 ) {
     var first by remember { mutableStateOf(Genotype.HETEROZYGOUS) }
@@ -87,14 +86,14 @@ fun PunnettSquarePanel(
         )
 
         when (result) {
-            is PunnettResult.Invalid -> GlassCard(accentColor = accent, glassOpacity = glassOpacity) {
+            is PunnettResult.Invalid -> SolidPanel(accentColor = accent) {
                 Column(Modifier.padding(14.dp)) {
                     Text("No se pudo calcular el cruce", style = MaterialTheme.typography.titleSmall)
                     Text(result.reason, style = MaterialTheme.typography.bodyMedium)
                 }
             }
 
-            is PunnettResult.Computed -> SquareResult(result.square, accent, glassOpacity)
+            is PunnettResult.Computed -> SquareResult(result.square, accent)
         }
     }
 }
@@ -162,7 +161,6 @@ private fun GenotypeChip(
 private fun SquareResult(
     square: PunnettSquare,
     accent: Color,
-    glassOpacity: Float
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
@@ -172,7 +170,7 @@ private fun SquareResult(
 
         PunnettGrid(square, accent)
 
-        GlassCard(accentColor = accent, glassOpacity = glassOpacity) {
+        SolidPanel(accentColor = accent) {
             Column(
                 modifier = Modifier.padding(14.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)

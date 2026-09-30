@@ -11,7 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.trichome.app.data.entity.Reminder
-import com.trichome.app.ui.components.GlassCard
+import com.trichome.app.ui.components.SolidPanel
+import com.trichome.app.ui.components.accentTextButtonColors
 
 /**
  * Editor for an existing reminder: title, time of day and recurrence.
@@ -130,7 +131,7 @@ fun EditReminderDialog(
                         onSave(ReminderEditing.applyTo(draft, reminder))
                     }
                 },
-                colors = ButtonDefaults.textButtonColors(contentColor = accent)
+                colors = accentTextButtonColors(MaterialTheme.colorScheme, accent)
             ) { Text("Guardar") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
@@ -154,7 +155,7 @@ fun ReminderRow(
     }
     val recurrence = ReminderEditing.presetFor(draft)
 
-    GlassCard(accentColor = accent) {
+    SolidPanel(accentColor = accent) {
         Row(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically

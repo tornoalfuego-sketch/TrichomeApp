@@ -18,11 +18,12 @@ import androidx.navigation.NavHostController
 import com.trichome.app.data.entity.Protocol
 import com.trichome.app.data.entity.ProtocolStage
 import com.trichome.app.model.SuperCycleEngine
+import com.trichome.app.ui.components.accentButtonColors
+import com.trichome.app.ui.components.accentContentOn
 import com.trichome.app.ui.components.AppTopBar
-import com.trichome.app.ui.components.FloatingOrbBackground
-import com.trichome.app.ui.components.GlassCard
 import com.trichome.app.ui.components.formatTime
 import com.trichome.app.ui.components.rememberDestructiveConfirmation
+import com.trichome.app.ui.components.SolidPanel
 import com.trichome.app.ui.theme.TrichomeThemeState
 import com.trichome.app.viewmodel.ProtocolViewModel
 import com.trichome.app.viewmodel.appViewModel
@@ -61,70 +62,65 @@ fun ProtocolScreen(
 
     LaunchedEffect(plantId) { vm.loadProtocols(plantId) }
 
-    Box {
-        FloatingOrbBackground(accentColor1 = accent, accentColor2 = themeState.accentColor)
-
-        Scaffold(
-            containerColor = Color.Transparent,
-            topBar = {
-                AppTopBar(
-                    title = "📋 Protocolos de Cultivo",
-                    onNavigateBack = { navController.popBackStack() }
-                )
-            },
-            floatingActionButton = {
-                FloatingActionButton(
-                    onClick = { editingProtocol = null; showEditor = true },
-                    containerColor = accent
-                ) {
-                    Icon(Icons.Default.Add, "Añadir Protocolo")
-                }
-            }
-        ) { padding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(16.dp)
+    Scaffold(
+        topBar = {
+            AppTopBar(
+                title = "📋 Protocolos de Cultivo",
+                onNavigateBack = { navController.popBackStack() }
+            )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { editingProtocol = null; showEditor = true },
+                containerColor = accent,
+                contentColor = accentContentOn(accent)
             ) {
-                Text("Editor por bloques", style = MaterialTheme.typography.titleMedium)
-                Text(
-                    "Cada protocolo define etapas ordenadas; su progreso se aplica a la planta.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
-                )
-                Spacer(Modifier.height(14.dp))
+                Icon(Icons.Default.Add, "Añadir Protocolo")
+            }
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp)
+        ) {
+            Text("Editor por bloques", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "Cada protocolo define etapas ordenadas; su progreso se aplica a la planta.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+            )
+            Spacer(Modifier.height(14.dp))
 
-                if (vm.protocols.isEmpty()) {
-                    GlassCard(accentColor = accent) {
-                        Column(
-                            modifier = Modifier.padding(32.dp).fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text("No hay protocolos registrados", style = MaterialTheme.typography.bodyLarge)
-                            Text(
-                                "Toca + para crear tu primer protocolo por bloques",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
+            if (vm.protocols.isEmpty()) {
+                SolidPanel(accentColor = accent) {
+                    Column(
+                        modifier = Modifier.padding(32.dp).fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("No hay protocolos registrados", style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            "Toca + para crear tu primer protocolo por bloques",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                     }
-                } else {
-                    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        items(vm.protocols, key = { it.id }) { protocol ->
-                            ProtocolCard(
-                                protocol = protocol,
-                                blocks = vm.blocks[protocol.id].orEmpty(),
-                                accent = accent,
-                                glassOpacity = themeState.glassTokens.glassOpacity,
-                                onEdit = { editingProtocol = protocol; showEditor = true },
-                                onDelete = { deleteConfirmation.request(protocol) },
-                                onLogStage = { stageName ->
-                                    scope.launch {
-                                        vm.logStageTransition(plantId, protocol.id, stageName)
-                                    }
+                }
+            } else {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(vm.protocols, key = { it.id }) { protocol ->
+                        ProtocolCard(
+                            protocol = protocol,
+                            blocks = vm.blocks[protocol.id].orEmpty(),
+                            accent = accent,
+                            onEdit = { editingProtocol = protocol; showEditor = true },
+                            onDelete = { deleteConfirmation.request(protocol) },
+                            onLogStage = { stageName ->
+                                scope.launch {
+                                    vm.logStageTransition(plantId, protocol.id, stageName)
                                 }
-                            )
-                        }
+                            }
+                        )
                     }
                 }
             }
@@ -189,12 +185,11 @@ private fun ProtocolCard(
     protocol: Protocol,
     blocks: List<com.trichome.app.data.entity.ProtocolStage>,
     accent: Color,
-    glassOpacity: Float,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onLogStage: (String) -> Unit
 ) {
-    GlassCard(accentColor = accent, glassOpacity = glassOpacity) {
+    SolidPanel(accentColor = accent) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
@@ -403,7 +398,7 @@ private fun ProtocolEditorDialog(
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = accent)
+                    colors = accentButtonColors(accent)
                 ) {
                     Text(if (editingIndex != null) "Actualizar bloque" else "Añadir bloque")
                 }

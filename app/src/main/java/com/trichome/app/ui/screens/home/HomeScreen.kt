@@ -16,9 +16,8 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import com.trichome.app.ui.components.FloatingOrbBackground
-import com.trichome.app.ui.components.GlassCard
-import com.trichome.app.ui.components.GlassmorphicBottomBar
+import com.trichome.app.ui.components.MainBottomBar
+import com.trichome.app.ui.components.SolidPanel
 import com.trichome.app.ui.theme.TrichomeThemeState
 import com.trichome.app.viewmodel.HomeViewModel
 import com.trichome.app.viewmodel.appViewModel
@@ -45,96 +44,91 @@ fun HomeScreen(
     val activePlants = plants.count { it.isActive }
     val activeTents = tents.count { it.isActive }
 
-    Box {
-        FloatingOrbBackground(accentColor1 = accent, accentColor2 = themeState.accentColor)
+    Scaffold(
+        bottomBar = {
+            MainBottomBar("home", { navController.navigate(it) }, themeState)
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text("🌿 Trichome App", style = MaterialTheme.typography.headlineLarge)
+            Text(
+                "Gestión y diagnóstico inteligente de tus cultivos",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+            )
 
-        Scaffold(
-            containerColor = Color.Transparent,
-            bottomBar = {
-                GlassmorphicBottomBar("home", { navController.navigate(it) }, themeState)
-            }
-        ) { padding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text("🌿 Trichome App", style = MaterialTheme.typography.headlineLarge)
-                Text(
-                    "Gestión y diagnóstico inteligente de tus cultivos",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                StatTile(
+                    tile = HomeStatTile.PLANTS,
+                    value = "$activePlants",
+                    modifier = Modifier.weight(1f),
+                    onClick = { HomeStatTile.PLANTS.route?.let(navController::navigate) }
                 )
+                StatTile(
+                    tile = HomeStatTile.TENTS,
+                    value = "$activeTents",
+                    modifier = Modifier.weight(1f),
+                    onClick = { HomeStatTile.TENTS.route?.let(navController::navigate) }
+                )
+                StatTile(
+                    tile = HomeStatTile.TODAY,
+                    value = "$todayCount",
+                    modifier = Modifier.weight(1f),
+                    onClick = { HomeStatTile.TODAY.route?.let(navController::navigate) }
+                )
+            }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    StatTile(
-                        tile = HomeStatTile.PLANTS,
-                        value = "$activePlants",
-                        modifier = Modifier.weight(1f),
-                        onClick = { HomeStatTile.PLANTS.route?.let(navController::navigate) }
-                    )
-                    StatTile(
-                        tile = HomeStatTile.TENTS,
-                        value = "$activeTents",
-                        modifier = Modifier.weight(1f),
-                        onClick = { HomeStatTile.TENTS.route?.let(navController::navigate) }
-                    )
-                    StatTile(
-                        tile = HomeStatTile.TODAY,
-                        value = "$todayCount",
-                        modifier = Modifier.weight(1f),
-                        onClick = { HomeStatTile.TODAY.route?.let(navController::navigate) }
-                    )
-                }
-
-                if (vm.streak > 0) {
-                    GlassCard(accentColor = accent, glassOpacity = themeState.glassTokens.glassOpacity) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("🔥", fontSize = 28.sp)
-                            Spacer(Modifier.width(12.dp))
-                            Column {
-                                Text(
-                                    "Racha de registro: ${vm.streak} día(s)",
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                Text("Mantén el hábito diario", style = MaterialTheme.typography.bodySmall)
-                            }
+            if (vm.streak > 0) {
+                SolidPanel(accentColor = accent) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("🔥", fontSize = 28.sp)
+                        Spacer(Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                "Racha de registro: ${vm.streak} día(s)",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text("Mantén el hábito diario", style = MaterialTheme.typography.bodySmall)
                         }
                     }
                 }
+            }
 
-                GlassCard(accentColor = accent, glassOpacity = themeState.glassTokens.glassOpacity) {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("⚡ Acciones rápidas", style = MaterialTheme.typography.titleMedium)
-                        ActionRow(navController, "calendar", Icons.Filled.CalendarMonth, "Calendario de cultivo")
-                        ActionRow(navController, "charts", Icons.Filled.StackedLineChart, "Gráficas e indicadores")
-                        ActionRow(navController, "terpenes", Icons.Filled.Spa, "Biblia de terpenos")
-                        ActionRow(navController, "breeding", Icons.Filled.Biotech, "Breeding & proyectos")
-                    }
+            SolidPanel(accentColor = accent) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("⚡ Acciones rápidas", style = MaterialTheme.typography.titleMedium)
+                    ActionRow(navController, "calendar", Icons.Filled.CalendarMonth, "Calendario de cultivo")
+                    ActionRow(navController, "charts", Icons.Filled.StackedLineChart, "Gráficas e indicadores")
+                    ActionRow(navController, "terpenes", Icons.Filled.Spa, "Biblia de terpenos")
+                    ActionRow(navController, "breeding", Icons.Filled.Biotech, "Breeding & proyectos")
                 }
+            }
 
-                GlassCard(accentColor = accent, glassOpacity = themeState.glassTokens.glassOpacity) {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("⏰ Próximos recordatorios", style = MaterialTheme.typography.titleMedium)
-                        val next = reminders.sortedBy { it.reminderTime }.take(3)
-                        if (next.isEmpty()) {
-                            Text("Sin recordatorios activos", style = MaterialTheme.typography.bodyMedium)
-                        } else {
-                            next.forEach { r ->
-                                Text(
-                                    "• ${r.title} — cada ${r.recurrenceIntervalDays} día(s)",
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            }
+            SolidPanel(accentColor = accent) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("⏰ Próximos recordatorios", style = MaterialTheme.typography.titleMedium)
+                    val next = reminders.sortedBy { it.reminderTime }.take(3)
+                    if (next.isEmpty()) {
+                        Text("Sin recordatorios activos", style = MaterialTheme.typography.bodyMedium)
+                    } else {
+                        next.forEach { r ->
+                            Text(
+                                "• ${r.title} — cada ${r.recurrenceIntervalDays} día(s)",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
                         }
                     }
                 }
@@ -159,7 +153,7 @@ private fun StatTile(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
-    GlassCard(
+    SolidPanel(
         modifier = modifier.clickable(onClick = onClick),
         accentColor = MaterialTheme.colorScheme.primary,
         cornerRadius = 20

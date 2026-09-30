@@ -16,11 +16,10 @@ import androidx.navigation.NavHostController
 import com.trichome.app.data.entity.GrowEvent
 import com.trichome.app.model.Gamification
 import com.trichome.app.ui.components.AppTopBar
-import com.trichome.app.ui.components.FloatingOrbBackground
-import com.trichome.app.ui.components.GlassCard
-import com.trichome.app.ui.components.GlassChip
 import com.trichome.app.ui.components.LevelProgressBar
 import com.trichome.app.ui.components.NativeLineChart
+import com.trichome.app.ui.components.SelectableChip
+import com.trichome.app.ui.components.SolidPanel
 import com.trichome.app.ui.theme.TrichomeThemeState
 import com.trichome.app.viewmodel.ChartsViewModel
 import com.trichome.app.viewmodel.appViewModel
@@ -52,106 +51,101 @@ fun ChartsScreen(
         "height" to "Altura"
     )
 
-    Box {
-        FloatingOrbBackground(accentColor1 = accent, accentColor2 = themeState.accentColor)
-
-        Scaffold(
-            containerColor = Color.Transparent,
-            topBar = {
-                AppTopBar(
-                    title = "📈 Diario de Indicadores",
-                    onNavigateBack = { navController.popBackStack() }
-                )
-            }
-        ) { padding ->
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                // ── Gamification summary ────────────────────────────────
-                item {
-                    GlassCard(accentColor = accent, glassOpacity = themeState.glassTokens.glassOpacity) {
-                        Column(modifier = Modifier.padding(14.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text("Nivel $level", style = MaterialTheme.typography.headlineSmall)
-                                    Text(
-                                        "XP total: ${vm.xp} · Racha: ${vm.streak} día(s)",
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                }
-                                Text("🏆", fontSize = 34.sp)
-                            }
-                            Spacer(Modifier.height(8.dp))
-                            LevelProgressBar(currentXp = vm.xp, level = level)
-
-                            Spacer(Modifier.height(8.dp))
-                            Text(
-                                "Logros: ${vm.achievements.count { it.isUnlocked }}/${vm.achievements.size}",
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                            vm.achievements.take(5).forEach { a ->
+    Scaffold(
+        topBar = {
+            AppTopBar(
+                title = "📈 Diario de Indicadores",
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            // ── Gamification summary ────────────────────────────────
+            item {
+                SolidPanel(accentColor = accent) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Nivel $level", style = MaterialTheme.typography.headlineSmall)
                                 Text(
-                                    "${if (a.isUnlocked) "✅" else "🔒"} ${a.name} — ${a.description}",
-                                    style = MaterialTheme.typography.bodySmall
+                                    "XP total: ${vm.xp} · Racha: ${vm.streak} día(s)",
+                                    style = MaterialTheme.typography.bodyMedium
                                 )
                             }
+                            Text("🏆", fontSize = 34.sp)
                         }
-                    }
-                }
+                        Spacer(Modifier.height(8.dp))
+                        LevelProgressBar(currentXp = vm.xp, level = level)
 
-                // ── Plant filter ────────────────────────────────────────
-                item {
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        item {
-                            GlassChip("🌱 Todas", selected = vm.selectedPlantId == null, onClick = { vm.selectPlant(null) })
-                        }
-                        items(plants, key = { it.id }) { p ->
-                            GlassChip(p.name, selected = vm.selectedPlantId == p.id, onClick = { vm.selectPlant(p.id) })
-                        }
-                    }
-                }
-
-                // ── Metrics selector ────────────────────────────────────
-                item {
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items(metrics) { (key, label) ->
-                            GlassChip(label, selected = metric == key, onClick = { metric = key })
-                        }
-                    }
-                }
-
-                // ── Chart ───────────────────────────────────────────────
-                item {
-                    GlassCard(accentColor = accent, glassOpacity = themeState.glassTokens.glassOpacity) {
-                        Column(modifier = Modifier.padding(14.dp)) {
-                            val label = metrics.first { it.first == metric }.second
-                            Text("$label a lo largo del cultivo", style = MaterialTheme.typography.titleMedium)
-                            Spacer(Modifier.height(10.dp))
-                            NativeLineChart(
-                                points = buildSeries(vm.events, metric),
-                                color = accent
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "Logros: ${vm.achievements.count { it.isUnlocked }}/${vm.achievements.size}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        vm.achievements.take(5).forEach { a ->
+                            Text(
+                                "${if (a.isUnlocked) "✅" else "🔒"} ${a.name} — ${a.description}",
+                                style = MaterialTheme.typography.bodySmall
                             )
                         }
                     }
                 }
+            }
 
-                // ── Recent events with metrics ──────────────────────────
-                item {
-                    Text("Últimos registros métricos", style = MaterialTheme.typography.titleMedium)
-                }
-                val recent = vm.events.filter { metricValue(it, metric) != null }.take(10)
-                if (recent.isEmpty()) {
+            // ── Plant filter ────────────────────────────────────────
+            item {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     item {
-                        Text("Sin datos suficientes", style = MaterialTheme.typography.bodyMedium)
+                        SelectableChip("🌱 Todas", selected = vm.selectedPlantId == null, onClick = { vm.selectPlant(null) })
                     }
-                } else {
-                    items(recent, key = { it.id }) { event ->
-                        MetricRow(event, metric, accent)
+                    items(plants, key = { it.id }) { p ->
+                        SelectableChip(p.name, selected = vm.selectedPlantId == p.id, onClick = { vm.selectPlant(p.id) })
                     }
+                }
+            }
+
+            // ── Metrics selector ────────────────────────────────────
+            item {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(metrics) { (key, label) ->
+                        SelectableChip(label, selected = metric == key, onClick = { metric = key })
+                    }
+                }
+            }
+
+            // ── Chart ───────────────────────────────────────────────
+            item {
+                SolidPanel(accentColor = accent) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        val label = metrics.first { it.first == metric }.second
+                        Text("$label a lo largo del cultivo", style = MaterialTheme.typography.titleMedium)
+                        Spacer(Modifier.height(10.dp))
+                        NativeLineChart(
+                            points = buildSeries(vm.events, metric),
+                            color = accent
+                        )
+                    }
+                }
+            }
+
+            // ── Recent events with metrics ──────────────────────────
+            item {
+                Text("Últimos registros métricos", style = MaterialTheme.typography.titleMedium)
+            }
+            val recent = vm.events.filter { metricValue(it, metric) != null }.take(10)
+            if (recent.isEmpty()) {
+                item {
+                    Text("Sin datos suficientes", style = MaterialTheme.typography.bodyMedium)
+                }
+            } else {
+                items(recent, key = { it.id }) { event ->
+                    MetricRow(event, metric, accent)
                 }
             }
         }
@@ -185,7 +179,7 @@ private fun MetricRow(event: GrowEvent, metric: String, accent: Color) {
         "height" -> " cm"
         else -> ""
     }
-    GlassCard(accentColor = accent, cornerRadius = 12) {
+    SolidPanel(accentColor = accent, cornerRadius = 12) {
         Row(
             modifier = Modifier.padding(10.dp),
             verticalAlignment = Alignment.CenterVertically

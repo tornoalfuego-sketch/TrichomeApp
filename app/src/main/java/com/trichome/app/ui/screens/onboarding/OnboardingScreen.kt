@@ -23,8 +23,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.vector.ImageVector
-import com.trichome.app.ui.components.FloatingOrbBackground
-import com.trichome.app.ui.components.GlassCard
+import com.trichome.app.ui.components.accentButtonColors
+import com.trichome.app.ui.components.SolidPanel
 import com.trichome.app.ui.theme.TrichomeThemeState
 import kotlinx.coroutines.launch
 
@@ -97,92 +97,82 @@ fun OnboardingScreen(
     val page = pagerState.currentPage
     val lastPage = PAGES.lastIndex
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        FloatingOrbBackground(
-            accentColor1 = scheme.primary,
-            accentColor2 = scheme.tertiary
-        )
-
-        Column(
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .systemBarsPadding()
+            .padding(horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Row(
             modifier = Modifier
-                .fillMaxSize()
-                .systemBarsPadding()
-                .padding(horizontal = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+            horizontalArrangement = Arrangement.End
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                horizontalArrangement = Arrangement.End
-            ) {
-                // Only offer "skip" while there is still something to skip.
-                if (page != lastPage) {
-                    TextButton(onClick = onFinish) {
-                        Text("Saltar", color = scheme.onSurfaceVariant)
-                    }
+            // Only offer "skip" while there is still something to skip.
+            if (page != lastPage) {
+                TextButton(onClick = onFinish) {
+                    Text("Saltar", color = scheme.onSurfaceVariant)
                 }
             }
+        }
 
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.weight(1f),
-                pageSpacing = 16.dp
-            ) { index ->
-                OnboardingPageContent(page = PAGES[index], themeState = themeState)
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.weight(1f),
+            pageSpacing = 16.dp
+        ) { index ->
+            OnboardingPageContent(page = PAGES[index], themeState = themeState)
+        }
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(bottom = 20.dp)
+        ) {
+            PAGES.indices.forEach { i ->
+                val active = i == page
+                Box(
+                    modifier = Modifier
+                        .height(8.dp)
+                        .width(if (active) 26.dp else 8.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (active) scheme.primary
+                            else scheme.onSurfaceVariant.copy(alpha = 0.3f)
+                        )
+                )
             }
+        }
 
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 20.dp)
-            ) {
-                PAGES.indices.forEach { i ->
-                    val active = i == page
-                    Box(
-                        modifier = Modifier
-                            .height(8.dp)
-                            .width(if (active) 26.dp else 8.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (active) scheme.primary
-                                else scheme.onSurfaceVariant.copy(alpha = 0.3f)
-                            )
-                    )
+        Button(
+            onClick = {
+                if (page < lastPage) {
+                    scope.launch { pagerState.animateScrollToPage(page + 1) }
+                } else {
+                    onFinish()
                 }
-            }
-
-            Button(
-                onClick = {
-                    if (page < lastPage) {
-                        scope.launch { pagerState.animateScrollToPage(page + 1) }
-                    } else {
-                        onFinish()
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = scheme.primary,
-                    contentColor = scheme.onPrimary
-                )
-            ) {
-                Text(
-                    text = if (page < lastPage) "Siguiente" else "Empezar a cultivar",
-                    style = MaterialTheme.typography.titleMedium
-                )
-            }
-
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            shape = RoundedCornerShape(18.dp),
+            colors = accentButtonColors(scheme.primary)
+        ) {
             Text(
-                text = if (page < lastPage) "Paso ${page + 1} de ${PAGES.size}"
-                else "Solo se mostrará 3 veces",
-                style = MaterialTheme.typography.labelSmall,
-                color = scheme.onSurfaceVariant,
-                modifier = Modifier.padding(vertical = 16.dp)
+                text = if (page < lastPage) "Siguiente" else "Empezar a cultivar",
+                style = MaterialTheme.typography.titleMedium
             )
         }
+
+        Text(
+            text = if (page < lastPage) "Paso ${page + 1} de ${PAGES.size}"
+            else "Solo se mostrará 3 veces",
+            style = MaterialTheme.typography.labelSmall,
+            color = scheme.onSurfaceVariant,
+            modifier = Modifier.padding(vertical = 16.dp)
+        )
     }
 }
 
@@ -233,9 +223,7 @@ private fun OnboardingPageContent(
 
         Spacer(Modifier.height(16.dp))
 
-        GlassCard(
-            glassOpacity = themeState.glassTokens.glassOpacity,
-            blurRadius = themeState.glassTokens.blurRadius,
+        SolidPanel(
             accentColor = scheme.primary,
             contentColor = scheme.onSurface
         ) {

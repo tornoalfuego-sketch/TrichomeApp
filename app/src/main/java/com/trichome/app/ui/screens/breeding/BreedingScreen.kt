@@ -25,10 +25,11 @@ import com.trichome.app.data.repository.BreedingTerm
 import com.trichome.app.data.prefs.BreedingProgressRepository
 import com.trichome.app.model.BreedingChapter
 import com.trichome.app.model.BreedingProgress
+import com.trichome.app.ui.components.accentContentOn
+import com.trichome.app.ui.components.accentTextButtonColors
 import com.trichome.app.ui.components.AppTopBar
-import com.trichome.app.ui.components.FloatingOrbBackground
-import com.trichome.app.ui.components.GlassCard
 import com.trichome.app.ui.components.rememberDestructiveConfirmation
+import com.trichome.app.ui.components.SolidPanel
 import com.trichome.app.ui.theme.TrichomeThemeState
 import com.trichome.app.viewmodel.BreedingViewModel
 import com.trichome.app.viewmodel.appViewModel
@@ -99,70 +100,67 @@ fun BreedingScreen(
         onConfirmed = { cross -> scope.launch { vm.deleteCross(cross) } }
     )
 
-    Box {
-        FloatingOrbBackground(accentColor1 = accent, accentColor2 = themeState.accentColor)
-
-        Scaffold(
-            containerColor = Color.Transparent,
-            topBar = {
-                AppTopBar(
-                    title = "🧬 Biblia de Breeding",
-                    onNavigateBack = { navController.popBackStack() }
-                )
-            },
-            floatingActionButton = {
-                if (tab == 1) {
-                    FloatingActionButton(
-                        onClick = { showProjectDialog = true },
-                        containerColor = accent
-                    ) {
-                        Icon(Icons.Default.Add, "Nuevo Proyecto")
-                    }
+    Scaffold(
+        topBar = {
+            AppTopBar(
+                title = "🧬 Biblia de Breeding",
+                onNavigateBack = { navController.popBackStack() }
+            )
+        },
+        floatingActionButton = {
+            if (tab == 1) {
+                FloatingActionButton(
+                    onClick = { showProjectDialog = true },
+                    containerColor = accent,
+                    contentColor = accentContentOn(accent)
+                ) {
+                    Icon(Icons.Default.Add, "Nuevo Proyecto")
                 }
             }
-        ) { padding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(16.dp)
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp)
+        ) {
+            TabRow(
+                selectedTabIndex = tab,
+                // An opaque scheme role, not a 20% black wash: a translucent bar
+                // over the page is a panel whose contrast depends on what happens
+                // to be behind it, which is the class of bug this refactor removed.
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
             ) {
-                TabRow(
-                    selectedTabIndex = tab,
-                    containerColor = Color.Black.copy(alpha = 0.2f)
-                ) {
-                    Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("📖 Teoría") })
-                    Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("🌱 Proyectos") })
-                }
-                Spacer(Modifier.height(12.dp))
+                Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("📖 Teoría") })
+                Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("🌱 Proyectos") })
+            }
+            Spacer(Modifier.height(12.dp))
 
-                when (tab) {
-                    // Theory is three surfaces now: the chapters with their
-                    // quizzes, the Punnett square, and the raw library. The
-                    // chapter list replaces the old flat generation/technique
-                    // dump, and the library stays as the unedited reference.
-                    0 -> TheoryTab(
-                        chapters = theory.chapters,
-                        progress = theory.progress,
-                        accent = accent,
-                        glassOpacity = themeState.glassTokens.glassOpacity,
-                        generations = generations,
-                        techniques = techniques,
-                        glossary = glossary,
-                        breedingProgressRepository = container.breedingProgress
-                    )
-                    else -> ProjectsTab(
-                        projects = projects,
-                        crosses = vm.crosses.groupBy { it.projectId },
-                        accent = accent,
-                        glassOpacity = themeState.glassTokens.glassOpacity,
-                        onDeleteProject = { deleteProjectConfirmation.request(it) },
-                        onEditProject = { projectTarget = it },
-                        onAddCross = { crossTarget = it to null },
-                        onEditCross = { project, cross -> crossTarget = project to cross },
-                        onDeleteCross = { deleteCrossConfirmation.request(it) }
-                    )
-                }
+            when (tab) {
+                // Theory is three surfaces now: the chapters with their
+                // quizzes, the Punnett square, and the raw library. The
+                // chapter list replaces the old flat generation/technique
+                // dump, and the library stays as the unedited reference.
+                0 -> TheoryTab(
+                    chapters = theory.chapters,
+                    progress = theory.progress,
+                    accent = accent,
+                    generations = generations,
+                    techniques = techniques,
+                    glossary = glossary,
+                    breedingProgressRepository = container.breedingProgress
+                )
+                else -> ProjectsTab(
+                    projects = projects,
+                    crosses = vm.crosses.groupBy { it.projectId },
+                    accent = accent,
+                    onDeleteProject = { deleteProjectConfirmation.request(it) },
+                    onEditProject = { projectTarget = it },
+                    onAddCross = { crossTarget = it to null },
+                    onEditCross = { project, cross -> crossTarget = project to cross },
+                    onDeleteCross = { deleteCrossConfirmation.request(it) }
+                )
             }
         }
     }
@@ -211,7 +209,6 @@ private fun TheoryTab(
     chapters: List<BreedingChapter>,
     progress: BreedingProgress,
     accent: Color,
-    glassOpacity: Float,
     generations: List<BreedingGeneration>,
     techniques: List<BreedingTechnique>,
     glossary: List<BreedingTerm>,
@@ -226,7 +223,10 @@ private fun TheoryTab(
         // 0 = capítulos con cuestionario, 1 = simulador, 2 = biblioteca en bruto.
         var section by rememberSaveable { mutableIntStateOf(0) }
 
-        TabRow(selectedTabIndex = section, containerColor = Color.Black.copy(alpha = 0.2f)) {
+        TabRow(
+            selectedTabIndex = section,
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ) {
             Tab(selected = section == 0, onClick = { section = 0 }, text = { Text("Capítulos") })
             Tab(selected = section == 1, onClick = { section = 1 }, text = { Text("Simulador") })
             Tab(selected = section == 2, onClick = { section = 2 }, text = { Text("Biblioteca") })
@@ -239,15 +239,13 @@ private fun TheoryTab(
                 progress = progress,
                 repository = breedingProgressRepository,
                 accent = accent,
-                glassOpacity = glassOpacity
             )
-            1 -> PunnettSquarePanel(accent = accent, glassOpacity = glassOpacity)
+            1 -> PunnettSquarePanel(accent = accent)
             else -> LibraryReference(
                 generations = generations,
                 techniques = techniques,
                 glossary = glossary,
                 accent = accent,
-                glassOpacity = glassOpacity
             )
         }
     }
@@ -266,7 +264,6 @@ private fun LibraryReference(
     techniques: List<BreedingTechnique>,
     glossary: List<BreedingTerm>,
     accent: Color,
-    glassOpacity: Float
 ) {
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -274,7 +271,7 @@ private fun LibraryReference(
     ) {
         Text("Generaciones", style = MaterialTheme.typography.titleMedium)
         generations.forEach { g ->
-            GlassCard(accentColor = accent, glassOpacity = glassOpacity) {
+            SolidPanel(accentColor = accent) {
                 Column(modifier = Modifier.padding(14.dp)) {
                     Text(g.label + " — " + g.titleEs, style = MaterialTheme.typography.titleMedium)
                     Text(g.descriptionEs, style = MaterialTheme.typography.bodyMedium)
@@ -296,7 +293,7 @@ private fun LibraryReference(
 
         Text("Técnicas", style = MaterialTheme.typography.titleMedium)
         techniques.forEach { t ->
-            GlassCard(accentColor = accent, glassOpacity = glassOpacity) {
+            SolidPanel(accentColor = accent) {
                 Column(modifier = Modifier.padding(14.dp)) {
                     Text(t.labelEs, style = MaterialTheme.typography.titleMedium)
                     Text(t.descriptionEs, style = MaterialTheme.typography.bodyMedium)
@@ -309,7 +306,7 @@ private fun LibraryReference(
 
         Text("Glosario", style = MaterialTheme.typography.titleMedium)
         glossary.forEach { term ->
-            GlassCard(accentColor = accent, glassOpacity = glassOpacity) {
+            SolidPanel(accentColor = accent) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     Text(term.term, style = MaterialTheme.typography.titleSmall)
                     Text(term.definitionEs, style = MaterialTheme.typography.bodySmall)
@@ -324,7 +321,6 @@ private fun ProjectsTab(
     projects: List<BreedingProject>,
     crosses: Map<Long, List<BreedingCross>>,
     accent: Color,
-    glassOpacity: Float,
     onDeleteProject: (BreedingProject) -> Unit,
     onEditProject: (BreedingProject) -> Unit,
     onAddCross: (BreedingProject) -> Unit,
@@ -332,7 +328,7 @@ private fun ProjectsTab(
     onDeleteCross: (BreedingCross) -> Unit
 ) {
     if (projects.isEmpty()) {
-        GlassCard(accentColor = accent) {
+        SolidPanel(accentColor = accent) {
             Column(
                 modifier = Modifier.padding(32.dp).fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -346,7 +342,7 @@ private fun ProjectsTab(
 
     LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         items(projects, key = { it.id }) { project ->
-            GlassCard(accentColor = accent, glassOpacity = glassOpacity) {
+            SolidPanel(accentColor = accent) {
                 Column(modifier = Modifier.padding(14.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(modifier = Modifier.weight(1f)) {
@@ -443,7 +439,7 @@ private fun ProjectDialog(
                         onSave(BreedingForm.projectFrom(form))
                     }
                 },
-                colors = ButtonDefaults.textButtonColors(contentColor = accent)
+                colors = accentTextButtonColors(MaterialTheme.colorScheme, accent)
             ) { Text("Guardar") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } },
@@ -515,7 +511,7 @@ private fun CrossDialog(
         confirmButton = {
             TextButton(
                 onClick = { onSave(BreedingForm.crossFrom(form)) },
-                colors = ButtonDefaults.textButtonColors(contentColor = accent)
+                colors = accentTextButtonColors(MaterialTheme.colorScheme, accent)
             ) { Text("Guardar") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } },

@@ -18,10 +18,11 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.trichome.app.data.entity.GrowTent
 import com.trichome.app.data.entity.Plant
-import com.trichome.app.ui.components.FloatingOrbBackground
-import com.trichome.app.ui.components.GlassCard
-import com.trichome.app.ui.components.GlassmorphicBottomBar
+import com.trichome.app.ui.components.accentButtonColors
+import com.trichome.app.ui.components.accentContentOn
+import com.trichome.app.ui.components.MainBottomBar
 import com.trichome.app.ui.components.rememberDestructiveConfirmation
+import com.trichome.app.ui.components.SolidPanel
 import com.trichome.app.ui.screens.plant.PlantDeletionNotice
 import com.trichome.app.ui.screens.plant.PlantEditDialog
 import com.trichome.app.ui.theme.TrichomeThemeState
@@ -63,79 +64,74 @@ fun TentListScreen(
         onConfirmed = { plant -> vm.deletePlant(plant) }
     )
 
-    Box {
-        FloatingOrbBackground(accentColor1 = accent, accentColor2 = themeState.accentColor)
-
-        Scaffold(
-            containerColor = Color.Transparent,
-            floatingActionButton = {
-                FloatingActionButton(
-                    onClick = { editingTent = null; showAddTent = true },
-                    containerColor = accent
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Añadir Carpa")
-                }
-            },
-            bottomBar = {
-                GlassmorphicBottomBar("tents", { navController.navigate(it) }, themeState)
-            }
-        ) { padding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(16.dp)
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { editingTent = null; showAddTent = true },
+                containerColor = accent,
+                contentColor = accentContentOn(accent)
             ) {
-                Text("🏕️ Carpas de Cultivo", style = MaterialTheme.typography.headlineMedium)
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    tents.count { it.isActive }.let { "$it carpa(s) activa(s) · ${plants.size} planta(s)" },
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Spacer(Modifier.height(16.dp))
+                Icon(Icons.Default.Add, contentDescription = "Añadir Carpa")
+            }
+        },
+        bottomBar = {
+            MainBottomBar("tents", { navController.navigate(it) }, themeState)
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp)
+        ) {
+            Text("🏕️ Carpas de Cultivo", style = MaterialTheme.typography.headlineMedium)
+            Spacer(Modifier.height(4.dp))
+            Text(
+                tents.count { it.isActive }.let { "$it carpa(s) activa(s) · ${plants.size} planta(s)" },
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Spacer(Modifier.height(16.dp))
 
-                if (tents.isEmpty()) {
-                    GlassCard(accentColor = accent) {
-                        Column(
-                            modifier = Modifier.padding(32.dp).fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text("🏕️", fontSize = 40.sp)
-                            Text("No hay carpas registradas", style = MaterialTheme.typography.titleMedium)
-                            Text(
-                                "Toca + para crear tu primera carpa y agrupar tus plantas",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
+            if (tents.isEmpty()) {
+                SolidPanel(accentColor = accent) {
+                    Column(
+                        modifier = Modifier.padding(32.dp).fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("🏕️", fontSize = 40.sp)
+                        Text("No hay carpas registradas", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            "Toca + para crear tu primera carpa y agrupar tus plantas",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                     }
-                } else {
-                    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        items(tents, key = { it.id }) { tent ->
-                            TentCard(
-                                tent = tent,
-                                plants = plants.filter { it.tentId == tent.id }.sortedBy { it.sortOrder },
-                                accent = accent,
-                                glassOpacity = themeState.glassTokens.glassOpacity,
-                                onOpen = { tapped ->
-                                    // A tent with no plants renders no row to
-                                    // tap; if one is ever reached with nothing
-                                    // selected the tap is ignored rather than
-                                    // navigating to a sentinel id.
-                                    TentNavigation.targetForTap(tapped)?.let { route ->
-                                        navController.navigate(route)
-                                    }
-                                },
-                                onEdit = { editingTent = tent },
-                                onDelete = { deleteTentConfirmation.request(tent) },
-                                onMoveUp = { p -> vm.moveUp(p) },
-                                onMoveDown = { p -> vm.moveDown(p) },
-                                onEditPlant = { p -> editingPlant = p },
-                                onDeletePlant = { p -> deletePlantConfirmation.request(p) },
-                                onAddPlant = { name ->
-                                    vm.addPlant(name, tent.id, "", "seedling", System.currentTimeMillis())
+                }
+            } else {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(tents, key = { it.id }) { tent ->
+                        TentCard(
+                            tent = tent,
+                            plants = plants.filter { it.tentId == tent.id }.sortedBy { it.sortOrder },
+                            accent = accent,
+                            onOpen = { tapped ->
+                                // A tent with no plants renders no row to
+                                // tap; if one is ever reached with nothing
+                                // selected the tap is ignored rather than
+                                // navigating to a sentinel id.
+                                TentNavigation.targetForTap(tapped)?.let { route ->
+                                    navController.navigate(route)
                                 }
-                            )
-                        }
+                            },
+                            onEdit = { editingTent = tent },
+                            onDelete = { deleteTentConfirmation.request(tent) },
+                            onMoveUp = { p -> vm.moveUp(p) },
+                            onMoveDown = { p -> vm.moveDown(p) },
+                            onEditPlant = { p -> editingPlant = p },
+                            onDeletePlant = { p -> deletePlantConfirmation.request(p) },
+                            onAddPlant = { name ->
+                                vm.addPlant(name, tent.id, "", "seedling", System.currentTimeMillis())
+                            }
+                        )
                     }
                 }
             }
@@ -176,7 +172,6 @@ private fun TentCard(
     tent: GrowTent,
     plants: List<Plant>,
     accent: Color,
-    glassOpacity: Float,
     onOpen: (Plant) -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
@@ -186,7 +181,7 @@ private fun TentCard(
     onDeletePlant: (Plant) -> Unit,
     onAddPlant: (String) -> Unit
 ) {
-    GlassCard(accentColor = accent, glassOpacity = glassOpacity) {
+    SolidPanel(accentColor = accent) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
@@ -267,7 +262,7 @@ private fun AddPlantRow(onAdd: (String) -> Unit, accent: Color) {
                     text = ""
                 }
             },
-            colors = ButtonDefaults.buttonColors(containerColor = accent)
+            colors = accentButtonColors(accent)
         ) {
             Icon(Icons.Default.Add, "Añadir")
         }

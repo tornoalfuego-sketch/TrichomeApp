@@ -25,10 +25,11 @@ import com.trichome.app.data.repository.DiagnosisCondition
 import com.trichome.app.domain.vision.PhotoAnalyzer
 import com.trichome.app.data.repository.DiagnosisResult
 import com.trichome.app.data.repository.DiagnosisSymptom
+import com.trichome.app.ui.components.accentButtonColors
+import com.trichome.app.ui.components.accentLabelOn
 import com.trichome.app.ui.components.AppTopBar
-import com.trichome.app.ui.components.FloatingOrbBackground
-import com.trichome.app.ui.components.GlassCard
-import com.trichome.app.ui.components.GlassmorphicBottomBar
+import com.trichome.app.ui.components.MainBottomBar
+import com.trichome.app.ui.components.SolidPanel
 import com.trichome.app.ui.theme.TrichomeThemeState
 import com.trichome.app.viewmodel.DiagnosisViewModel
 import com.trichome.app.viewmodel.appViewModel
@@ -127,215 +128,209 @@ var currentImageError by remember { mutableStateOf<String?>(null) }
             .onFailure { currentImageError = "No se pudo abrir la galería." }
     }
 
-    Box {
-        FloatingOrbBackground(accentColor1 = accent, accentColor2 = themeState.accentColor)
-
-        Scaffold(
-            containerColor = Color.Transparent,
-            topBar = {
-                AppTopBar(
-                    title = "🩺 Diagnóstico Inteligente",
-                    onNavigateBack = { navController.popBackStack() }
-                )
-            },
-            bottomBar = {
-                GlassmorphicBottomBar("diagnosis", { navController.navigate(it) }, themeState)
+    Scaffold(
+        topBar = {
+            AppTopBar(
+                title = "🩺 Diagnóstico Inteligente",
+                onNavigateBack = { navController.popBackStack() }
+            )
+        },
+        bottomBar = {
+            MainBottomBar("diagnosis", { navController.navigate(it) }, themeState)
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            // ── Photo capture / selection ────────────────────────────
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Button(
+                    onClick = { openCamera() },
+                    modifier = Modifier.weight(1f),
+                    colors = accentButtonColors(accent)
+                ) { Text("📷 Cámara") }
+                Button(
+                    onClick = { openGallery() },
+                    modifier = Modifier.weight(1f)
+                ) { Text("🖼️ Galería") }
             }
-        ) { padding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                // ── Photo capture / selection ────────────────────────────
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Button(
-                        onClick = { openCamera() },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(containerColor = accent)
-                    ) { Text("📷 Cámara") }
-                    Button(
-                        onClick = { openGallery() },
-                        modifier = Modifier.weight(1f)
-                    ) { Text("🖼️ Galería") }
+
+            currentImageError?.let { reason ->
+                Text(
+                    text = reason,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+
+            // Analysis state and what the photo actually measured. Without
+            // this the verdict looked identical whether or not a picture was
+            // taken, which is why the feature read as a no-op.
+            when {
+                vm.analyzing -> {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                        Spacer(Modifier.width(10.dp))
+                        Text("Analizando la imagen…", style = MaterialTheme.typography.bodySmall)
+                    }
                 }
 
-                currentImageError?.let { reason ->
+                vm.photoFeatures != null -> {
+                    SolidPanel(
+                        accentColor = accent,
+                    ) {
+                        Column(Modifier.padding(12.dp)) {
+                            Text("Lectura de la foto", style = MaterialTheme.typography.titleSmall)
+                            Spacer(Modifier.height(6.dp))
+                            PhotoAnalyzer.describe(vm.photoFeatures!!).forEach { (label, value) ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 2.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        label,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(value, style = MaterialTheme.typography.bodySmall)
+                                }
+                            }
+                            if (vm.photoMatches.isNotEmpty()) {
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    "Coincide con:",
+                                    style = MaterialTheme.typography.labelLarge
+                                )
+                                vm.photoMatches.take(3).forEach { match ->
+                                    Text(
+                                        "· ${match.condition.labelEs} — ${(match.evidenceFit * 100).toInt()}%",
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                vm.photoError != null -> {
                     Text(
-                        text = reason,
+                        text = vm.photoError.orEmpty(),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error
                     )
                 }
+            }
 
-                // Analysis state and what the photo actually measured. Without
-                // this the verdict looked identical whether or not a picture was
-                // taken, which is why the feature read as a no-op.
-                when {
-                    vm.analyzing -> {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-                            Spacer(Modifier.width(10.dp))
-                            Text("Analizando la imagen…", style = MaterialTheme.typography.bodySmall)
-                        }
-                    }
-
-                    vm.photoFeatures != null -> {
-                        GlassCard(
-                            accentColor = accent,
-                            glassOpacity = themeState.glassTokens.glassOpacity
-                        ) {
-                            Column(Modifier.padding(12.dp)) {
-                                Text("Lectura de la foto", style = MaterialTheme.typography.titleSmall)
-                                Spacer(Modifier.height(6.dp))
-                                PhotoAnalyzer.describe(vm.photoFeatures!!).forEach { (label, value) ->
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 2.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Text(
-                                            label,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                        Text(value, style = MaterialTheme.typography.bodySmall)
-                                    }
-                                }
-                                if (vm.photoMatches.isNotEmpty()) {
-                                    Spacer(Modifier.height(8.dp))
-                                    Text(
-                                        "Coincide con:",
-                                        style = MaterialTheme.typography.labelLarge
-                                    )
-                                    vm.photoMatches.take(3).forEach { match ->
-                                        Text(
-                                            "· ${match.condition.labelEs} — ${(match.evidenceFit * 100).toInt()}%",
-                                            style = MaterialTheme.typography.bodySmall
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    vm.photoError != null -> {
-                        Text(
-                            text = vm.photoError.orEmpty(),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-                }
-
-                if (currentImage != null) {
-                    GlassCard(accentColor = accent, glassOpacity = themeState.glassTokens.glassOpacity) {
-                        AsyncImage(
-                            model = currentImage,
-                            contentDescription = "Foto de la planta",
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(220.dp),
-                            contentScale = ContentScale.Crop
-                        )
-                    }
-                }
-
-                // ── Symptoms ─────────────────────────────────────────────
-                GlassCard(accentColor = accent, glassOpacity = themeState.glassTokens.glassOpacity) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        Text("Selecciona los síntomas visibles", style = MaterialTheme.typography.titleMedium)
-                        Spacer(Modifier.height(10.dp))
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            symptoms.forEach { s ->
-                                FilterChip(
-                                    selected = vm.selectedSymptoms.contains(s.id),
-                                    onClick = { vm.toggleSymptom(s.id) },
-                                    label = { Text("${s.icon} ${s.labelEs}") }
-                                )
-                            }
-                        }
-                        Spacer(Modifier.height(10.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Button(
-                                onClick = { vm.diagnose() },
-                                modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.buttonColors(containerColor = accent)
-                            ) { Text("🔬 Diagnosticar") }
-                            OutlinedButton(onClick = { vm.reset(); currentImage = null }) { Text("Limpiar") }
-                        }
-                    }
-                }
-
-                // ── Report ───────────────────────────────────────────────
-                val result = vm.result
-                if (result != null && reportCondition != null) {
-                    DiagnosisReport(
-                        result = result,
-                        condition = reportCondition!!,
-                        accent = accent
+            if (currentImage != null) {
+                SolidPanel(accentColor = accent) {
+                    AsyncImage(
+                        model = currentImage,
+                        contentDescription = "Foto de la planta",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(220.dp),
+                        contentScale = ContentScale.Crop
                     )
+                }
+            }
 
-                    // Register in journal
-                    GlassCard(accentColor = accent, glassOpacity = themeState.glassTokens.glassOpacity) {
-                        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Text("Registrar en Bitácora", style = MaterialTheme.typography.titleMedium)
-                            plants.forEach { p ->
-                                FilterChip(
-                                    selected = selectedPlantId == p.id,
-                                    onClick = { selectedPlantId = p.id; registerError = false; registered = false },
-                                    label = { Text(p.name) }
-                                )
-                            }
-                            if (registerError) {
-                                Text(
-                                    "Selecciona una planta para registrar",
-                                    color = MaterialTheme.colorScheme.error,
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                            }
-                            if (registered) {
-                                Text(
-                                    "✓ Registrado en la bitácora",
-                                    color = accent,
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                            }
-                            Button(
-                                onClick = {
-                                    val pid = selectedPlantId
-                                    if (pid == null) {
-                                        registerError = true
-                                    } else {
-                                        scope.launch {
-                                            vm.registerOnJournal(pid)
-                                            registered = true
-                                        }
-                                    }
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(containerColor = accent)
-                            ) { Text("Registrar en Bitácora") }
-                        }
-                    }
-                } else {
-                    GlassCard(accentColor = accent) {
-                        Column(
-                            modifier = Modifier.padding(28.dp).fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                "Captura una foto y selecciona síntomas para obtener un diagnóstico.",
-                                style = MaterialTheme.typography.bodyMedium
+            // ── Symptoms ─────────────────────────────────────────────
+            SolidPanel(accentColor = accent) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Text("Selecciona los síntomas visibles", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(10.dp))
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        symptoms.forEach { s ->
+                            FilterChip(
+                                selected = vm.selectedSymptoms.contains(s.id),
+                                onClick = { vm.toggleSymptom(s.id) },
+                                label = { Text("${s.icon} ${s.labelEs}") }
                             )
                         }
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Button(
+                            onClick = { vm.diagnose() },
+                            modifier = Modifier.weight(1f),
+                            colors = accentButtonColors(accent)
+                        ) { Text("🔬 Diagnosticar") }
+                        OutlinedButton(onClick = { vm.reset(); currentImage = null }) { Text("Limpiar") }
+                    }
+                }
+            }
+
+            // ── Report ───────────────────────────────────────────────
+            val result = vm.result
+            if (result != null && reportCondition != null) {
+                DiagnosisReport(
+                    result = result,
+                    condition = reportCondition!!,
+                    accent = accent
+                )
+
+                // Register in journal
+                SolidPanel(accentColor = accent) {
+                    Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text("Registrar en Bitácora", style = MaterialTheme.typography.titleMedium)
+                        plants.forEach { p ->
+                            FilterChip(
+                                selected = selectedPlantId == p.id,
+                                onClick = { selectedPlantId = p.id; registerError = false; registered = false },
+                                label = { Text(p.name) }
+                            )
+                        }
+                        if (registerError) {
+                            Text(
+                                "Selecciona una planta para registrar",
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                        if (registered) {
+                            Text(
+                                "✓ Registrado en la bitácora",
+                                color = accent,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                        Button(
+                            onClick = {
+                                val pid = selectedPlantId
+                                if (pid == null) {
+                                    registerError = true
+                                } else {
+                                    scope.launch {
+                                        vm.registerOnJournal(pid)
+                                        registered = true
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = accentButtonColors(accent)
+                        ) { Text("Registrar en Bitácora") }
+                    }
+                }
+            } else {
+                SolidPanel(accentColor = accent) {
+                    Column(
+                        modifier = Modifier.padding(28.dp).fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            "Captura una foto y selecciona síntomas para obtener un diagnóstico.",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                     }
                 }
             }
@@ -357,12 +352,19 @@ private fun DiagnosisReport(
         else -> "Planta Saludable"
     }
 
-    GlassCard(accentColor = accent) {
+    SolidPanel(accentColor = accent) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("📋 Reporte de Diagnóstico", style = MaterialTheme.typography.titleMedium)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(condition.labelEs, style = MaterialTheme.typography.headlineSmall, color = accent)
+                    Text(
+                        condition.labelEs,
+                        style = MaterialTheme.typography.headlineSmall,
+                        // The accent as ink is unreadable on several theme pairs
+                        // (1.57:1 for amber on the light theme); the helper keeps
+                        // it where it carries and falls back where it does not.
+                        color = accentLabelOn(MaterialTheme.colorScheme, accent)
+                    )
                     Text("Categoría: $categoryLabel", style = MaterialTheme.typography.bodySmall)
                     Text(
                         "Certeza: ${(result.confidence * 100).toInt()}%",

@@ -13,11 +13,10 @@ import androidx.navigation.NavHostController
 import com.trichome.app.model.Phase
 import com.trichome.app.model.SuperCycleEngine
 import com.trichome.app.model.SuperCycleResult
+import com.trichome.app.ui.components.accentButtonColors
 import com.trichome.app.ui.components.AppTopBar
-import com.trichome.app.ui.components.FloatingOrbBackground
-import com.trichome.app.ui.components.GlassCard
-import com.trichome.app.ui.components.GlassProgressIndicator
-import com.trichome.app.ui.components.GlassSlider
+import com.trichome.app.ui.components.SolidPanel
+import com.trichome.app.ui.components.SolidProgressRing
 import com.trichome.app.ui.theme.TrichomeThemeState
 import com.trichome.app.viewmodel.SuperCycleViewModel
 import com.trichome.app.viewmodel.appViewModel
@@ -65,131 +64,121 @@ fun SuperCycleScreen(
         label = "supercycle_progress"
     )
 
-    Box {
-        FloatingOrbBackground(
-            accentColor1 = accent,
-            accentColor2 = if (vm.result?.isLight == true) Color(0xFFFFD54F) else themeState.accentColor
-        )
+    Scaffold(
+        topBar = {
+            AppTopBar(
+                title = "☀️ SuperCycle Engine",
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            // ── Photoperiod configuration ───────────────────────────
+            SolidPanel(accentColor = accent) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Text("Configuración de Fotoperiodo", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(10.dp))
 
-        Scaffold(
-            containerColor = Color.Transparent,
-            topBar = {
-                AppTopBar(
-                    title = "☀️ SuperCycle Engine",
-                    onNavigateBack = { navController.popBackStack() }
-                )
-            }
-        ) { padding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                // ── Photoperiod configuration ───────────────────────────
-                GlassCard(accentColor = accent, glassOpacity = themeState.glassTokens.glassOpacity) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        Text("Configuración de Fotoperiodo", style = MaterialTheme.typography.titleMedium)
-                        Spacer(Modifier.height(10.dp))
-
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("18/6", "12/12", "24/0", "custom").forEach { preset ->
-                                FilterChip(
-                                    selected = selectedPreset == preset,
-                                    onClick = {
-                                        selectedPreset = preset
-                                        when (preset) {
-                                            "18/6" -> { lightHours = 18; darkHours = 6 }
-                                            "12/12" -> { lightHours = 12; darkHours = 12 }
-                                            "24/0" -> { lightHours = 24; darkHours = 0 }
-                                        }
-                                    },
-                                    label = { Text(preset.uppercase()) }
-                                )
-                            }
-                        }
-
-                        Spacer(Modifier.height(12.dp))
-
-                        Text("☀️ Horas de Luz: $lightHours h", style = MaterialTheme.typography.bodyMedium)
-                        GlassSlider(
-                            value = lightHours.toFloat(),
-                            onValueChange = { lightHours = it.toInt() },
-                            valueRange = 0f..24f,
-                            steps = 23,
-                            accentColor = accent
-                        )
-                        Text("🌙 Horas de Oscuridad: $darkHours h", style = MaterialTheme.typography.bodyMedium)
-                        GlassSlider(
-                            value = darkHours.toFloat(),
-                            onValueChange = { darkHours = it.toInt() },
-                            valueRange = 0f..24f,
-                            steps = 23,
-                            accentColor = accent
-                        )
-
-                        Spacer(Modifier.height(8.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text("Ciclo Total", style = MaterialTheme.typography.bodyMedium)
-                            Text(
-                                "${lightHours + darkHours} h",
-                                style = MaterialTheme.typography.titleLarge,
-                                color = accent
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf("18/6", "12/12", "24/0", "custom").forEach { preset ->
+                            FilterChip(
+                                selected = selectedPreset == preset,
+                                onClick = {
+                                    selectedPreset = preset
+                                    when (preset) {
+                                        "18/6" -> { lightHours = 18; darkHours = 6 }
+                                        "12/12" -> { lightHours = 12; darkHours = 12 }
+                                        "24/0" -> { lightHours = 24; darkHours = 0 }
+                                    }
+                                },
+                                label = { Text(preset.uppercase()) }
                             )
                         }
                     }
-                }
 
-                // ── Live results ────────────────────────────────────────
-                vm.result?.let { result ->
-                    SuperCycleResultCard(
-                        result = result,
-                        progress = animatedProgress,
-                        accent = accent
+                    Spacer(Modifier.height(12.dp))
+
+                    Text("☀️ Horas de Luz: $lightHours h", style = MaterialTheme.typography.bodyMedium)
+                    Slider(
+                        value = lightHours.toFloat(),
+                        onValueChange = { lightHours = it.toInt() },
+                        valueRange = 0f..24f,
+                        steps = 23
                     )
-                } ?: GlassCard(accentColor = accent) {
-                    Column(
-                        modifier = Modifier.padding(24.dp).fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    Text("🌙 Horas de Oscuridad: $darkHours h", style = MaterialTheme.typography.bodyMedium)
+                    Slider(
+                        value = darkHours.toFloat(),
+                        onValueChange = { darkHours = it.toInt() },
+                        valueRange = 0f..24f,
+                        steps = 23
+                    )
+
+                    Spacer(Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("Ajusta las horas para ver el cálculo en vivo", style = MaterialTheme.typography.bodyMedium)
+                        Text("Ciclo Total", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            "${lightHours + darkHours} h",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = accent
+                        )
                     }
                 }
+            }
 
-                // ── Save ────────────────────────────────────────────────
-                Button(
-                    onClick = {
-                        val startAt = vm.config?.cycleStartAt ?: System.currentTimeMillis()
-                        scope.launch {
-                            vm.save(
-                                plantId = plantId,
-                                lightHours = lightHours,
-                                darkHours = darkHours,
-                                cycleStartAt = startAt,
-                                preset = selectedPreset
-                            )
-                            savedAt = System.currentTimeMillis()
-                            showSaved = true
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = accent)
+            // ── Live results ────────────────────────────────────────
+            vm.result?.let { result ->
+                SuperCycleResultCard(
+                    result = result,
+                    progress = animatedProgress,
+                    accent = accent
+                )
+            } ?: SolidPanel(accentColor = accent) {
+                Column(
+                    modifier = Modifier.padding(24.dp).fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("💾 Guardar Configuración")
+                    Text("Ajusta las horas para ver el cálculo en vivo", style = MaterialTheme.typography.bodyMedium)
                 }
+            }
 
-                if (showSaved) {
-                    Text(
-                        "✓ Configuración guardada " + (savedAt?.let { java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date(it)) } ?: ""),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = accent,
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
-                    )
-                }
+            // ── Save ────────────────────────────────────────────────
+            Button(
+                onClick = {
+                    val startAt = vm.config?.cycleStartAt ?: System.currentTimeMillis()
+                    scope.launch {
+                        vm.save(
+                            plantId = plantId,
+                            lightHours = lightHours,
+                            darkHours = darkHours,
+                            cycleStartAt = startAt,
+                            preset = selectedPreset
+                        )
+                        savedAt = System.currentTimeMillis()
+                        showSaved = true
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = accentButtonColors(accent)
+            ) {
+                Text("💾 Guardar Configuración")
+            }
+
+            if (showSaved) {
+                Text(
+                    "✓ Configuración guardada " + (savedAt?.let { java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date(it)) } ?: ""),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = accent,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
             }
         }
     }
@@ -201,13 +190,13 @@ private fun SuperCycleResultCard(
     progress: Float,
     accent: Color
 ) {
-    GlassCard(accentColor = accent) {
+    SolidPanel(accentColor = accent) {
         Column(modifier = Modifier.padding(14.dp)) {
             Text("📊 Resultados del SuperCycle", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(12.dp))
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                GlassProgressIndicator(
+                SolidProgressRing(
                     percentage = progress,
                     size = 84,
                     color = if (result.isLight) Color(0xFFFFD54F) else Color(0xFF7C4DFF)

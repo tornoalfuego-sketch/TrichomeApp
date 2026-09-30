@@ -14,7 +14,7 @@ import com.trichome.app.model.BlendQuality
 import com.trichome.app.model.BlendResult
 import com.trichome.app.model.TerpeneBlender
 import com.trichome.app.model.TerpeneProgression
-import com.trichome.app.ui.components.GlassCard
+import com.trichome.app.ui.components.SolidPanel
 import com.trichome.app.ui.theme.TrichomeThemeState
 
 /**
@@ -36,7 +36,6 @@ fun MasterBlenderDialog(
     onDismiss: () -> Unit
 ) {
     val scheme = themeState.colorScheme()
-    val glass = themeState.glassTokens
     val featured = remember(catalog) { TerpeneBlender.featuredCompounds(catalog) }
 
     var readings by remember(catalog) { mutableStateOf(emptyMap<String, Float>()) }
@@ -150,9 +149,7 @@ private fun BlendReport(
     themeState: TrichomeThemeState
 ) {
     val scheme = themeState.colorScheme()
-    GlassCard(
-        glassOpacity = themeState.glassTokens.glassOpacity,
-        blurRadius = themeState.glassTokens.blurRadius,
+    SolidPanel(
         accentColor = scheme.primary,
         contentColor = scheme.onSurface
     ) {

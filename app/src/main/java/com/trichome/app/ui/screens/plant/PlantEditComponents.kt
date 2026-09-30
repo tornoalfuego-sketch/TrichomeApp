@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import com.trichome.app.ui.components.accentTextButtonColors
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.trichome.app.data.entity.Plant
@@ -90,7 +91,7 @@ fun PlantEditDialog(
                         onSave(PlantEditForm.applyTo(form, plant))
                     }
                 },
-                colors = ButtonDefaults.textButtonColors(contentColor = accent)
+                colors = accentTextButtonColors(MaterialTheme.colorScheme, accent)
             ) { Text("Guardar") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }

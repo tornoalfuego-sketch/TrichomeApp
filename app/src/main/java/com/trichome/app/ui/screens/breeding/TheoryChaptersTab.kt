@@ -41,7 +41,7 @@ import com.trichome.app.model.BreedingContentSource
 import com.trichome.app.model.percentLabelEs
 import com.trichome.app.model.requiredCorrectFor
 import com.trichome.app.model.scoreBreedingQuiz
-import com.trichome.app.ui.components.GlassCard
+import com.trichome.app.ui.components.SolidPanel
 import kotlinx.coroutines.launch
 
 /**
@@ -62,7 +62,6 @@ fun TheoryChaptersTab(
     progress: BreedingProgress,
     repository: BreedingProgressRepository,
     accent: Color,
-    glassOpacity: Float,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -94,7 +93,6 @@ fun TheoryChaptersTab(
                 progress = progress,
                 repository = repository,
                 accent = accent,
-                glassOpacity = glassOpacity
             )
         }
     }
@@ -108,7 +106,6 @@ private fun ChapterCard(
     progress: BreedingProgress,
     repository: BreedingProgressRepository,
     accent: Color,
-    glassOpacity: Float
 ) {
     val scope = rememberCoroutineScope()
     var expanded by remember { mutableStateOf(false) }
@@ -118,7 +115,7 @@ private fun ChapterCard(
 
     val best = medals.maxByOrNull { it.ordinal }
 
-    GlassCard(accentColor = accent, glassOpacity = glassOpacity) {
+    SolidPanel(accentColor = accent) {
         Column(
             modifier = Modifier.padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -183,7 +180,6 @@ private fun ChapterCard(
                         outcome = outcome,
                         error = error,
                         accent = accent,
-                        glassOpacity = glassOpacity,
                         bestTier = best,
                         onAnswer = { index, option ->
                             answers = answers + (index to option)
@@ -283,7 +279,6 @@ private fun QuizSection(
     outcome: BreedingQuizResult?,
     error: String?,
     accent: Color,
-    glassOpacity: Float,
     bestTier: BreedingMedalTier?,
     onAnswer: (Int, Int) -> Unit,
     onSubmit: () -> Unit,
@@ -292,7 +287,7 @@ private fun QuizSection(
     val scored = outcome as? BreedingQuizResult.Scored
     val answered = answers.size == chapter.questions.size
 
-    GlassCard(accentColor = accent, glassOpacity = glassOpacity * 0.9f) {
+    SolidPanel(accentColor = accent) {
         Column(
             modifier = Modifier.padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)

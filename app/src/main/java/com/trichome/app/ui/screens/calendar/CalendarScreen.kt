@@ -22,11 +22,12 @@ import androidx.navigation.NavHostController
 import com.trichome.app.data.entity.GrowEvent
 import com.trichome.app.data.entity.Plant
 import com.trichome.app.data.entity.Reminder
+import com.trichome.app.ui.components.accentButtonColors
+import com.trichome.app.ui.components.accentContentOn
 import com.trichome.app.ui.components.AppTopBar
-import com.trichome.app.ui.components.FloatingOrbBackground
-import com.trichome.app.ui.components.GlassCard
-import com.trichome.app.ui.components.GlassmorphicBottomBar
-import com.trichome.app.ui.components.GlassChip
+import com.trichome.app.ui.components.MainBottomBar
+import com.trichome.app.ui.components.SelectableChip
+import com.trichome.app.ui.components.SolidPanel
 import com.trichome.app.ui.screens.journal.EventTypeUi
 import com.trichome.app.ui.screens.plant.dateShort
 import com.trichome.app.ui.theme.TrichomeThemeState
@@ -87,149 +88,145 @@ fun CalendarScreen(
         }
     }
 
-    Box {
-        FloatingOrbBackground(accentColor1 = accent, accentColor2 = themeState.accentColor)
-
-        Scaffold(
-            containerColor = Color.Transparent,
-            topBar = {
-                AppTopBar(
-                    title = "📅 Calendario de Cultivo",
-                    onNavigateBack = { navController.popBackStack() }
-                )
-            },
-            floatingActionButton = {
-                // The calendar was read-only: there was no way to add anything,
-                // so the month markers could only ever reflect the journal.
-                FloatingActionButton(
-                    onClick = { showAddSheet = true },
-                    containerColor = accent
-                ) {
-                    Icon(Icons.Default.Add, "Añadir evento o recordatorio")
-                }
-            },
-            bottomBar = {
-                GlassmorphicBottomBar("calendar", { navController.navigate(it) }, themeState)
-            }
-        ) { padding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+    Scaffold(
+        topBar = {
+            AppTopBar(
+                title = "📅 Calendario de Cultivo",
+                onNavigateBack = { navController.popBackStack() }
+            )
+        },
+        floatingActionButton = {
+            // The calendar was read-only: there was no way to add anything,
+            // so the month markers could only ever reflect the journal.
+            FloatingActionButton(
+                onClick = { showAddSheet = true },
+                containerColor = accent,
+                contentColor = accentContentOn(accent)
             ) {
-                // ── Month navigation ─────────────────────────────────────
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(onClick = { month = month.minusMonths(1) }) { Text("◀") }
-                    Text(
-                        month.month.name.lowercase().replaceFirstChar { it.uppercase() } + " " + month.year,
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.weight(1f),
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                    )
-                    TextButton(onClick = { month = month.plusMonths(1) }) { Text("▶") }
-                }
-
-                // ── Filter by plant ──────────────────────────────────────
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    item {
-                        GlassChip(
-                            "🌱 Todas",
-                            selected = filterPlantId == null,
-                            onClick = { filterPlantId = null }
-                        )
-                    }
-                    items(plants, key = { it.id }) { p ->
-                        GlassChip(
-                            p.name,
-                            selected = filterPlantId == p.id,
-                            onClick = { filterPlantId = p.id }
-                        )
-                    }
-                }
-
-                // ── Grid ─────────────────────────────────────────────────
-                MonthGrid(
-                    month = month,
-                    selectedDay = selectedDay,
-                    eventsByDay = eventsByDay,
-                    remindersByDay = remindersByDay,
-                    accent = accent,
-                    onSelectDay = { selectedDay = it }
-                )
-
-    if (showAddSheet) {
-        AddCalendarEntryDialog(
-            day = selectedDay,
-            plants = plants,
-            accent = accent,
-            onDismiss = { showAddSheet = false },
-            onSaveEvent = { plantId, eventType, notes ->
-                val at = selectedDay.atTime(12, 0)
-                    .atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
-                vm.addEvent(
-                    GrowEvent(
-                        plantId = plantId,
-                        eventType = eventType,
-                        notes = notes,
-                        timestamp = at
-                    )
-                ) { ok -> if (ok) showAddSheet = false }
-            },
-            onSaveReminder = { plantId, title ->
-                vm.addReminder(
-                    Reminder(
-                        plantId = plantId,
-                        title = title,
-                        message = "Recordatorio: $title",
-                        recurrenceType = "none",
-                        recurrenceIntervalDays = 0,
-                        reminderTime = 9 * 3600_000L,
-                        isActive = true
-                    )
-                ) { ok -> if (ok) showAddSheet = false }
+                Icon(Icons.Default.Add, "Añadir evento o recordatorio")
             }
-        )
-    }
-                // ── Selected day detail ──────────────────────────────────
-                GlassCard(accentColor = accent, glassOpacity = themeState.glassTokens.glassOpacity) {
-                    Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(
-                            "Detalle · ${selectedDay.dayOfMonth}/${selectedDay.monthValue}",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        val dayEvents = eventsByDay[selectedDay].orEmpty()
-                        val dayReminders = remindersByDay[selectedDay].orEmpty()
-                        if (dayEvents.isEmpty() && dayReminders.isEmpty()) {
-                            Text("Sin eventos ni tareas este día", style = MaterialTheme.typography.bodyMedium)
-                        } else {
-                            dayEvents.forEach { e ->
-                                Text(
-                                    "• ${EventTypeUi.labelResolved(e.eventType)} — ${plantNames[e.plantId] ?: "Planta"} — ${hm(e.timestamp)}",
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                            }
-                            dayReminders.forEach { r ->
-                                Text(
-                                    "⏰ Tarea recordatorio — ${hm(r)}",
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                            }
+        },
+        bottomBar = {
+            MainBottomBar("calendar", { navController.navigate(it) }, themeState)
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // ── Month navigation ─────────────────────────────────────
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = { month = month.minusMonths(1) }) { Text("◀") }
+                Text(
+                    month.month.name.lowercase().replaceFirstChar { it.uppercase() } + " " + month.year,
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.weight(1f),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+                TextButton(onClick = { month = month.plusMonths(1) }) { Text("▶") }
+            }
+
+            // ── Filter by plant ──────────────────────────────────────
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                item {
+                    SelectableChip(
+                        "🌱 Todas",
+                        selected = filterPlantId == null,
+                        onClick = { filterPlantId = null }
+                    )
+                }
+                items(plants, key = { it.id }) { p ->
+                    SelectableChip(
+                        p.name,
+                        selected = filterPlantId == p.id,
+                        onClick = { filterPlantId = p.id }
+                    )
+                }
+            }
+
+            // ── Grid ─────────────────────────────────────────────────
+            MonthGrid(
+                month = month,
+                selectedDay = selectedDay,
+                eventsByDay = eventsByDay,
+                remindersByDay = remindersByDay,
+                accent = accent,
+                onSelectDay = { selectedDay = it }
+            )
+
+if (showAddSheet) {
+    AddCalendarEntryDialog(
+        day = selectedDay,
+        plants = plants,
+        accent = accent,
+        onDismiss = { showAddSheet = false },
+        onSaveEvent = { plantId, eventType, notes ->
+            val at = selectedDay.atTime(12, 0)
+                .atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+            vm.addEvent(
+                GrowEvent(
+                    plantId = plantId,
+                    eventType = eventType,
+                    notes = notes,
+                    timestamp = at
+                )
+            ) { ok -> if (ok) showAddSheet = false }
+        },
+        onSaveReminder = { plantId, title ->
+            vm.addReminder(
+                Reminder(
+                    plantId = plantId,
+                    title = title,
+                    message = "Recordatorio: $title",
+                    recurrenceType = "none",
+                    recurrenceIntervalDays = 0,
+                    reminderTime = 9 * 3600_000L,
+                    isActive = true
+                )
+            ) { ok -> if (ok) showAddSheet = false }
+        }
+    )
+}
+            // ── Selected day detail ──────────────────────────────────
+            SolidPanel(accentColor = accent) {
+                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        "Detalle · ${selectedDay.dayOfMonth}/${selectedDay.monthValue}",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    val dayEvents = eventsByDay[selectedDay].orEmpty()
+                    val dayReminders = remindersByDay[selectedDay].orEmpty()
+                    if (dayEvents.isEmpty() && dayReminders.isEmpty()) {
+                        Text("Sin eventos ni tareas este día", style = MaterialTheme.typography.bodyMedium)
+                    } else {
+                        dayEvents.forEach { e ->
+                            Text(
+                                "• ${EventTypeUi.labelResolved(e.eventType)} — ${plantNames[e.plantId] ?: "Planta"} — ${hm(e.timestamp)}",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                        dayReminders.forEach { r ->
+                            Text(
+                                "⏰ Tarea recordatorio — ${hm(r)}",
+                                style = MaterialTheme.typography.bodySmall
+                            )
                         }
                     }
                 }
+            }
 
-                // ── Month list ───────────────────────────────────────────
-                Text("Registros del mes", style = MaterialTheme.typography.titleMedium)
-                val monthEvents = viewEvents.sortedByDescending { it.timestamp }
-                if (monthEvents.isEmpty()) {
-                    Text("Sin registros este mes", style = MaterialTheme.typography.bodyMedium)
-                } else {
-                    monthEvents.take(30).forEach { e ->
-                        MonthEventRow(e, plantName = plantNames[e.plantId] ?: "Planta")
-                    }
+            // ── Month list ───────────────────────────────────────────
+            Text("Registros del mes", style = MaterialTheme.typography.titleMedium)
+            val monthEvents = viewEvents.sortedByDescending { it.timestamp }
+            if (monthEvents.isEmpty()) {
+                Text("Sin registros este mes", style = MaterialTheme.typography.bodyMedium)
+            } else {
+                monthEvents.take(30).forEach { e ->
+                    MonthEventRow(e, plantName = plantNames[e.plantId] ?: "Planta")
                 }
             }
         }
@@ -337,7 +334,7 @@ private fun DayDot(color: Color, count: Int) {
 
 @Composable
 private fun MonthEventRow(event: GrowEvent, plantName: String) {
-    GlassCard(accentColor = MaterialTheme.colorScheme.primary, cornerRadius = 12) {
+    SolidPanel(accentColor = MaterialTheme.colorScheme.primary, cornerRadius = 12) {
         Row(
             modifier = Modifier.padding(10.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -393,8 +390,8 @@ private fun AddCalendarEntryDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    GlassChip("Evento", selected = !isReminder, onClick = { isReminder = false })
-                    GlassChip("Recordatorio", selected = isReminder, onClick = { isReminder = true })
+                    SelectableChip("Evento", selected = !isReminder, onClick = { isReminder = false })
+                    SelectableChip("Recordatorio", selected = isReminder, onClick = { isReminder = true })
                 }
 
                 if (plants.isEmpty()) {
@@ -407,7 +404,7 @@ private fun AddCalendarEntryDialog(
                     Text("Planta", style = MaterialTheme.typography.labelLarge)
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(plants, key = { it.id }) { p ->
-                            GlassChip(p.name, selected = plantId == p.id, onClick = { plantId = p.id })
+                            SelectableChip(p.name, selected = plantId == p.id, onClick = { plantId = p.id })
                         }
                     }
                 }
@@ -417,7 +414,7 @@ private fun AddCalendarEntryDialog(
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(EventTypeUi.ALL.size) { i ->
                             val type = EventTypeUi.ALL[i]
-                            GlassChip(
+                            SelectableChip(
                                 EventTypeUi.label(type),
                                 selected = typeIndex == i,
                                 onClick = { typeIndex = i }
@@ -458,7 +455,7 @@ private fun AddCalendarEntryDialog(
                         }
                     }
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = accent)
+                colors = accentButtonColors(accent)
             ) { Text("Guardar") }
         },
         dismissButton = {

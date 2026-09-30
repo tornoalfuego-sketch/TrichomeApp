@@ -20,11 +20,10 @@ import com.trichome.app.data.entity.Plant
 import com.trichome.app.data.entity.Reminder
 import com.trichome.app.model.EventType
 import com.trichome.app.ui.components.AppTopBar
-import com.trichome.app.ui.components.FloatingOrbBackground
-import com.trichome.app.ui.components.GlassCard
-import com.trichome.app.ui.components.GlassChip
-import com.trichome.app.ui.components.GlassmorphicBottomBar
+import com.trichome.app.ui.components.MainBottomBar
 import com.trichome.app.ui.components.rememberDestructiveConfirmation
+import com.trichome.app.ui.components.SelectableChip
+import com.trichome.app.ui.components.SolidPanel
 import com.trichome.app.ui.theme.TrichomeThemeState
 import com.trichome.app.viewmodel.JournalViewModel
 import com.trichome.app.viewmodel.ReminderViewModel
@@ -35,7 +34,7 @@ import java.util.UUID
 
 /**
  * Journal (Bitácora). Global entry point supports multi-plant selection
- * (shared [groupId]) and all 16 event types through the dynamic glass form.
+ * (shared [groupId]) and all 16 event types through the dynamic form.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -91,180 +90,174 @@ fun JournalScreen(
         onConfirmed = { event -> scope.launch { vm.deleteEvent(event) } }
     )
 
-    Box {
-        FloatingOrbBackground(accentColor1 = accent, accentColor2 = themeState.accentColor)
-
-        Scaffold(
-            containerColor = Color.Transparent,
-            topBar = {
-                // The arrow was already conditional: the global journal is a
-                // bottom-bar destination, so there is nothing to go back to.
-                AppTopBar(
-                    title = if (plantId != null) "Bitácora de planta" else "📒 Bitácora",
-                    onNavigateBack = if (plantId != null) {
-                        { navController.popBackStack() }
-                    } else {
-                        null
-                    }
-                )
-            },
-            bottomBar = {
-                if (plantId == null) {
-                    GlassmorphicBottomBar("journal", { navController.navigate(it) }, themeState)
+    Scaffold(
+        topBar = {
+            // The arrow was already conditional: the global journal is a
+            // bottom-bar destination, so there is nothing to go back to.
+            AppTopBar(
+                title = if (plantId != null) "Bitácora de planta" else "📒 Bitácora",
+                onNavigateBack = if (plantId != null) {
+                    { navController.popBackStack() }
+                } else {
+                    null
                 }
+            )
+        },
+        bottomBar = {
+            if (plantId == null) {
+                MainBottomBar("journal", { navController.navigate(it) }, themeState)
             }
-        ) { padding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                // ── Plant selector ───────────────────────────────────────
-                if (plantId == null) {
-                    GlassCard(accentColor = accent, glassOpacity = themeState.glassTokens.glassOpacity) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Checkbox(checked = multiSelection, onCheckedChange = { multiSelection = it })
-                                Text("Selección múltiple (grupo)", style = MaterialTheme.typography.bodyLarge)
-                            }
-                            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                item {
-                                    GlassChip(
-                                        "🌱 Todas",
-                                        selected = selectedPlantIds.isEmpty() && !multiSelection,
-                                        onClick = { selectedPlantIds = emptySet() }
-                                    )
-                                }
-                                items(plants, key = { it.id }) { p ->
-                                    GlassChip(
-                                        (if (multiSelection) "☑️ " else "") + p.name,
-                                        selected = selectedPlantIds.contains(p.id),
-                                        onClick = {
-                                            selectedPlantIds = if (multiSelection) {
-                                                if (selectedPlantIds.contains(p.id)) selectedPlantIds - p.id else selectedPlantIds + p.id
-                                            } else {
-                                                setOf(p.id)
-                                            }
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Resolved once, above both cards: `resolveTargets` is a composable
-                // so it cannot be called from the lambdas below, and an empty
-                // result is the silent-save trap (nothing gets written).
-                val targetPlants = resolveTargets(
-                    plants, plantId, multiSelection, selectedPlantIds
-                )
-
-                // ── Dynamic event form (horizontal carousel of types) ───
-                GlassCard(accentColor = accent, glassOpacity = themeState.glassTokens.glassOpacity) {
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            // ── Plant selector ───────────────────────────────────────
+            if (plantId == null) {
+                SolidPanel(accentColor = accent) {
                     Column(modifier = Modifier.padding(12.dp)) {
-                        Text("Tipo de evento", style = MaterialTheme.typography.titleSmall)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(checked = multiSelection, onCheckedChange = { multiSelection = it })
+                            Text("Selección múltiple (grupo)", style = MaterialTheme.typography.bodyLarge)
+                        }
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            items(EventTypeUi.ALL) { type ->
-                                GlassChip(
-                                    EventTypeUi.label(type),
-                                    selected = selectedType == type,
-                                    onClick = { selectedType = type }
+                            item {
+                                SelectableChip(
+                                    "🌱 Todas",
+                                    selected = selectedPlantIds.isEmpty() && !multiSelection,
+                                    onClick = { selectedPlantIds = emptySet() }
+                                )
+                            }
+                            items(plants, key = { it.id }) { p ->
+                                SelectableChip(
+                                    (if (multiSelection) "☑️ " else "") + p.name,
+                                    selected = selectedPlantIds.contains(p.id),
+                                    onClick = {
+                                        selectedPlantIds = if (multiSelection) {
+                                            if (selectedPlantIds.contains(p.id)) selectedPlantIds - p.id else selectedPlantIds + p.id
+                                        } else {
+                                            setOf(p.id)
+                                        }
+                                    }
                                 )
                             }
                         }
-                        Spacer(Modifier.height(8.dp))
-
-                        Text(
-                            text = if (targetPlants.isEmpty()) {
-                                "⚠ Sin planta seleccionada: elige una planta arriba para poder guardar"
-                            } else {
-                                "Aplica a: " + targetPlants.joinToString { it.name }
-                            },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (targetPlants.isEmpty()) accent else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-
-                        DynamicEventForm(
-                            eventType = selectedType,
-                            accent = accent,
-                            backdrop = themeState.glassTokens.glassOpacity,
-                            onSave = { form ->
-                                if (targetPlants.isEmpty()) {
-                                    scope.launch { vm.reportSaveError("No hay ninguna planta seleccionada. Elige una antes de guardar el evento.") }
-                                    return@DynamicEventForm
-                                }
-                                val groupId = if (targetPlants.size > 1) UUID.randomUUID().toString() else null
-                                scope.launch {
-                                    targetPlants.forEach { p ->
-                                        vm.addEvent(form.toGrowEvent(p.id, groupId))
-                                    }
-                                    // Refresh only after the writes are queued.
-                                    vm.loadEvents(plantId)
-                                }
-                            }
-                        )
                     }
                 }
+            }
 
-                // ── Reminder quick-create ────────────────────────────────
-                ReminderQuickCard(
-                    accent = accent,
-                    targetPlants = targetPlants,
-                    onCreated = { ReminderSchedulerWorker.syncNow(context) },
-                    onPersist = { r ->
-                        val targets = targetPlants.map { it.id }
-                        scope.launch { vm.persistReminder(r, targets) }
-                    }
-                )
+            // Resolved once, above both cards: `resolveTargets` is a composable
+            // so it cannot be called from the lambdas below, and an empty
+            // result is the silent-save trap (nothing gets written).
+            val targetPlants = resolveTargets(
+                plants, plantId, multiSelection, selectedPlantIds
+            )
 
-                // ── Active reminders (the only place they can be changed) ──
-                // The create card above was the only reminder surface in the
-                // app, and it could not even list what it had created:
-                // `ReminderDao.updateReminder` / `deleteReminder` had no
-                // callers at all. The journal is where a reminder is created,
-                // so it is where it is edited and removed.
-                if (activeReminders.isNotEmpty()) {
-                    Text("Recordatorios activos", style = MaterialTheme.typography.titleMedium)
-                    activeReminders.forEach { reminder ->
-                        ReminderRow(
-                            reminder = reminder,
-                            plantName = reminder.plantId?.let { plantNames[it] },
-                            accent = accent,
-                            onEdit = { editingReminder = reminder },
-                            onDelete = { deleteReminderConfirmation.request(reminder) }
-                        )
-                    }
-                }
-
-                // A refused edit is saved but will not ring, and a failed delete
-                // leaves the reminder armed. Both are silent otherwise.
-                reminderVm.saveError?.let {
-                    Text(
-                        it,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-
-                // ── List ─────────────────────────────────────────────────
-                Text("Registro de eventos", style = MaterialTheme.typography.titleMedium)
-                if (vm.events.isEmpty()) {
-                    GlassCard(accentColor = accent) {
-                        Column(
-                            modifier = Modifier.padding(32.dp).fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text("Sin eventos registrados", style = MaterialTheme.typography.bodyLarge)
+            // ── Dynamic event form (horizontal carousel of types) ───
+            SolidPanel(accentColor = accent) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text("Tipo de evento", style = MaterialTheme.typography.titleSmall)
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(EventTypeUi.ALL) { type ->
+                            SelectableChip(
+                                EventTypeUi.label(type),
+                                selected = selectedType == type,
+                                onClick = { selectedType = type }
+                            )
                         }
                     }
-                } else {
-                    vm.events.forEach { e ->
-                        EventRow(e, onDeleteRequest = { deleteConfirmation.request(e) })
+                    Spacer(Modifier.height(8.dp))
+
+                    Text(
+                        text = if (targetPlants.isEmpty()) {
+                            "⚠ Sin planta seleccionada: elige una planta arriba para poder guardar"
+                        } else {
+                            "Aplica a: " + targetPlants.joinToString { it.name }
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (targetPlants.isEmpty()) accent else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    DynamicEventForm(
+                        eventType = selectedType,
+                        accent = accent,
+                        onSave = { form ->
+                            if (targetPlants.isEmpty()) {
+                                scope.launch { vm.reportSaveError("No hay ninguna planta seleccionada. Elige una antes de guardar el evento.") }
+                                return@DynamicEventForm
+                            }
+                            val groupId = if (targetPlants.size > 1) UUID.randomUUID().toString() else null
+                            scope.launch {
+                                targetPlants.forEach { p ->
+                                    vm.addEvent(form.toGrowEvent(p.id, groupId))
+                                }
+                                // Refresh only after the writes are queued.
+                                vm.loadEvents(plantId)
+                            }
+                        }
+                    )
+                }
+            }
+
+            // ── Reminder quick-create ────────────────────────────────
+            ReminderQuickCard(
+                accent = accent,
+                targetPlants = targetPlants,
+                onCreated = { ReminderSchedulerWorker.syncNow(context) },
+                onPersist = { r ->
+                    val targets = targetPlants.map { it.id }
+                    scope.launch { vm.persistReminder(r, targets) }
+                }
+            )
+
+            // ── Active reminders (the only place they can be changed) ──
+            // The create card above was the only reminder surface in the
+            // app, and it could not even list what it had created:
+            // `ReminderDao.updateReminder` / `deleteReminder` had no
+            // callers at all. The journal is where a reminder is created,
+            // so it is where it is edited and removed.
+            if (activeReminders.isNotEmpty()) {
+                Text("Recordatorios activos", style = MaterialTheme.typography.titleMedium)
+                activeReminders.forEach { reminder ->
+                    ReminderRow(
+                        reminder = reminder,
+                        plantName = reminder.plantId?.let { plantNames[it] },
+                        accent = accent,
+                        onEdit = { editingReminder = reminder },
+                        onDelete = { deleteReminderConfirmation.request(reminder) }
+                    )
+                }
+            }
+
+            // A refused edit is saved but will not ring, and a failed delete
+            // leaves the reminder armed. Both are silent otherwise.
+            reminderVm.saveError?.let {
+                Text(
+                    it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+
+            // ── List ─────────────────────────────────────────────────
+            Text("Registro de eventos", style = MaterialTheme.typography.titleMedium)
+            if (vm.events.isEmpty()) {
+                SolidPanel(accentColor = accent) {
+                    Column(
+                        modifier = Modifier.padding(32.dp).fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("Sin eventos registrados", style = MaterialTheme.typography.bodyLarge)
                     }
+                }
+            } else {
+                vm.events.forEach { e ->
+                    EventRow(e, onDeleteRequest = { deleteConfirmation.request(e) })
                 }
             }
         }
@@ -336,7 +329,7 @@ private fun resolveTargets(
 
 @Composable
 private fun EventRow(event: GrowEvent, onDeleteRequest: () -> Unit) {
-    GlassCard(
+    SolidPanel(
         accentColor = MaterialTheme.colorScheme.primary,
         cornerRadius = 14
     ) {

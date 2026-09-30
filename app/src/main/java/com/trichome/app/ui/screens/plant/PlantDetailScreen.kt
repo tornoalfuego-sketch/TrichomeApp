@@ -19,11 +19,11 @@ import com.trichome.app.model.Phase
 import com.trichome.app.model.StageProgressEngine
 import com.trichome.app.model.SuperCycleEngine
 import com.trichome.app.model.SuperCycleResult
-import com.trichome.app.ui.components.FloatingOrbBackground
-import com.trichome.app.ui.components.GlassCard
-import com.trichome.app.ui.components.GlassProgressIndicator
-import com.trichome.app.ui.components.GlassmorphicBottomBar
+import com.trichome.app.ui.components.accentButtonColors
+import com.trichome.app.ui.components.MainBottomBar
 import com.trichome.app.ui.components.rememberDestructiveConfirmation
+import com.trichome.app.ui.components.SolidPanel
+import com.trichome.app.ui.components.SolidProgressRing
 import com.trichome.app.ui.theme.TrichomeThemeState
 import com.trichome.app.viewmodel.PlantDetailUiState
 import com.trichome.app.viewmodel.PlantDetailViewModel
@@ -67,118 +67,109 @@ fun PlantDetailScreen(
         }
     )
 
-    Box {
-        FloatingOrbBackground(
-            accentColor1 = accent,
-            accentColor2 = if (vm.superCycleResult?.isLight == true) Color(0xFFFFD54F) else tintAccent
-        )
-
-        Scaffold(
-            containerColor = Color.Transparent,
-            topBar = {
-                TopAppBar(
-                    title = { Text(plant?.name ?: "Detalle de Planta") },
-                    navigationIcon = {
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(plant?.name ?: "Detalle de Planta") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
+                    }
+                },
+                actions = {
+                    // Only offered once the row has resolved: there is
+                    // nothing to edit or delete while it is still loading,
+                    // and a wrong id is worse than no button.
+                    plant?.let { current ->
+                        IconButton(onClick = { editing = true }) {
+                            Icon(Icons.Default.Edit, "Editar planta")
                         }
-                    },
-                    actions = {
-                        // Only offered once the row has resolved: there is
-                        // nothing to edit or delete while it is still loading,
-                        // and a wrong id is worse than no button.
-                        plant?.let { current ->
-                            IconButton(onClick = { editing = true }) {
-                                Icon(Icons.Default.Edit, "Editar planta")
-                            }
-                            IconButton(onClick = { deleteConfirmation.request(current) }) {
-                                Icon(
-                                    Icons.Default.Delete,
-                                    "Eliminar planta",
-                                    tint = MaterialTheme.colorScheme.error
-                                )
-                            }
+                        IconButton(onClick = { deleteConfirmation.request(current) }) {
+                            Icon(
+                                Icons.Default.Delete,
+                                "Eliminar planta",
+                                tint = MaterialTheme.colorScheme.error
+                            )
                         }
                     }
-                )
-            },
-            bottomBar = {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Button(
-                        onClick = { navController.navigate("protocol/$plantId") },
-                        modifier = Modifier.weight(1f)
-                    ) { Text("📋 Protocolos") }
-                    Button(
-                        onClick = { navController.navigate("super_cycle/$plantId") },
-                        modifier = Modifier.weight(1f)
-                    ) { Text("☀️ SuperCycle") }
-                    Button(
-                        onClick = { navController.navigate("journal/$plantId") },
-                        modifier = Modifier.weight(1f)
-                    ) { Text("📒 Bitácora") }
                 }
-            }
-        ) { padding ->
-            Column(
+            )
+        },
+        bottomBar = {
+            Row(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                when (uiState) {
-                    PlantDetailUiState.Loading -> {
+                Button(
+                    onClick = { navController.navigate("protocol/$plantId") },
+                    modifier = Modifier.weight(1f)
+                ) { Text("📋 Protocolos") }
+                Button(
+                    onClick = { navController.navigate("super_cycle/$plantId") },
+                    modifier = Modifier.weight(1f)
+                ) { Text("☀️ SuperCycle") }
+                Button(
+                    onClick = { navController.navigate("journal/$plantId") },
+                    modifier = Modifier.weight(1f)
+                ) { Text("📒 Bitácora") }
+            }
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            when (uiState) {
+                PlantDetailUiState.Loading -> {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        CircularProgressIndicator(color = accent)
+                        Text("Cargando planta…", style = MaterialTheme.typography.bodyLarge)
+                    }
+                }
+
+                is PlantDetailUiState.Error -> {
+                    SolidPanel(accentColor = accent) {
                         Column(
-                            modifier = Modifier.fillMaxWidth().padding(32.dp),
+                            modifier = Modifier.fillMaxWidth().padding(16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            CircularProgressIndicator(color = accent)
-                            Text("Cargando planta…", style = MaterialTheme.typography.bodyLarge)
-                        }
-                    }
-
-                    is PlantDetailUiState.Error -> {
-                        GlassCard(accentColor = accent, glassOpacity = themeState.glassTokens.glassOpacity) {
-                            Column(
-                                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            Text(
+                                "⚠️ No pudimos abrir la planta",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(
+                                uiState.message,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Button(
+                                onClick = { navController.popBackStack() },
+                                colors = accentButtonColors(accent)
                             ) {
-                                Text(
-                                    "⚠️ No pudimos abrir la planta",
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                Text(
-                                    uiState.message,
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                                Button(
-                                    onClick = { navController.popBackStack() },
-                                    colors = ButtonDefaults.buttonColors(containerColor = accent)
-                                ) {
-                                    Text("← Volver a las carpas")
-                                }
+                                Text("← Volver a las carpas")
                             }
                         }
                     }
+                }
 
-                    is PlantDetailUiState.Success -> {
-                        val success = uiState
-                        PlantDetailContent(
-                            success = success,
-                            superCycleResult = vm.superCycleResult,
-                            events = vm.events,
-                            accent = accent,
-                            glassOpacity = themeState.glassTokens.glassOpacity
-                        )
-                    }
+                is PlantDetailUiState.Success -> {
+                    val success = uiState
+                    PlantDetailContent(
+                        success = success,
+                        superCycleResult = vm.superCycleResult,
+                        events = vm.events,
+                        accent = accent,
+                    )
                 }
             }
         }
@@ -214,12 +205,11 @@ private fun PlantDetailContent(
     superCycleResult: SuperCycleResult?,
     events: List<GrowEvent>,
     accent: Color,
-    glassOpacity: Float
 ) {
     val plant = success.plant
 
     // ── Header info ─────────────────────────────────────────────────────
-    GlassCard(accentColor = accent, glassOpacity = glassOpacity) {
+    SolidPanel(accentColor = accent) {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -236,7 +226,7 @@ private fun PlantDetailContent(
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
-            GlassProgressIndicator(
+            SolidProgressRing(
                 percentage = 1f,
                 size = 72,
                 color = accent
@@ -246,7 +236,7 @@ private fun PlantDetailContent(
 
     // ── SuperCycle status ───────────────────────────────────────────────
     superCycleResult?.let { result ->
-        GlassCard(accentColor = accent, glassOpacity = glassOpacity) {
+        SolidPanel(accentColor = accent) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text("☀️ Fase actual", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
@@ -258,7 +248,7 @@ private fun PlantDetailContent(
                     }
                     Text(phaseText, style = MaterialTheme.typography.headlineSmall)
                     Spacer(Modifier.weight(1f))
-                    GlassProgressIndicator(
+                    SolidProgressRing(
                         percentage = result.phaseProgress,
                         size = 64,
                         color = if (result.isLight) Color(0xFFFFD54F) else Color(0xFF7C4DFF)
@@ -275,7 +265,7 @@ private fun PlantDetailContent(
 
     // ── Stage progress (protocol blocks) ─────────────────────────────────
     success.stageProgress?.let { sp ->
-        GlassCard(accentColor = accent, glassOpacity = glassOpacity) {
+        SolidPanel(accentColor = accent) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text("📈 Progreso del protocolo", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(4.dp))
@@ -298,7 +288,7 @@ private fun PlantDetailContent(
     }
 
     // ── Latest events ───────────────────────────────────────────────────
-    GlassCard(accentColor = accent, glassOpacity = glassOpacity) {
+    SolidPanel(accentColor = accent) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text("📒 Últimos eventos", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(8.dp))
@@ -317,7 +307,7 @@ private fun PlantDetailContent(
     }
 
     if (plant.notes.isNotBlank()) {
-        GlassCard(accentColor = accent) {
+        SolidPanel(accentColor = accent) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text("📝 Notas", style = MaterialTheme.typography.titleMedium)
                 Text(plant.notes, style = MaterialTheme.typography.bodyMedium)

@@ -12,14 +12,14 @@ import androidx.compose.ui.unit.dp
 import com.trichome.app.data.entity.Plant
 import com.trichome.app.data.entity.Reminder
 import com.trichome.app.model.EventType
-import com.trichome.app.ui.components.GlassCard
+import com.trichome.app.ui.components.SolidPanel
+import com.trichome.app.ui.components.accentButtonColors
 import com.trichome.app.worker.ReminderSchedulerWorker
 
 @Composable
 fun DynamicEventForm(
     eventType: EventType,
     accent: Color,
-    backdrop: Float,
     onSave: (EventFormData) -> Unit
 ) {
     var data by remember(eventType) { mutableStateOf(EventFormData().apply { this.eventType = eventType }) }
@@ -104,7 +104,7 @@ fun DynamicEventForm(
                 if (data.hasAnyValue()) onSave(data)
             },
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = accent)
+            colors = accentButtonColors(accent)
         ) {
             Text("Guardar evento")
         }
@@ -180,7 +180,7 @@ fun ReminderQuickCard(
     var minute by remember { mutableStateOf(0) }
     var error by remember { mutableStateOf(false) }
 
-    GlassCard(accentColor = accent) {
+    SolidPanel(accentColor = accent) {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("⏰ Crear recordatorio recurrente", style = MaterialTheme.typography.titleSmall)
             OutlinedTextField(
@@ -246,7 +246,7 @@ fun ReminderQuickCard(
                     title = ""
                 },
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = accent)
+                colors = accentButtonColors(accent)
             ) {
                 Text("Crear recordatorio")
             }
