@@ -6,6 +6,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ProvidableCompositionLocal
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -259,6 +262,20 @@ data class SolidPalette(
     val onBackground: Color,
     val onSurface: Color,
     val onSurfaceVariant: Color,
+    /**
+     * The third text level: captions, counts, hints.
+     *
+     * This role did not exist. Seventeen call sites asked for it by writing
+     * `onSurface.copy(alpha = 0.5f)` through `0.8f`, which meant a "tertiary text
+     * colour" setting had nothing to override and a change to it would have been
+     * invisible on four screens. It is a real palette entry now, and those sites
+     * read it instead of mutating a colour by hand.
+     *
+     * Deliberately dimmer than [onSurfaceVariant] so the three levels stay
+     * distinguishable, but it still clears [MINIMUM_TEXT_CONTRAST] against
+     * [surface]: it is a caption, not a decoration.
+     */
+    val onSurfaceMuted: Color,
     val secondaryBase: Color,
     val tertiaryBase: Color,
     val error: Color
@@ -276,6 +293,7 @@ object SolidPalettes {
         onBackground = Color(0xFFF3F9F2),
         onSurface = Color(0xFFF3F9F2),
         onSurfaceVariant = Color(0xFFC2D5C4),
+        onSurfaceMuted = Color(0xFF93AA95),
         secondaryBase = Color(0xFF7FD1A0),
         tertiaryBase = Color(0xFFFFC857),
         error = Color(0xFFFFB4AB)
@@ -290,6 +308,7 @@ object SolidPalettes {
         onBackground = Color(0xFFFDF2E7),
         onSurface = Color(0xFFFDF2E7),
         onSurfaceVariant = Color(0xFFDDC3A8),
+        onSurfaceMuted = Color(0xFFAE967C),
         secondaryBase = Color(0xFFFFB86B),
         tertiaryBase = Color(0xFFFFD166),
         error = Color(0xFFFFB4AB)
@@ -304,6 +323,7 @@ object SolidPalettes {
         onBackground = Color(0xFFF5F7FF),
         onSurface = Color(0xFFF5F7FF),
         onSurfaceVariant = Color(0xFFBFC9E0),
+        onSurfaceMuted = Color(0xFF8B97B4),
         secondaryBase = Color(0xFF8AB4F8),
         tertiaryBase = Color(0xFFC7A8FF),
         error = Color(0xFFFFB4AB)
@@ -318,6 +338,7 @@ object SolidPalettes {
         onBackground = Color(0xFF14180F),
         onSurface = Color(0xFF14180F),
         onSurfaceVariant = Color(0xFF3E4739),
+        onSurfaceMuted = Color(0xFF6B7466),
         secondaryBase = Color(0xFFB4631C),
         tertiaryBase = Color(0xFF2F7D32),
         error = Color(0xFFB3261E)
@@ -334,6 +355,135 @@ object SolidPalettes {
 }
 
 /**
+ * The user's colour choices, each null meaning "the palette's own".
+ *
+ * These are app-wide, not per screen. [solidSchemeFor] is the only place a
+ * `ColorScheme` is ever built, and `TrichomeTheme` publishes that same instance
+ * into `MaterialTheme`, so an override applied here reaches every one of the
+ * 25 files that read a scheme — there is no per-screen plumbing and no way for
+ * one screen to keep a colour the rest of the app dropped.
+ */
+data class ColorOverrides(
+    /** Body text, titles, values. Overrides `onSurface` and `onBackground`. */
+    val primaryText: Color? = null,
+    /** Supporting text, subtitles, metadata. Overrides `onSurfaceVariant`. */
+    val secondaryText: Color? = null,
+    /** Captions and counts. Has no `ColorScheme` role; see [tertiaryTextFor]. */
+    val tertiaryText: Color? = null,
+    /** Filled buttons, the selected-tab indicator, accents. The `primary` role. */
+    val button: Color? = null
+)
+
+/**
+ * A user-chosen text colour, or null when it cannot be read.
+ *
+ * A pick that does not clear [MINIMUM_TEXT_CONTRAST] against the surface it
+ * would be drawn on is *dropped*, not dimmed or nudged: a text colour that
+ * silently renders as something else is worse than one that visibly did not
+ * apply, and the picker marks such a swatch so the user knows before they tap.
+ *
+ * This is the same contract [containerFor] already follows for accent tints, so
+ * the app has one rule about legibility instead of two.
+ */
+private fun textOverrideOrNull(candidate: Color?, surface: Color): Color? =
+    candidate?.takeIf { contrastRatio(it, surface) >= MINIMUM_TEXT_CONTRAST }
+
+/**
+ * The three text levels for a theme, with the user's overrides applied.
+ *
+ * The third level has no `ColorScheme` role — Material 3 has exactly 36 and none
+ * of them is a muted text ink — so it travels beside the scheme in a
+ * `CompositionLocal` rather than inside it. See [LocalTertiaryText].
+ */
+data class ResolvedTextColors(
+    val primary: Color,
+    val secondary: Color,
+    val tertiary: Color
+)
+
+/**
+ * Resolves the three text levels for [theme] under [overrides].
+ *
+ * Split out of [solidSchemeFor] because the third level cannot ride along in the
+ * scheme, and having both in one function means the fallback rule is written
+ * once instead of twice.
+ */
+fun resolvedTextColors(theme: AppTheme, overrides: ColorOverrides): ResolvedTextColors {
+    val palette = SolidPalettes.forTheme(theme)
+    // Whether an override was *supplied* is not the same as whether one was
+    // accepted: a pick that could not be read falls back to the palette, and
+    // deriving from that fallback would repaint the other two levels off a colour
+    // the user never actually chose. Deriving keys off acceptance.
+    val acceptedPrimary = textOverrideOrNull(overrides.primaryText, palette.surface)
+    val primary = acceptedPrimary ?: palette.onSurface
+    val deriveFromPick = acceptedPrimary != null
+    return ResolvedTextColors(
+        primary = primary,
+        // When the user has chosen a primary text colour and left the other two
+        // on the theme, the other two are *derived from the pick* rather than
+        // staying behind in the old palette. A user who set the text to amber and
+        // got cool blue-grey captions back had picked one colour and received a
+        // system of two, which is the "the tertiary does not match" report.
+        //
+        // The ratios are the same shape the shipped palettes use: the secondary
+        // sits a third of the way towards the surface, the tertiary two thirds of
+        // the way, so the three levels stay visibly distinct. Deriving is
+        // conditional on the user *not* having chosen that level, so an explicit
+        // pick is always respected.
+        secondary = textOverrideOrNull(overrides.secondaryText, palette.surface)
+            ?: if (deriveFromPick) {
+                derivedTextLevel(primary, palette.surface, SECONDARY_DERIVE_RATIO)
+            } else {
+                palette.onSurfaceVariant
+            },
+        tertiary = textOverrideOrNull(overrides.tertiaryText, palette.surface)
+            ?: if (deriveFromPick) {
+                derivedTextLevel(primary, palette.surface, TERTIARY_DERIVE_RATIO)
+            } else {
+                palette.onSurfaceMuted
+            }
+    )
+}
+
+/**
+ * How much of a user-chosen primary text colour survives into the levels below it.
+ *
+ * 0.66 and 0.42 rather than round numbers because the shipped palettes are tuned
+ * by eye, and a derived level that lands on the same tone as the shipped one is
+ * the point: the two cases have to look like the same system.
+ */
+private const val SECONDARY_DERIVE_RATIO = 0.66f
+private const val TERTIARY_DERIVE_RATIO = 0.42f
+
+/**
+ * A lower text level derived from a user-chosen primary, dimmed by [ratio] but
+ * never past legibility.
+ *
+ * The dimming alone is not safe: a dark primary on a dark surface produces a
+ * derived level that clears nothing, and the report that prompted this was that
+ * the information could not be read. So the blend walks back towards the primary
+ * until it clears [MINIMUM_TEXT_CONTRAST] -- the same "strongest tint that still
+ * reads" rule [containerFor] already applies to accent containers, so the app has
+ * one rule about legibility rather than two.
+ *
+ * @param ratio how far towards the surface to start, between 0 and 1.
+ */
+private fun derivedTextLevel(primary: Color, surface: Color, ratio: Float): Color {
+    val steps = 20
+    // Upwards from the requested ratio: start exactly where the caller asked, and
+    // only strengthen towards the primary if that fails. Walking downwards would
+    // start at the primary itself and return it on the first iteration whenever it
+    // is legible, which collapses the level it was supposed to derive.
+    for (step in 0..steps) {
+        val candidate = blend(primary, surface, ratio + (1f - ratio) * step / steps)
+        if (contrastRatio(candidate, surface) >= MINIMUM_TEXT_CONTRAST) return candidate
+    }
+    // Unreachable: at the last step the candidate is the primary itself, and the
+    // primary has already been resolved as legible by `textOverrideOrNull`.
+    return primary
+}
+
+/**
  * The one Material 3 scheme for a theme.
  *
  * Everything that needs a scheme goes through here, so there is no way for one
@@ -343,11 +493,24 @@ object SolidPalettes {
  * into the surface, and every `on*` role derived from a user-chosen colour is
  * resolved with [readableOnStrict] rather than a luminance threshold — so *any*
  * accent stays legible, not just the green that shipped.
+ *
+ * [overrides] carries the user's text and button choices. They are validated
+ * against the surface they will be read on, and an unusable pick falls back to
+ * the palette rather than shipping unreadable text.
  */
-fun solidSchemeFor(theme: AppTheme, accent: Color): ColorScheme {
+fun solidSchemeFor(
+    theme: AppTheme,
+    accent: Color,
+    overrides: ColorOverrides = ColorOverrides()
+): ColorScheme {
     val palette = SolidPalettes.forTheme(theme)
+    val text = resolvedTextColors(theme, overrides)
 
-    val primaryContainer = containerFor(accent, palette.surface)
+    // The button colour is the `primary` role, so every filled button, the
+    // selected-tab indicator and every accent-coloured icon follow one pick.
+    val buttonColor = overrides.button ?: accent
+
+    val primaryContainer = containerFor(buttonColor, palette.surface)
     val secondaryBase = if (theme.isDark) palette.secondaryBase else palette.secondaryBase.darken(0.35f)
     val secondaryContainer = containerFor(secondaryBase, palette.surface)
     val tertiaryBase = if (theme.isDark) palette.tertiaryBase else palette.tertiaryBase.darken(0.40f)
@@ -359,8 +522,8 @@ fun solidSchemeFor(theme: AppTheme, accent: Color): ColorScheme {
     val base = if (theme.isDark) darkColorScheme() else lightColorScheme()
 
     return base.copy(
-        primary = accent,
-        onPrimary = readableOnStrict(accent),
+        primary = buttonColor,
+        onPrimary = readableOnStrict(buttonColor),
         primaryContainer = primaryContainer,
         onPrimaryContainer = readableOnStrict(primaryContainer),
         secondary = secondaryBase,
@@ -372,11 +535,14 @@ fun solidSchemeFor(theme: AppTheme, accent: Color): ColorScheme {
         tertiaryContainer = tertiaryContainer,
         onTertiaryContainer = readableOnStrict(tertiaryContainer),
         background = palette.background,
-        onBackground = palette.onBackground,
+        // `onBackground` moves with the primary text: it is the same literal as
+        // `onSurface` in all four palettes, so overriding one and not the other
+        // would leave three call sites painting a different colour from the rest.
+        onBackground = text.primary,
         surface = palette.surface,
-        onSurface = palette.onSurface,
+        onSurface = text.primary,
         surfaceVariant = palette.surfaceVariant,
-        onSurfaceVariant = palette.onSurfaceVariant,
+        onSurfaceVariant = text.secondary,
         outline = palette.outline,
         outlineVariant = palette.outlineVariant,
         error = palette.error,
@@ -590,6 +756,16 @@ class TrichomeThemeState(
     var fontWeightIndex by mutableStateOf(AppFontWeight.NORMAL.ordinal)
         private set
 
+    /**
+     * The user's app-wide colour choices.
+     *
+     * Held as one object rather than four loose fields because they are resolved
+     * together in [colorScheme] and validated together: a screen can never see
+     * half of a change.
+     */
+    var colorOverrides by mutableStateOf(ColorOverrides())
+        private set
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     val theme: AppTheme
@@ -601,6 +777,10 @@ class TrichomeThemeState(
     val fontWeight: AppFontWeight
         get() = AppFontWeight.entries.getOrElse(fontWeightIndex) { AppFontWeight.NORMAL }
 
+    /** The three text levels, overrides applied and unusable picks dropped. */
+    val textColors: ResolvedTextColors
+        get() = resolvedTextColors(theme, colorOverrides)
+
     /** One-shot collection of the persisted preferences. */
     suspend fun collectFromRepository() {
         val container = appContainer ?: return
@@ -610,6 +790,12 @@ class TrichomeThemeState(
             accentColor = Color(prefs.accentArgb)
             fontFamilyIndex = prefs.fontFamilyIndex.coerceIn(AppFontFamily.entries.indices)
             fontWeightIndex = prefs.fontWeightIndex.coerceIn(AppFontWeight.entries.indices)
+            colorOverrides = ColorOverrides(
+                primaryText = prefs.primaryTextArgb?.let(::Color),
+                secondaryText = prefs.secondaryTextArgb?.let(::Color),
+                tertiaryText = prefs.tertiaryTextArgb?.let(::Color),
+                button = prefs.buttonColorArgb?.let(::Color)
+            )
         }
     }
 
@@ -625,6 +811,68 @@ class TrichomeThemeState(
         accentColor = color
         scope.launch { appContainer?.appearanceSettings?.setAccentArgb(argb) }
     }
+
+    /**
+     * Replaces one text level, or clears it with null.
+     *
+     * Clearing removes the stored key instead of writing a sentinel, so the
+     * preference file never accumulates a meaning for "the theme's own" — the
+     * same rule the rest of the appearance store follows.
+     */
+    fun updatePrimaryTextColor(color: Color?) = updateColor(
+        color,
+        apply = { current, value -> current.copy(primaryText = value) },
+        persist = { repo, argb -> repo.setPrimaryTextArgb(argb) }
+    )
+
+    /** @see updatePrimaryTextColor */
+    fun updateSecondaryTextColor(color: Color?) = updateColor(
+        color,
+        apply = { current, value -> current.copy(secondaryText = value) },
+        persist = { repo, argb -> repo.setSecondaryTextArgb(argb) }
+    )
+
+    /** @see updatePrimaryTextColor */
+    fun updateTertiaryTextColor(color: Color?) = updateColor(
+        color,
+        apply = { current, value -> current.copy(tertiaryText = value) },
+        persist = { repo, argb -> repo.setTertiaryTextArgb(argb) }
+    )
+
+    /** @see updatePrimaryTextColor */
+    fun updateButtonColor(color: Color?) = updateColor(
+        color,
+        apply = { current, value -> current.copy(button = value) },
+        persist = { repo, argb -> repo.setButtonColorArgb(argb) }
+    )
+
+    /** Returns all four colour choices to the theme's own. */
+    fun clearColorOverrides() {
+        colorOverrides = ColorOverrides()
+        scope.launch { appContainer?.appearanceSettings?.clearColorOverrides() }
+    }
+
+    /**
+     * Applies one override and persists it.
+     *
+     * A fully transparent pick is rejected before it reaches the state, not
+     * after: the old `toArgbInt()` wrote zero for every colour and `Color(0)` is
+     * fully transparent, so accepting one here would render invisible text. It
+     * is *not* rejected for low contrast here — that is resolved once, in
+     * [solidSchemeFor], so the legibility rule lives beside the palette instead
+     * of being duplicated in every writer.
+     */
+    private fun updateColor(
+        color: Color?,
+        apply: (ColorOverrides, Color?) -> ColorOverrides,
+        persist: suspend (com.trichome.app.data.prefs.AppearanceSettingsRepository, Int?) -> Unit
+    ) {
+        val value = color?.takeIf { it != Color.Transparent }
+        colorOverrides = apply(colorOverrides, value)
+        scope.launch { appContainer?.appearanceSettings?.let { persist(it, value?.toArgbInt()) } }
+    }
+
+    fun colorScheme(): ColorScheme = solidSchemeFor(theme, accentColor, colorOverrides)
 
     fun updateFontScale(scale: Float) {
         val v = scale.coerceIn(0.85f, 1.30f)
@@ -644,10 +892,43 @@ class TrichomeThemeState(
         scope.launch { appContainer?.appearanceSettings?.setFontWeightIndex(safe) }
     }
 
-    fun colorScheme(): ColorScheme = solidSchemeFor(theme, accentColor)
-
     fun typography(): Typography = buildTypography(fontScale, fontFamily, fontWeight)
 }
+
+/* ─────────────────────────── Tertiary text ──────────────────────────────── */
+
+/**
+ * The third text level: captions, counts, hints.
+ *
+ * Material 3's [ColorScheme] has exactly 36 roles and none of them is a muted
+ * text ink, so this cannot ride along in the scheme the way `onSurface` and
+ * `onSurfaceVariant] do. It travels beside it.
+ *
+ * Seventeen call sites used to reach for it by hand with
+ * `onSurface.copy(alpha = 0.5f)` through `0.8f`. They now read
+ * `LocalTertiaryText.current`, so a "tertiary text colour" the user picks is
+ * actually visible on the four screens that had no seam for it.
+ *
+ * [compositionLocalOf], not [staticCompositionLocalOf] -- and that distinction was
+ * a bug reported from a device. A static local does not track its reads: when the
+ * value changes, only the content passed to the provider's own lambda is
+ * recomposed, so an already-composed screen keeps painting the *previous* colour
+ * until something else invalidates it. The symptom was exactly "the text does not
+ * match the colour I picked, and switching tabs and coming back fixes it" -- a tab
+ * round trip disposes the composition, which re-reads the local. The dynamic local
+ * records the read as a state read, so every consumer is invalidated the moment
+ * the value changes.
+ *
+ * The cost is one equality comparison per read. For a single colour that is not a
+ * cost, and paying it is what makes the setting work on the first tap.
+ */
+val LocalTertiaryText: ProvidableCompositionLocal<Color> = compositionLocalOf {
+    Color(0xFF93AA95)
+}
+
+/** The third text level, for a composable that has the theme state at hand. */
+@Composable
+fun tertiaryText(themeState: TrichomeThemeState): Color = themeState.textColors.tertiary
 
 /* ─────────────────────────── ARGB helpers ─────────────────────────────── */
 
@@ -694,9 +975,17 @@ fun TrichomeTheme(
         }
     }
 
-    MaterialTheme(
-        colorScheme = scheme,
-        typography = typography,
-        content = content
-    )
+    // The third text level travels beside the scheme, because Material 3 has no
+    // role for it. Provided here — the one place that knows the theme state — so
+    // every screen inside the theme reads the user's pick without being handed
+    // anything.
+    CompositionLocalProvider(
+        LocalTertiaryText provides themeState.textColors.tertiary
+    ) {
+        MaterialTheme(
+            colorScheme = scheme,
+            typography = typography,
+            content = content
+        )
+    }
 }
