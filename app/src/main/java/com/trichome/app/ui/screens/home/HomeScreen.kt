@@ -21,6 +21,7 @@ import com.trichome.app.ui.components.SolidPanel
 import com.trichome.app.ui.theme.TrichomeThemeState
 import com.trichome.app.viewmodel.HomeViewModel
 import com.trichome.app.viewmodel.appViewModel
+import com.trichome.app.ui.theme.LocalTertiaryText
 
 @Composable
 fun HomeScreen(
@@ -61,7 +62,7 @@ fun HomeScreen(
             Text(
                 "Gestión y diagnóstico inteligente de tus cultivos",
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                color = LocalTertiaryText.current
             )
 
             Row(
@@ -178,6 +179,21 @@ private fun ActionRow(
     icon: ImageVector,
     label: String
 ) {
+    // One row, one colour source.
+    //
+    // This used to resolve the leading glyph through `accentLabelOn`, so the icon
+    // followed the accent while the label followed the text role and the chevron
+    // followed neither: three colours in one row, and the icon repainted every
+    // time the accent changed. It was the only list row in the app that did it --
+    // the other two `accentLabelOn` call sites are chrome (the bottom bar, the
+    // encyclopedia header), not content.
+    //
+    // The rule now: in a row, the label is the content and the two glyphs are
+    // furniture, so both glyphs take the third text level. The accent keeps its
+    // meaning everywhere else -- filled buttons, the selected tab, the panel edge
+    // and the FAB -- and a list that changes colour with the accent stops being a
+    // list the user can scan.
+    val furniture = LocalTertiaryText.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -185,9 +201,13 @@ private fun ActionRow(
             .padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+        Icon(icon, contentDescription = null, tint = furniture)
         Spacer(Modifier.width(12.dp))
         Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-        Icon(Icons.Filled.ChevronRight, contentDescription = null)
+        Icon(
+            Icons.Filled.ChevronRight,
+            contentDescription = null,
+            tint = furniture
+        )
     }
 }
