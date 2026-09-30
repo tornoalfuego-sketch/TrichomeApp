@@ -13,6 +13,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import com.trichome.app.ui.components.accentButtonColors
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -72,6 +75,7 @@ fun SettingsScreen(
 ) {
     val scheme = themeState.colorScheme()
     val accent = scheme.primary
+    var showColorRoles by remember { mutableStateOf(false) }
 
     Scaffold(
         bottomBar = {
@@ -105,7 +109,8 @@ fun SettingsScreen(
                 Text("🎨 Tema de la aplicación", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    "El fondo y las tarjetas usan tonos distintos para que el texto siempre tenga contraste.",
+                    "Cada tema es opaco y usa tonos distintos para el fondo y las tarjetas, " +
+                    "de modo que el texto siempre tenga contraste.",
                     style = MaterialTheme.typography.bodySmall,
                     color = scheme.onSurfaceVariant
                 )
@@ -130,7 +135,7 @@ fun SettingsScreen(
             Column(Modifier.padding(16.dp)) {
                 Text("💧 Color de acento", style = MaterialTheme.typography.titleMedium)
                 Text(
-                    "Se aplica a botones, iconos activos y bordes de tarjeta.",
+                    "Se aplica a botones, iconos activos y al indicador de la pestaña seleccionada.",
                     style = MaterialTheme.typography.bodySmall,
                     color = scheme.onSurfaceVariant
                 )
@@ -154,6 +159,57 @@ fun SettingsScreen(
                     "Acento actual: #${themeState.accentColor.toArgbHex()}",
                     style = MaterialTheme.typography.labelMedium,
                     color = scheme.onSurfaceVariant
+                )
+            }
+        }
+
+        /* ── Colores de texto y botones ───────────────────────────── */
+        // The accent above and these four are different things: the accent is the
+        // one colour a user is expected to pick freely, because a fill that does
+        // not contrast is still a usable button. Text is different -- an
+        // unreadable label is a broken app -- so these are validated against the
+        // surface and a colour that cannot clear the bar is marked and dropped
+        // rather than applied.
+        SolidPanel(
+            accentColor = accent,
+            contentColor = scheme.onSurface
+        ) {
+            Column(Modifier.padding(16.dp)) {
+                Text(
+                    "🔤 Colores de texto y botones",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    "Texto primario, secundario y terciario, y el color de los botones. " +
+                        "Se aplican a toda la aplicación.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = scheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(12.dp))
+                val overrides = themeState.colorOverrides
+                Button(
+                    onClick = { showColorRoles = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = accentButtonColors(accent)
+                ) {
+                    Text("Elegir colores")
+                }
+                Spacer(Modifier.height(10.dp))
+                ColorReadout(
+                    "Primario",
+                    overrides.primaryText ?: scheme.onSurface
+                )
+                ColorReadout(
+                    "Secundario",
+                    overrides.secondaryText ?: scheme.onSurfaceVariant
+                )
+                ColorReadout(
+                    "Terciario",
+                    themeState.textColors.tertiary
+                )
+                ColorReadout(
+                    "Botones",
+                    overrides.button ?: accent
                 )
             }
         }
@@ -233,6 +289,59 @@ fun SettingsScreen(
 
         Spacer(Modifier.height(80.dp))
     }
+    }
+
+    if (showColorRoles) {
+        val overrides = themeState.colorOverrides
+        ColorRolesDialog(
+            theme = themeState.theme,
+            scheme = scheme,
+            tertiaryCurrent = themeState.textColors.tertiary,
+            primaryText = overrides.primaryText,
+            secondaryText = overrides.secondaryText,
+            tertiaryText = overrides.tertiaryText,
+            buttonColor = overrides.button,
+            onPickPrimaryText = themeState::updatePrimaryTextColor,
+            onPickSecondaryText = themeState::updateSecondaryTextColor,
+            onPickTertiaryText = themeState::updateTertiaryTextColor,
+            onPickButton = themeState::updateButtonColor,
+            onClearAll = themeState::clearColorOverrides,
+            onDismiss = { showColorRoles = false }
+        )
+    }
+}
+
+/**
+ * One role's resolved colour, with its hex value.
+ *
+ * Prints the *resolved* value rather than the stored pick, so a role that fell
+ * back to the theme is visibly the theme's colour instead of a stale swatch the
+ * user cannot account for.
+ */
+@Composable
+private fun ColorReadout(label: String, color: Color) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(18.dp)
+                .background(color, CircleShape)
+        )
+        Spacer(Modifier.width(10.dp))
+        Text(
+            label,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            "#${color.toArgbHex()}",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 

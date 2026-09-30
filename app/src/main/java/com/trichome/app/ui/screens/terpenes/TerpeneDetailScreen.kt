@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -230,7 +231,6 @@ private fun TerpeneHeader(
     val scheme = themeState.colorScheme()
     SolidPanel(
         accentColor = scheme.primary,
-        contentColor = scheme.onSurface
     ) {
         Column(Modifier.padding(18.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -286,7 +286,6 @@ private fun DetailCard(
     val scheme = themeState.colorScheme()
     SolidPanel(
         accentColor = scheme.primary,
-        contentColor = scheme.onSurface
     ) {
         Column(Modifier.padding(16.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium)

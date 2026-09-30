@@ -832,6 +832,7 @@ class TerpenesViewModel(container: AppContainer) : ViewModel() {
     private var bestStreak by mutableStateOf(0)
         private set
 
+
     val level: Int get() = TerpeneProgression.levelFor(xp)
     val levelProgress: Float get() = TerpeneProgression.levelProgress(xp)
     val rankTitle: String get() = TerpeneProgression.rankTitle(level)
@@ -926,6 +927,7 @@ class TerpenesViewModel(container: AppContainer) : ViewModel() {
         aromaFilter = if (aromaFilter == family) null else family
         viewModelScope.launch { refresh() }
     }
+
 
     fun clearFilters() {
         query = ""

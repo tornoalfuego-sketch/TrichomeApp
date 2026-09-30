@@ -15,6 +15,7 @@ import com.trichome.app.model.BlendResult
 import com.trichome.app.model.TerpeneBlender
 import com.trichome.app.model.TerpeneProgression
 import com.trichome.app.ui.components.SolidPanel
+import com.trichome.app.ui.components.accentTextButtonColors
 import com.trichome.app.ui.theme.TrichomeThemeState
 
 /**
@@ -76,11 +77,17 @@ fun MasterBlenderDialog(
 
                     Spacer(Modifier.height(8.dp))
                     if (readings.isEmpty()) {
-                        TextButton(onClick = { readings = defaultReading(featured) }) {
+                        TextButton(
+                            onClick = { readings = defaultReading(featured) },
+                            colors = accentTextButtonColors(scheme, scheme.primary)
+                        ) {
                             Text("Cargar un perfil de ejemplo")
                         }
                     } else {
-                        TextButton(onClick = { readings = emptyMap() }) {
+                        TextButton(
+                            onClick = { readings = emptyMap() },
+                            colors = accentTextButtonColors(scheme, scheme.primary)
+                        ) {
                             Text("Limpiar")
                         }
                     }
@@ -99,7 +106,12 @@ fun MasterBlenderDialog(
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Cerrar") } }
+        confirmButton = {
+            TextButton(
+                onClick = onDismiss,
+                colors = accentTextButtonColors(scheme, scheme.primary)
+            ) { Text("Cerrar") }
+        }
     )
 }
 

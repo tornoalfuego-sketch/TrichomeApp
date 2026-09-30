@@ -21,6 +21,7 @@ import com.trichome.app.data.repository.Terpene
 import com.trichome.app.model.TerpeneQuiz
 import com.trichome.app.model.TerpeneQuizState
 import com.trichome.app.model.TerpeneQuizQuestion
+import com.trichome.app.ui.components.accentTextButtonColors
 
 /**
  * Trivia minigame over the terpenes catalog.
@@ -111,18 +112,36 @@ fun TerpeneQuizDialog(
             }
         },
         confirmButton = {
+            // The action colour follows the encyclopedia's own button preference
+            // when one is set, and the app accent otherwise.
+            val actionColors = accentTextButtonColors(
+                MaterialTheme.colorScheme,
+                MaterialTheme.colorScheme.primary
+            )
             when (val current = state) {
-                is TerpeneQuizState.Finished -> TextButton(onClick = onDismiss) { Text("Cerrar") }
-                is TerpeneQuizState.Unavailable -> TextButton(onClick = onDismiss) { Text("Cerrar") }
+                is TerpeneQuizState.Finished -> TextButton(
+                    onClick = onDismiss,
+                    colors = actionColors
+                ) { Text("Cerrar") }
+                is TerpeneQuizState.Unavailable -> TextButton(
+                    onClick = onDismiss,
+                    colors = actionColors
+                ) { Text("Cerrar") }
                 is TerpeneQuizState.Revealed -> {
                     if (current.isLastRound) {
-                        TextButton(onClick = {
-                            val after = quiz.next()
-                            dispatch(after)
-                            if (after is TerpeneQuizState.Finished) onCompleted()
-                        }) { Text("Ver resultado") }
+                        TextButton(
+                            onClick = {
+                                val after = quiz.next()
+                                dispatch(after)
+                                if (after is TerpeneQuizState.Finished) onCompleted()
+                            },
+                            colors = actionColors
+                        ) { Text("Ver resultado") }
                     } else {
-                        TextButton(onClick = { dispatch(quiz.next()) }) { Text("Siguiente") }
+                        TextButton(
+                            onClick = { dispatch(quiz.next()) },
+                            colors = actionColors
+                        ) { Text("Siguiente") }
                     }
                 }
                 // An unanswered round has no meaningful confirm action; advancing
@@ -132,7 +151,13 @@ fun TerpeneQuizDialog(
         },
         dismissButton = {
             if (state is TerpeneQuizState.Finished) {
-                TextButton(onClick = { dispatch(quiz.restart()) }) { Text("Otra ronda") }
+                TextButton(
+                    onClick = { dispatch(quiz.restart()) },
+                    colors = accentTextButtonColors(
+                        MaterialTheme.colorScheme,
+                        MaterialTheme.colorScheme.primary
+                    )
+                ) { Text("Otra ronda") }
             }
         }
     )

@@ -68,6 +68,7 @@ class TerpeneProgressRepository(private val context: Context) {
         val QUIZZES_COMPLETED = intPreferencesKey("quizzes_completed")
         val BEST_STREAK = intPreferencesKey("best_streak")
         val EARNED_BADGES = stringSetPreferencesKey("earned_badges")
+
     }
 
     val progress: Flow<TerpeneProgress> = context.terpeneDataStore.data.map { prefs ->
@@ -82,6 +83,7 @@ class TerpeneProgressRepository(private val context: Context) {
             lastActiveEpochDay = prefs[Keys.LAST_ACTIVE] ?: 0L
         )
     }
+
 
     /**
      * Registers [terpeneId] as discovered and updates the daily streak.

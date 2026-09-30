@@ -3,14 +3,25 @@ package com.trichome.app.ui.screens.terpenes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.text.style.TextOverflow
+import com.trichome.app.ui.components.accentTextButtonColors
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.FilterAltOff
+import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.Quiz
 import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Search
@@ -55,64 +66,118 @@ fun TerpenesScreen(
     val scope = rememberCoroutineScope()
     val scheme = themeState.colorScheme()
     val accent = scheme.primary
+
+
     var showQuiz by remember { mutableStateOf(false) }
     var showBadges by remember { mutableStateOf(false) }
     var showBlender by remember { mutableStateOf(false) }
 
+    // The header, the progression card and the filter rows are siblings of the
+    // list, not items in it, so scrolling the LazyColumn never moves them. The
+    // trigger is derived from the list's own scroll position instead.
+    //
+    // The threshold is a *distance* rather than a boolean the list flips: a small
+    // scroll back up brings the filters in again, and a fling that overshoots
+    // does not leave them stuck half-hidden.
+    val listState = rememberLazyListState()
+    val headersCollapsed by remember {
+        derivedStateOf {
+            listState.firstVisibleItemIndex > 0 ||
+                listState.firstVisibleItemScrollOffset > HEADER_COLLAPSE_PX
+        }
+    }
+
+    // A new search reopens the filters and returns to the top: a new query means
+    // a new narrowing step, and the filters are how that step is taken.
+    LaunchedEffect(vm.query) {
+        if (vm.query.isNotEmpty()) listState.scrollToItem(0)
+    }
+
     Scaffold(
         bottomBar = {
             MainBottomBar("terpenes", { navController.navigate(it) }, themeState)
-        }
-    ) { padding ->
+        }    ) { padding ->
     Column(
         Modifier
             .fillMaxSize()
             .padding(padding)
     ) {
         /* ── Cabecera ─────────────────────────────────────────────── */
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+        // The title row collapses first and is the only place the colour
+        // sections can be reopened from, so it is never removed outright.
+        AnimatedVisibility(
+            visible = !headersCollapsed,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
         ) {
-            IconButton(onClick = { navController.popBackStack() }) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
-            }
-            Column(Modifier.weight(1f)) {
-                Text("📖 Biblia de Terpenos", style = MaterialTheme.typography.titleLarge)
-                Text(
-                    "${vm.terpenes.size} compuestos · ${vm.discovered.size} descubiertos",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = scheme.onSurfaceVariant
-                )
-            }
-            // Header icons carry the accent only where it stays legible; on a
-            // light theme with a pale accent the glyph would otherwise sink into
-            // the surface. The fallback is the theme's own onSurface.
-            val iconTint = accentLabelOn(MaterialTheme.colorScheme, accent)
-            IconButton(onClick = { showBlender = true }) {
-                Icon(Icons.Filled.Science, contentDescription = "Master Blender", tint = iconTint)
-            }
-            IconButton(onClick = { showBadges = true }) {
-                Icon(Icons.Filled.Star, contentDescription = "Medallas", tint = iconTint)
-            }
-            IconButton(onClick = { showQuiz = true }) {
-                Icon(Icons.Filled.Quiz, contentDescription = "Trivia", tint = iconTint)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = { navController.popBackStack() }) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                }
+                Column(Modifier.weight(1f)) {
+                    // Four header actions plus a back arrow leave roughly 190dp
+                    // for the title, and "Biblia de Terpenos" wrapped onto three
+                    // lines at titleLarge. One line, slightly smaller, is the
+                    // difference between a title and a stack of words.
+                    Text(
+                        "📖 Biblia de Terpenos",
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        "${vm.terpenes.size} compuestos · ${vm.discovered.size} descubiertos",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = scheme.onSurfaceVariant,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                // Header icons carry the accent only where it stays legible; on a
+                // light theme with a pale accent the glyph would otherwise sink
+                // into the surface. The fallback is the theme's own onSurface.
+                val iconTint = accentLabelOn(MaterialTheme.colorScheme, accent)
+                IconButton(onClick = { showBlender = true }) {
+                    Icon(Icons.Filled.Science, contentDescription = "Master Blender", tint = iconTint)
+                }
+                IconButton(onClick = { showBadges = true }) {
+                    Icon(Icons.Filled.Star, contentDescription = "Medallas", tint = iconTint)
+                }
+                IconButton(onClick = { showQuiz = true }) {
+                    Icon(Icons.Filled.Quiz, contentDescription = "Trivia", tint = iconTint)
+                }
             }
         }
 
         /* ── Progresión ───────────────────────────────────────────── */
-        ProgressionCard(
-            level = vm.level,
-            rank = vm.rankTitle,
-            progress = vm.levelProgress,
-            xp = vm.xp,
-            streak = vm.streak,
-            discovered = vm.discovered.size,
-            total = vm.terpenes.size,
-            themeState = themeState
-        )
+        // The progression card is the first thing to go when the user starts
+        // scrolling: it is a badge, not a control, and it was eating a third of
+        // the screen on a 2340px-tall device. The header, the search field and
+        // the filters collapse progressively for the same reason -- searching
+        // through 158 compounds is impossible when half the viewport is menus.
+        AnimatedVisibility(
+            visible = !headersCollapsed,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            ProgressionCard(
+                level = vm.level,
+                rank = vm.rankTitle,
+                progress = vm.levelProgress,
+                xp = vm.xp,
+                streak = vm.streak,
+                discovered = vm.discovered.size,
+                total = vm.terpenes.size,
+                themeState = themeState
+            )
+        }
 
         /* ── Buscador ────────────────────────────────────────────── */
         OutlinedTextField(
@@ -135,25 +200,53 @@ fun TerpenesScreen(
         )
 
         /* ── Filtros ─────────────────────────────────────────────── */
-        Column(Modifier.padding(top = 8.dp)) {
-            FilterRow(
-                label = "Familia",
-                options = vm.families,
-                selected = vm.familyFilter,
-                onToggle = vm::toggleFamilyFilter
-            )
-            FilterRow(
-                label = "Efecto",
-                options = vm.effectGroups,
-                selected = vm.effectFilter,
-                onToggle = vm::toggleEffectFilter
-            )
-            FilterRow(
-                label = "Aroma",
-                options = vm.aromaFamilies,
-                selected = vm.aromaFilter,
-                onToggle = vm::toggleAromaFilter
-            )
+        AnimatedVisibility(
+            visible = !headersCollapsed,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            Column(Modifier.padding(top = 8.dp)) {
+                FilterRow(
+                    label = "Familia",
+                    options = vm.families,
+                    selected = vm.familyFilter,
+                    onToggle = vm::toggleFamilyFilter
+                )
+                FilterRow(
+                    label = "Efecto",
+                    options = vm.effectGroups,
+                    selected = vm.effectFilter,
+                    onToggle = vm::toggleEffectFilter
+                )
+                FilterRow(
+                    label = "Aroma",
+                    options = vm.aromaFamilies,
+                    selected = vm.aromaFilter,
+                    onToggle = vm::toggleAromaFilter
+                )
+            }
+        }
+
+        // A way back once the filters are gone, otherwise collapsing them is a
+        // one-way trip: the user would have to scroll to the very top to change
+        // a filter with no idea it had moved.
+        AnimatedVisibility(
+            visible = headersCollapsed,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            TextButton(
+                // headersCollapsed is derived from the list position, so the way
+                // back is to scroll up rather than to flip a flag: scrolling to
+                // the first item is the same gesture the user would use anyway.
+                onClick = { scope.launch { listState.animateScrollToItem(0) } },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                colors = accentTextButtonColors(scheme, accent)
+            ) {
+                Text("▾ Mostrar progresión y filtros", maxLines = 1)
+            }
         }
 
         /* ── Lista ───────────────────────────────────────────────── */
@@ -166,9 +259,11 @@ fun TerpenesScreen(
             }
         } else {
             LazyColumn(
+                state = listState,
                 contentPadding = PaddingValues(16.dp, 8.dp, 16.dp, 96.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
             ) {
                 items(vm.terpenes, key = { it.id }) { terpene ->
                     TerpeneRow(
@@ -184,26 +279,26 @@ fun TerpenesScreen(
     }
     }
 
-    if (showQuiz) {
-        TerpeneQuizDialog(
-            pool = vm.terpenes.ifEmpty { emptyList() },
-            onDismiss = { showQuiz = false },
-            onAnswer = vm::recordQuiz,
-            onCompleted = vm::recordQuizCompleted
-        )
-    }
+        if (showQuiz) {
+            TerpeneQuizDialog(
+                pool = vm.terpenes.ifEmpty { emptyList() },
+                onDismiss = { showQuiz = false },
+                onAnswer = vm::recordQuiz,
+                onCompleted = vm::recordQuizCompleted
+            )
+        }
 
-    if (showBadges) {
-        BadgesDialog(badges = vm.badges, onDismiss = { showBadges = false })
-    }
+        if (showBadges) {
+            BadgesDialog(badges = vm.badges, onDismiss = { showBadges = false })
+        }
 
-    if (showBlender) {
-        MasterBlenderDialog(
-            catalog = vm.terpenes,
-            themeState = themeState,
-            onDismiss = { showBlender = false }
-        )
-    }
+        if (showBlender) {
+            MasterBlenderDialog(
+                catalog = vm.terpenes,
+                themeState = themeState,
+                onDismiss = { showBlender = false }
+            )
+        }
 }
 
 @Composable
@@ -249,6 +344,9 @@ private fun ProgressionCard(
                     Text(
                         "$xp XP · ${TerpeneProgression.xpToNextLevel(xp)} XP para el nivel ${level + 1}",
                         style = MaterialTheme.typography.labelSmall,
+                        // The secondary line keeps the theme's variant tone: the
+                        // custom ink is for the headline and the body, and two
+                        // competing user colours in one card is noise.
                         color = scheme.onSurfaceVariant
                     )
                 }
@@ -298,6 +396,9 @@ private fun FilterRow(
             Text(
                 label,
                 style = MaterialTheme.typography.labelMedium,
+                // A row header, not body text: it keeps the theme's dimmer tone
+                // rather than the custom reading colour, which is reserved for
+                // the compound text itself.
                 color = scheme.onSurfaceVariant,
                 modifier = Modifier.padding(end = 4.dp)
             )
@@ -327,7 +428,6 @@ private fun TerpeneRow(
     val scheme = themeState.colorScheme()
     SolidPanel(
         accentColor = scheme.primary,
-        contentColor = scheme.onSurface,
         modifier = Modifier.clickable(onClick = onClick)
     ) {
         Row(
@@ -339,7 +439,10 @@ private fun TerpeneRow(
                     Text(
                         terpene.name,
                         style = MaterialTheme.typography.titleSmall,
-                        color = if (discovered) scheme.onSurface else scheme.onSurfaceVariant
+                        // An undiscovered compound keeps the dimmer tone, so the
+                        // custom colour brightens the names without flattening the
+                        // difference between found and unfound.
+                        color = if (discovered) Color.Unspecified else scheme.onSurfaceVariant
                     )
                     if (discovered) {
                         Spacer(Modifier.width(6.dp))
@@ -365,7 +468,6 @@ private fun TerpeneRow(
                 Text(
                     terpene.aroma,
                     style = MaterialTheme.typography.bodySmall,
-                    color = scheme.onSurface,
                     maxLines = 2
                 )
                 if (terpene.effects.isNotEmpty()) {
@@ -387,6 +489,18 @@ private fun TerpeneRow(
         }
     }
 }
+
+/**
+ * How far the list must scroll before the header, the progression card and the
+ * three filter rows collapse, in pixels.
+ *
+ * A scroll threshold rather than a nested scroll listener: it is one line, it
+ * cannot leak a callback, and it behaves the same whether the user flings the
+ * list or nudges it. On a 440dpi screen this is roughly a fifth of the viewport,
+ * which is enough to signal "you are in the results" without hiding anything
+ * while the user is still reading the controls.
+ */
+private const val HEADER_COLLAPSE_PX = 220f
 
 @Composable
 private fun BadgesDialog(badges: List<com.trichome.app.model.Badge>, onDismiss: () -> Unit) {
