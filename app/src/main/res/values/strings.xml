@@ -54,8 +54,6 @@
 
     <!-- Appearance settings -->
     <string name="settings_appearance">Ajustes de Apariencia</string>
-    <string name="glass_opacity">Opacidad del Vidrio</string>
-    <string name="blur_intensity">Intensidad de Desenfoque</string>
     <string name="theme">Tema</string>
     <string name="font_scale">Escala de Fuente</string>
     <string name="accent_color">Color de Acento</string>

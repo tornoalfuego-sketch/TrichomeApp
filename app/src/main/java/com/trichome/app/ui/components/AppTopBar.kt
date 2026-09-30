@@ -19,36 +19,24 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.trichome.app.ui.theme.GlassRanges
-import com.trichome.app.ui.theme.LocalGlassConfig
 
 /**
  * Contrast contract for the shared top bar.
  *
  * Every bar this replaces drew over a `Scaffold` with `containerColor =
- * Color.Transparent`, on top of the animated orb background, and none of them
- * passed `colors`. The title and the back arrow were therefore whatever the
- * framework picked for the theme — with no guarantee against the *orb* behind
- * them, which is not part of the colour scheme at all.
+ * Color.Transparent`, on top of an animated backdrop, and none of them passed
+ * `colors`. The title and the back arrow were therefore whatever the framework
+ * picked for the theme — with no guarantee against whatever was behind them.
  *
- * The colours cannot be "just the scheme roles" either: in glass mode the bar is
- * translucent and what is really behind the title is the drifting orb, whose
- * brightness is not a scheme role. So the container carries a legible minimum
- * alpha — [MINIMUM_ALPHA] — and once it is composited over the background the
- * title is measured against the result, not against a translucent surface where
- * a contrast ratio would compare the wrong two things.
+ * The colours are now the scheme's own `surface` / `onSurface` pair, both fully
+ * opaque, and that is the point: a translucent bar over a known backdrop can
+ * only be contrast-checked by compositing two colours by hand, whereas an opaque
+ * bar puts a scheme role directly behind the title, so the ratio below is a real
+ * measurement instead of an estimate of a composite.
  */
 object AppTopBarDefaults {
-    /**
-     * Floor for the bar's alpha.
-     *
-     * Below this the orb shows through strongly enough that the title stops
-     * being reliably readable, which is the entire defect being fixed.
-     */
-    const val MINIMUM_ALPHA = 0.92f
-
-    /** The bar is opaque once content scrolls under it. */
-    const val SCRATCHED_ALPHA = 1f
+    /** The bar's container is fully opaque in both its resting and scrolled state. */
+    const val CONTAINER_ALPHA = 1f
 
     /**
      * The colour set the bar paints with.
@@ -87,32 +75,20 @@ object AppTopBarDefaults {
     const val OFFERS_NAVIGATION_SLOT = true
 }
 
-/** Resolves the bar's colours from the active scheme and the glass preference. */
+/** Resolves the bar's colours from the active scheme. */
 fun appTopBarPaletteFor(
     scheme: ColorScheme,
-    glassOpacity: Float,
-    glassEnabled: Boolean,
     showNavigationIcon: Boolean = true
-): AppTopBarDefaults.Palette {
-    val clamped = GlassRanges.clampOpacity(glassOpacity)
-    // Translucency is only honoured when the effect is on, and never below the
-    // floor: the slider's minimum is a card's minimum, not a bar's.
-    val restingAlpha = if (glassEnabled) {
-        (panelAlphaFor(clamped)).coerceAtLeast(AppTopBarDefaults.MINIMUM_ALPHA)
-    } else {
-        1f
-    }
-    val scrolledAlpha = AppTopBarDefaults.SCRATCHED_ALPHA.coerceAtLeast(restingAlpha)
-
-    return AppTopBarDefaults.Palette(
-        containerColor = scheme.surface.copy(alpha = restingAlpha),
-        scrolledContainerColor = scheme.surface.copy(alpha = scrolledAlpha),
-        titleContent = scheme.onSurface,
-        navigationIconContent = scheme.onSurface,
-        actionIconContent = scheme.onSurfaceVariant,
-        dividerColor = scheme.primary.copy(alpha = 0.45f)
-    )
-}
+): AppTopBarDefaults.Palette = AppTopBarDefaults.Palette(
+    // Plain `surface`, not `surface.copy(alpha = …)`: there is no alpha left to
+    // tune, and writing one would invite the next editor to reintroduce the knob.
+    containerColor = scheme.surface,
+    scrolledContainerColor = scheme.surface,
+    titleContent = scheme.onSurface,
+    navigationIconContent = scheme.onSurface,
+    actionIconContent = scheme.onSurfaceVariant,
+    dividerColor = scheme.primary.copy(alpha = 0.45f)
+)
 
 /** True when this bar would paint the same pixels for [other]. */
 internal fun AppTopBarDefaults.Palette.sameLookAs(other: AppTopBarDefaults.Palette): Boolean =
@@ -145,8 +121,6 @@ fun AppTopBar(
     val scheme = MaterialTheme.colorScheme
     val palette = appTopBarPaletteFor(
         scheme = scheme,
-        glassOpacity = GlassRanges.OPACITY_DEFAULT,
-        glassEnabled = LocalGlassConfig.current.enabled,
         showNavigationIcon = onNavigateBack != null
     )
 

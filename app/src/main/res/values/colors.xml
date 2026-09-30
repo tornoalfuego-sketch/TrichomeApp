@@ -6,11 +6,6 @@
     <color name="brand_amber">#FFFFC107</color>
     <color name="brand_teal">#FF00897B</color>
 
-    <!-- Glassmorphism tokens -->
-    <color name="glass_opacity">#26151515</color>
-    <color name="glass_border">#66FFFFFF</color>
-    <color name="glass_highlight">#4DFFFFFF</color>
-
     <!-- Launcher background -->
     <color name="ic_launcher_background">#FF1B2A1B</color>
 </resources>

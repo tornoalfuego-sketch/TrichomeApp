@@ -5,7 +5,7 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Leaf silhouette (glassier mint white) -->
+    <!-- Leaf silhouette (pale mint white) -->
     <path
         android:fillColor="#FFFFFFFF"
         android:fillAlpha="0.96"

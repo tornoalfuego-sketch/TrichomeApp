@@ -40,7 +40,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun TrichomeAppRoot(themeState: TrichomeThemeState) {
-    // Load persisted appearance once at startup (glass opacity, blur, theme, font).
+    // Load persisted appearance once at startup (theme, accent, font).
     LaunchedEffect(Unit) {
         themeState.collectFromRepository()
     }
