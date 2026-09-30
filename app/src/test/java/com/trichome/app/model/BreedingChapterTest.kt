@@ -109,6 +109,20 @@ class BreedingChapterTest {
                     "${chapter.id} claims the asset but names no entry",
                     source.refs.isNotEmpty()
                 )
+                // A mixed chapter has two obligations, not one: it must name the
+                // entries it quotes *and* say what the expansion adds. Either half
+                // alone would let authored prose be read as library text, which is
+                // the thing this whole mechanism exists to prevent.
+                is BreedingContentSource.Mixed -> {
+                    assertTrue(
+                        "${chapter.id} mixes but names no asset entry",
+                        source.refs.isNotEmpty()
+                    )
+                    assertTrue(
+                        "${chapter.id} mixes without saying what the expansion adds",
+                        source.addedForApp.isNotBlank()
+                    )
+                }
                 is BreedingContentSource.Authored -> assertTrue(
                     "${chapter.id} is authored without saying why",
                     source.reason.isNotBlank()

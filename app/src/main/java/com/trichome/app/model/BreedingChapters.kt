@@ -31,10 +31,12 @@ data class BreedingAssetRef(
 /**
  * Where a chapter's text came from.
  *
- * There is no third case. Either every paragraph is quoted from the asset, or
- * the chapter says it was written for the app — which is the honest way to ship
- * reference prose the asset does not contain, and the only way a reader can tell
- * the difference.
+ * Three cases, because the honest answer for an expanded chapter is neither of the
+ * two originals. `reversal` and `phenotype_stabilization` exist in the asset and
+ * the chapters on those subjects need them; those same chapters also need prose
+ * the asset does not have at all. Forcing the choice meant either dropping the
+ * asset citations or describing authored paragraphs as library text, and both
+ * misinform the reader.
  */
 sealed interface BreedingContentSource {
 
@@ -43,6 +45,19 @@ sealed interface BreedingContentSource {
      * own or as `"<asset string> — <asset string>"`.
      */
     data class FromAsset(val refs: List<BreedingAssetRef>) : BreedingContentSource
+
+    /**
+     * Some paragraphs are quoted from [refs] and the rest were written for the
+     * app because the asset stops short of the subject.
+     *
+     * [addedForApp] is reader-facing Spanish naming what the expansion covers, so
+     * the badge can say which half is which instead of implying the whole chapter
+     * came out of the library.
+     */
+    data class Mixed(
+        val refs: List<BreedingAssetRef>,
+        val addedForApp: String
+    ) : BreedingContentSource
 
     /**
      * Written for this app because the asset has nothing on the subject.
@@ -115,6 +130,8 @@ data class BreedingChapter(
     val provenanceLabelEs: String
         get() = when (val source = source) {
             is BreedingContentSource.FromAsset -> "Texto de la biblioteca de breeding"
+            is BreedingContentSource.Mixed ->
+                "Parte de la biblioteca de breeding · ${source.addedForApp}"
             is BreedingContentSource.Authored -> source.reason
         }
 }

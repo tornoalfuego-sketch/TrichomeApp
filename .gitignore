@@ -30,3 +30,4 @@ Thumbs.db
 
 # CodeGraph local index (regenerate with: codegraph init)
 .codegraph/
+.kotlin/
