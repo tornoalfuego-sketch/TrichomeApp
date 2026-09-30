@@ -15,6 +15,29 @@ interface PlantDao {
     @Query("SELECT * FROM plants WHERE tentId = :tentId ORDER BY sortOrder ASC")
     suspend fun getPlantsByTent(tentId: Long): List<Plant>
 
+    /**
+     * Plants whose tent no longer exists.
+     *
+     * `plants.tentId` is declared `ON DELETE SET NULL`, so deleting a tent
+     * detaches its plants instead of deleting them, and every other query in the
+     * app filters on `tentId = :tentId`. That left them with no way to be read at
+     * all: they existed, they were counted by [getAllPlants], and no screen could
+     * show them. This query is what makes the set reachable, which is the only
+     * reason a row this invisible could survive.
+     */
+    @Query("SELECT * FROM plants WHERE tentId IS NULL ORDER BY createdAt ASC")
+    fun getUnassignedPlants(): Flow<List<Plant>>
+
+    /**
+     * Puts a plant into a tent at the end of its order.
+     *
+     * A targeted UPDATE rather than a full-row write: the caller has only the id
+     * and the destination, and replacing the row from a stale snapshot would
+     * overwrite whatever the grower changed in the meantime.
+     */
+    @Query("UPDATE plants SET tentId = :tentId WHERE id = :plantId")
+    suspend fun assignPlantToTent(plantId: Long, tentId: Long)
+
     @Query("SELECT * FROM plants ORDER BY sortOrder ASC")
     suspend fun getPlantsSnapshot(): List<Plant>
 

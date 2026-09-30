@@ -22,6 +22,12 @@ import com.trichome.app.ui.components.accentButtonColors
 import com.trichome.app.ui.components.accentContentOn
 import com.trichome.app.ui.components.MainBottomBar
 import com.trichome.app.ui.components.rememberDestructiveConfirmation
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.TextButton
+import com.trichome.app.ui.components.accentTextButtonColors
+import com.trichome.app.ui.theme.LocalTertiaryText
 import com.trichome.app.ui.components.SolidPanel
 import com.trichome.app.ui.screens.plant.PlantDeletionNotice
 import com.trichome.app.ui.screens.plant.PlantEditDialog
@@ -35,25 +41,43 @@ fun TentListScreen(
     themeState: TrichomeThemeState
 ) {
     val vm = appViewModel { TentViewModel(it) }
-    val accent = themeState.colorScheme().primary
+    val scheme = themeState.colorScheme()
+    val accent = scheme.primary
     // Collected as state: reading `.value` in composition would freeze the
     // tent and plant lists at their first value and never update.
     val tents by vm.tents.collectAsState()
+    val unassigned by vm.unassignedPlants.collectAsState()
     val plants by vm.plants.collectAsState()
     var showAddTent by remember { mutableStateOf(false) }
     var editingTent by remember { mutableStateOf<GrowTent?>(null) }
     var editingPlant by remember { mutableStateOf<Plant?>(null) }
 
-    // Both deletes here used to fire on a single tap. The dialog names the row
-    // so the user can see which tent or plant they are about to lose.
+    // A tent that still has plants in it is refused, not emptied.
+    //
+    // It used to be emptied, and the dialog said so: "sus plantas no se borrarán,
+    // quedarán sin asignar a ninguna carpa". The first half was true and the
+    // second half was a promise the app could not keep -- `tentId` became null,
+    // every query filtered on `tentId = :tentId`, and there was no query anywhere
+    // that returned them. The plants survived, were counted in the totals, and
+    // could not be seen, opened, edited or deleted from any screen.
+    //
+    // So the delete is now a decision the grower makes twice: first where the
+    // plants go, then whether the tent itself goes.
+    var tentToClear by remember { mutableStateOf<GrowTent?>(null) }
     val deleteTentConfirmation = rememberDestructiveConfirmation<GrowTent>(
         title = { "Eliminar carpa" },
         message = { tent ->
-            "Se eliminará la carpa «${tent.name}». Sus plantas no se borrarán: quedarán sin " +
-                "asignar a ninguna carpa. Esta acción no se puede deshacer."
+            "Se eliminará la carpa «${tent.name}». No tiene plantas dentro, así que no " +
+                "se queda nada sin asignar. Esta acción no se puede deshacer."
         },
         confirmLabel = { "Eliminar" },
-        onConfirmed = { tent -> vm.deleteTent(tent) }
+        onConfirmed = { tent ->
+            // The plant list is re-read here rather than trusted from the message:
+            // it can change between the tap and the confirm, and deleting a tent
+            // that gained a plant in between is the exact case this guard is for.
+            val hasPlants = vm.plants.value.any { it.tentId == tent.id }
+            if (hasPlants) tentToClear = tent else vm.deleteTent(tent)
+        }
     )
     val deletePlantConfirmation = rememberDestructiveConfirmation<Plant>(
         title = { "Eliminar planta" },
@@ -133,9 +157,116 @@ fun TentListScreen(
                             }
                         )
                     }
+
+                    // Plants left behind by a deleted tent.
+                    //
+                    // They used to exist with no way to be seen: `tentId` was null
+                    // and every query filtered on `tentId = :tentId`. Shown here,
+                    // they are reachable again -- open one, move it into a tent, or
+                    // delete it. Rendered as a card rather than as a row inside a
+                    // tent, because a tent is exactly what they no longer have.
+                    if (unassigned.isNotEmpty()) {
+                        item(key = "unassigned") {
+                            SolidPanel(
+                                accentColor = accent,
+                                contentColor = scheme.onSurface
+                            ) {
+                                Column(Modifier.padding(16.dp)) {
+                                    Text(
+                                        "🧺 Sin carpa",
+                                        style = MaterialTheme.typography.titleMedium
+                                    )
+                                    Text(
+                                        "Estas plantas estaban en una carpa que ya no existe. " +
+                                            "Asignales una carpa o eliminalas.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = scheme.onSurfaceVariant
+                                    )
+                                    Spacer(Modifier.height(8.dp))
+                                    unassigned.forEach { plant ->
+                                        UnassignedPlantRow(
+                                            plant = plant,
+                                            tentOptions = tents.filter { it.id != tentToClear?.id },
+                                            accent = accent,
+                                            onOpen = { target ->
+                                                TentNavigation.targetForTap(target)
+                                                    ?.let { navController.navigate(it) }
+                                            },
+                                            onAssign = { destination ->
+                                                vm.assignPlantToTent(plant.id, destination.id)
+                                            },
+                                            onDelete = { deletePlantConfirmation.request(plant) }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
+    }
+
+    // The refusal. It replaces the confirm rather than stacking on top of it, so
+    // the grower reads one explanation instead of two dialogs about the same tap.
+    tentToClear?.let { tent ->
+        val occupants = plants.filter { it.tentId == tent.id }.sortedBy { it.sortOrder }
+        val destinations = tents.filter { it.id != tent.id }
+        AlertDialog(
+            onDismissRequest = { tentToClear = null },
+            title = { Text("La carpa tiene plantas") },
+            text = {
+                Column {
+                    Text(
+                        "«${tent.name}» tiene ${occupants.size} planta(s). No se puede " +
+                            "eliminar hasta que estén en otra carpa: si se borrara, se " +
+                            "quedarían sin asignar y no se podrían abrir ni editar desde " +
+                            "ningún lado.",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    occupants.forEach { plant ->
+                        Text(
+                            "· ${plant.name}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = scheme.onSurfaceVariant
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { tentToClear = null },
+                    colors = accentTextButtonColors(scheme, accent)
+                ) { Text("Entendido") }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        // Move every plant, then delete: the tent is only empty
+                        // once they have all landed, and doing it in one step is
+                        // what makes the second tap unnecessary.
+                        val fallback = destinations.firstOrNull() ?: run {
+                            tentToClear = null
+                            return@TextButton
+                        }
+                        occupants.forEach { vm.assignPlantToTent(it.id, fallback.id) }
+                        vm.deleteTent(tent)
+                        tentToClear = null
+                    },
+                    enabled = destinations.isNotEmpty(),
+                    colors = accentTextButtonColors(scheme, accent)
+                ) {
+                    Text(
+                        if (destinations.isEmpty()) {
+                            "Sin carpa destino"
+                        } else {
+                            "Mover a ${destinations.first().name} y eliminar"
+                        }
+                    )
+                }
+            }
+        )
     }
 
     if (showAddTent || editingTent != null) {
@@ -191,8 +322,13 @@ private fun TentCard(
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
-                IconButton(onClick = onEdit) { Icon(Icons.Default.Edit, null) }
-                IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, null) }
+                // Named, because an unnamed icon button is a button TalkBack
+                // announces as just a button: two of them in a row, one editing and
+                // one destroying, with nothing to tell them apart. It also gave the
+                // automated checks nothing to target, which is how the delete path
+                // stayed untested until now.
+                IconButton(onClick = onEdit) { Icon(Icons.Default.Edit, "Editar carpa") }
+                IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, "Eliminar carpa") }
             }
 
             Spacer(Modifier.height(8.dp))
@@ -339,4 +475,78 @@ private fun TentDialog(
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
     )
+}
+/**
+ * One plant with no tent, and the three things that can be done about it.
+ *
+ * A dropdown rather than a second dialog: the destination is usually obvious
+ * (there is one other tent) and a row that needs its own modal to be repaired is
+ * a row nobody repairs. [tentOptions] may be empty, and then the assign control
+ * says so instead of opening onto nothing.
+ */
+@Composable
+private fun UnassignedPlantRow(
+    plant: Plant,
+    tentOptions: List<GrowTent>,
+    accent: Color,
+    onOpen: (Plant) -> Unit,
+    onAssign: (GrowTent) -> Unit,
+    onDelete: () -> Unit
+) {
+    var menuOpen by remember { mutableStateOf(false) }
+    Column(Modifier.padding(vertical = 6.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onOpen(plant) },
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(plant.name, style = MaterialTheme.typography.titleSmall)
+                Text(
+                    plant.strain.ifBlank { "sin cepa" },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = LocalTertiaryText.current
+                )
+            }
+            IconButton(onClick = onDelete) {
+                Icon(
+                    Icons.Default.Delete,
+                    "Eliminar planta",
+                    tint = MaterialTheme.colorScheme.error
+                )
+            }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box {
+                TextButton(
+                    onClick = { menuOpen = true },
+                    enabled = tentOptions.isNotEmpty(),
+                    colors = accentTextButtonColors(MaterialTheme.colorScheme, accent)
+                ) {
+                    Text(
+                        if (tentOptions.isEmpty()) {
+                            "No hay carpa destino"
+                        } else {
+                            "Mover a..."
+                        }
+                    )
+                }
+                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                    tentOptions.forEach { tent ->
+                        DropdownMenuItem(
+                            text = { Text(tent.name) },
+                            onClick = {
+                                menuOpen = false
+                                onAssign(tent)
+                            }
+                        )
+                    }
+                }
+            }
+            IconButton(onClick = { onOpen(plant) }) {
+                Icon(Icons.Default.ChevronRight, "Abrir planta")
+            }
+        }
+    }
 }

@@ -118,6 +118,29 @@ class TentViewModel(container: AppContainer) : ViewModel() {
     fun deletePlant(plant: Plant) = viewModelScope.launch { plantRepo.deletePlant(plant) }
 
     fun updatePlant(plant: Plant) = viewModelScope.launch { plantRepo.updatePlant(plant) }
+
+    /**
+     * Plants whose tent was deleted.
+     *
+     * They are surfaced so the promise in the delete dialog -- "sus plantas no se
+     * borrarán, quedarán sin asignar a ninguna carpa" -- is true somewhere the
+     * grower can act on. Before this, `tentId` became null, every query filtered
+     * it away, and the plants were unreachable: counted in the totals, visible
+     * nowhere.
+     */
+    val unassignedPlants: StateFlow<List<Plant>> = plantRepo.getUnassignedPlants()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /**
+     * Puts a plant into [tentId].
+     *
+     * The recovery path for an unassigned plant, and the step the tent delete
+     * flow asks for before it lets the tent go: a tent with plants in it is
+     * refused rather than emptied, because emptying it is what made them
+     * unreachable in the first place.
+     */
+    fun assignPlantToTent(plantId: Long, tentId: Long) =
+        viewModelScope.launch { plantRepo.assignPlantToTent(plantId, tentId) }
 }
 
 /* ─────────────────────────── Plant detail ─────────────────────────────── */

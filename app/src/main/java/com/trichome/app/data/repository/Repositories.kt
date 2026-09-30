@@ -8,6 +8,19 @@ class PlantRepository(private val dao: PlantDao) {
     fun getAllPlants(): Flow<List<Plant>> = dao.getAllPlants()
     suspend fun getPlantById(id: Long): Plant? = dao.getPlantById(id)
     suspend fun getPlantsByTent(tentId: Long): List<Plant> = dao.getPlantsByTent(tentId)
+
+    /**
+     * Plants whose tent was deleted.
+     *
+     * Reachable because `getPlantsByTent` filters on `tentId` and the foreign key
+     * is `ON DELETE SET NULL`, so without this these rows exist and are counted
+     * but cannot be shown, opened, edited or deleted from anywhere.
+     */
+    fun getUnassignedPlants(): Flow<List<Plant>> = dao.getUnassignedPlants()
+
+    /** Moves a plant into [tentId], at the end of that tent's order. */
+    suspend fun assignPlantToTent(plantId: Long, tentId: Long) =
+        dao.assignPlantToTent(plantId, tentId)
     suspend fun getPlantsSnapshot(): List<Plant> = dao.getPlantsSnapshot()
     suspend fun insertPlant(plant: Plant): Long = dao.insertPlant(plant)
     suspend fun updatePlant(plant: Plant) = dao.updatePlant(plant)
