@@ -24,6 +24,10 @@ import com.trichome.app.ui.components.MainBottomBar
 import com.trichome.app.ui.components.rememberDestructiveConfirmation
 import com.trichome.app.ui.components.SolidPanel
 import com.trichome.app.ui.components.SolidProgressRing
+import com.trichome.app.ui.navigation.PLANT_ID_ARG
+import com.trichome.app.ui.navigation.PROTOCOL_ID_ROUTE
+import com.trichome.app.ui.navigation.SUPER_CYCLE_ID_ROUTE
+import com.trichome.app.ui.navigation.JOURNAL_ID_ROUTE
 import com.trichome.app.ui.theme.TrichomeThemeState
 import com.trichome.app.viewmodel.PlantDetailUiState
 import com.trichome.app.viewmodel.PlantDetailViewModel
@@ -99,21 +103,31 @@ fun PlantDetailScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    // The three-button system bar sat on top of these buttons and
+                    // the labels were unreadable; verified on a device at
+                    // 1080x2340 with navigation_mode = 0.
+                    .navigationBarsPadding()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                // Two lines, not one. Three Spanish labels plus an emoji in three
+                // equal columns is about 340dp each, and at the largest text size
+                // the user can pick a single line either clipped mid-word ("Bitác
+                // ora") or overflowed into its neighbour. Letting it wrap makes the
+                // row a little taller and the label whole, which is the trade the
+                // user asked for: the label has to be readable.
                 Button(
-                    onClick = { navController.navigate("protocol/$plantId") },
+                    onClick = { navController.navigate(PROTOCOL_ID_ROUTE.replace("{${PLANT_ID_ARG}}", "$plantId")) },
                     modifier = Modifier.weight(1f)
-                ) { Text("📋 Protocolos") }
+                ) { Text("📋 Protocolos", maxLines = 2) }
                 Button(
-                    onClick = { navController.navigate("super_cycle/$plantId") },
+                    onClick = { navController.navigate(SUPER_CYCLE_ID_ROUTE.replace("{${PLANT_ID_ARG}}", "$plantId")) },
                     modifier = Modifier.weight(1f)
-                ) { Text("☀️ SuperCycle") }
+                ) { Text("☀️ SuperCiclo", maxLines = 2) }
                 Button(
-                    onClick = { navController.navigate("journal/$plantId") },
+                    onClick = { navController.navigate(JOURNAL_ID_ROUTE.replace("{${PLANT_ID_ARG}}", "$plantId")) },
                     modifier = Modifier.weight(1f)
-                ) { Text("📒 Bitácora") }
+                ) { Text("📒 Bitácora", maxLines = 2) }
             }
         }
     ) { padding ->
@@ -217,7 +231,9 @@ private fun PlantDetailContent(
             Column(modifier = Modifier.weight(1f)) {
                 Text("Día de Crecimiento", style = MaterialTheme.typography.labelLarge)
                 Text(
-                    "${success.daysInGrow} días",
+                    // "1 días" reads as a bug to a Spanish speaker; the plural is
+                    // only correct from two.
+                    "${success.daysInGrow} ${if (success.daysInGrow == 1) "día" else "días"}",
                     style = MaterialTheme.typography.displaySmall,
                     color = accent
                 )

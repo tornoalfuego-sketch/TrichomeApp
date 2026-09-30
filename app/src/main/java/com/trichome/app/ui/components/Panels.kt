@@ -219,7 +219,21 @@ fun accentButtonColors(accent: Color): ButtonColors = ButtonDefaults.buttonColor
  * every accent against every theme.
  */
 fun accentLabelOn(scheme: ColorScheme, accent: Color): Color =
-    if (contrastRatio(accent, scheme.background) >= MINIMUM_TEXT_CONTRAST) {
+    accentLabelOn(scheme, accent, scheme.background)
+
+/**
+ * [accentLabelOn] against a chosen backdrop.
+ *
+ * The one-argument form measures against `scheme.background`, which is right for
+ * a label floating on the page and wrong for one painted on a panel: on a dark
+ * theme `surface` is lighter than `background`, and the same accent can clear
+ * 4.5:1 on one and fail on the other. Measured on a real device, the accent read
+ * 4.94:1 against the page and 1.60:1 against the card it was actually drawn on.
+ *
+ * @param backdrop the surface this label sits on, not the page behind it.
+ */
+fun accentLabelOn(scheme: ColorScheme, accent: Color, backdrop: Color): Color =
+    if (contrastRatio(accent, backdrop) >= MINIMUM_TEXT_CONTRAST) {
         accent
     } else {
         scheme.onSurface

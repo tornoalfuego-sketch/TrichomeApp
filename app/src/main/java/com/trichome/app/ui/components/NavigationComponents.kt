@@ -1,6 +1,7 @@
 package com.trichome.app.ui.components
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.*
@@ -8,6 +9,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.trichome.app.ui.theme.TrichomeThemeState
 
@@ -25,9 +28,26 @@ private val MainTabItems = listOf(
     // Terpenes and the calendar were reachable only by deep link, so two of the
     // app's main destinations looked like they did not exist at all.
     BottomBarItem("terpenes", "Terpenos", Icons.Filled.Science, Icons.Filled.Science),
-    BottomBarItem("calendar", "Calendario", Icons.Filled.CalendarMonth, Icons.Filled.CalendarMonth),
-    BottomBarItem("diagnosis", "Diagnóstico", Icons.Filled.MedicalServices, Icons.Filled.MedicalServices),
+    // Seven tabs leave about 51dp each on a 360dp phone. "Calendario" and
+    // "Diagnóstico" do not fit there at any readable size: measured on a device,
+    // they either wrapped to "Calend ario" / "Diagn ostico" or clipped to
+    // "Calendari" / "Diagnosti". Both are worse than a shorter word, so the
+    // labels are shortened and the route, the contentDescription and the
+    // accessibility text keep the full word.
+    BottomBarItem("calendar", "Calend.", Icons.Filled.CalendarMonth, Icons.Filled.CalendarMonth),
+    BottomBarItem("diagnosis", "Diag.", Icons.Filled.MedicalServices, Icons.Filled.MedicalServices),
     BottomBarItem("settings", "Ajustes", Icons.Filled.Settings, Icons.Filled.Settings)
+)
+
+/** The full, unabbreviated name of each tab, for accessibility and tooltips. */
+private val MainTabFullLabels: Map<String, String> = mapOf(
+    "home" to "Inicio",
+    "tents" to "Carpas",
+    "journal" to "Bitácora",
+    "terpenes" to "Biblia de terpenos",
+    "calendar" to "Calendario de cultivo",
+    "diagnosis" to "Diagnóstico inteligente",
+    "settings" to "Ajustes"
 )
 
 /**
@@ -51,29 +71,53 @@ fun MainBottomBar(
     val scheme = themeState.colorScheme()
     val accent = scheme.primary
     val indicatorContent = accentContentOn(accent)
-
+    // The bar sits on `surface`, and on a dark theme that is lighter than the
+    // page behind it. Measuring the label against the wrong backdrop is how a
+    // 4.94:1 accent ends up rendering at 1.60:1.
+    val labelInk = accentLabelOn(scheme, accent, scheme.surface)
     Column(modifier = modifier.fillMaxWidth()) {
         HorizontalDivider(thickness = 1.dp, color = scheme.outline)
         NavigationBar(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                // With the three-button system bar (navigation_mode = 0) the
+                // bottom items sat underneath it and the labels were unreadable.
+                // Verified on a device at 1080x2340: the bar's own bottom edge
+                // was clipped by the system bar, and on the plant detail screen
+                // the three navigation buttons were half hidden.
+                .navigationBarsPadding(),
             containerColor = scheme.surface,
             tonalElevation = 0.dp
         ) {
             MainTabItems.forEach { item ->
                 val selected = currentRoute.startsWith(item.route)
+                val spoken = MainTabFullLabels[item.route] ?: item.label
                 NavigationBarItem(
                     selected = selected,
                     onClick = { onNavigate(item.route) },
                     icon = {
                         Icon(
                             imageVector = if (selected) item.selectedIcon else item.icon,
-                            contentDescription = item.label
+                            contentDescription = spoken
                         )
                     },
-                    label = { Text(item.label, style = MaterialTheme.typography.labelSmall) },
+                    label = {
+                        // One line, never wrapped. A label that breaks mid-word
+                        // ("Carpa s", "Diagn ostico") or clips ("Calendari") is
+                        // worse than a shorter one, so the shortening happens in
+                        // MainTabItems and TalkBack still reads the full name.
+                        Text(
+                            text = item.label,
+                            style = MaterialTheme.typography.labelSmall,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Visible,
+                            textAlign = TextAlign.Center
+                        )
+                    },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = indicatorContent,
-                        selectedTextColor = scheme.onSurface,
+                        selectedTextColor = labelInk,
                         indicatorColor = accent,
                         unselectedIconColor = scheme.onSurfaceVariant,
                         unselectedTextColor = scheme.onSurfaceVariant
