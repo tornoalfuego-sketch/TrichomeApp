@@ -179,6 +179,11 @@ class TerpeneQuiz(
  * Distractors are picked from other answerable terpenes so they are plausible,
  * and the correct option's position is randomised to avoid a learnable pattern.
  * [random] is injected so the shuffle is reproducible in tests.
+ *
+ * The aroma goes *in the prompt*. It used to say "¿Qué terpeno tiene este aroma?"
+ * and then never show one: the text only appeared in [explanation], after the
+ * answer was already locked, so the question could not be answered by reading it.
+ * The player was picking between four names with nothing to choose from.
  */
 internal fun buildQuestion(pool: List<Terpene>, random: Random): TerpeneQuizQuestion {
     val correct = pool[random.nextInt(pool.size)]
@@ -189,7 +194,7 @@ internal fun buildQuestion(pool: List<Terpene>, random: Random): TerpeneQuizQues
         .toList()
     val options = (distractors + correct).shuffled(random)
     return TerpeneQuizQuestion(
-        prompt = "¿Qué terpeno tiene este aroma?",
+        prompt = "¿Qué terpeno huele a esto: «${correct.aroma.trim()}»?",
         options = options.map { it.name },
         correctIndex = options.indexOfFirst { it.id == correct.id },
         explanation = "${correct.name}: ${correct.aroma}" +
