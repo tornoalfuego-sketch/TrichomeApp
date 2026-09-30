@@ -7,6 +7,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.trichome.app.data.repository.Terpene
@@ -52,7 +53,15 @@ fun MasterBlenderDialog(
                 Column(
                     modifier = Modifier
                         .verticalScroll(rememberScrollState())
-                        .heightIn(max = 420.dp)
+                        // A share of the screen rather than a fixed 420dp.
+                        //
+                        // Five sliders plus a paragraph do not fit in 420dp, so the
+                        // last one was cut through the middle of its own row and the
+                        // only sign there was more was a clipped word -- which reads as
+                        // a rendering fault, not as "scroll for more". Measured on a
+                        // 2340px device, six tenths of the screen shows the whole
+                        // set, and the scroll is still there for a longer catalogue.
+                        .heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.6f).dp)
                 ) {
                     Text(
                         "Ajusta los porcentajes de tu análisis y compáralo con el " +
