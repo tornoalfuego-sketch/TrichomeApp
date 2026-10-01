@@ -22,7 +22,9 @@ class ModelPurityTest {
     private val files = listOf(
         "LunarEngine.kt",
         "AmbientClimate.kt",
-        "PlantMigrationPlan.kt"
+        "PlantMigrationPlan.kt",
+        "Entourage.kt",
+        "EntourageAchievement.kt"
     )
 
     private fun codeOf(name: String): String {

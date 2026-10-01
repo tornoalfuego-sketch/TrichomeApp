@@ -1,0 +1,358 @@
+{
+  "version": 1,
+  "disclaimer_es": "Contenido educativo sobre química de cannabis. No es consejo médico ni sustituye a la atención de un profesional de la salud. Las posibles interacciones farmacológicas se señalan de forma explícita, pero la lista no es exhaustiva: si tomas medicación, consulta antes de combinar.",
+  "synergies": [
+    {
+      "id": "thc_myrcene",
+      "cannabinoids": ["THC"],
+      "terpenes": ["MYRCENE"],
+      "profiles": ["SEDANTE"],
+      "outcome_es": "Sedación profunda y efecto couch-lock",
+      "description_es": "La combinación de THC con un perfil rico en mirceno se asocia a un efecto más sedante, con relajación muscular marcada y una duración percibida más larga. Es la base del perfil conocido como couch-lock: el cuerpo se siente pesado y la relajación muscular domina la experiencia.",
+      "mechanism_es": "El mirceno se ha propuesto como modulador alostérico del receptor CB1 y como modulador de la señalización de CB2, de modo que aumenta la afinidad y la actividad del receptor sobre la señal ya presente, sin aportar más THC. En dosis altas, esa vía mediada por CB1 produce sedación y relajación muscular. También se ha propuesto que el mirceno facilitaría el paso de otros cannabinoids al sistema nervioso central; ese punto sigue siendo una hipótesis y no un hallazgo medido en personas.",
+      "evidence_es": "Los datos disponibles son preclínicos y mecanicistas. No hay ensayos en personas que confirmen un aumento de la permeabilidad de la barrera hematoencefálica ni un couch-lock atribuible al mirceno. Trátalo como hipótesis de trabajo.",
+      "strains_es": ["OG Kush", "Granddaddy Purple", "Blue Dream", "Mango Kush", "Amnesia Haze", "Sour Kush"],
+      "interaction_es": "El THC aumenta la frecuencia cardíaca y puede producir hipotensión ortostática. Combinado con alcohol o con pastillas sedantes aumenta el riesgo de somnolencia excesiva y de caídas."
+    },
+    {
+      "id": "thc_limonene",
+      "cannabinoids": ["THC"],
+      "terpenes": ["LIMONENE"],
+      "profiles": ["ANSIOLITICO", "FOCO_CREATIVIDAD"],
+      "outcome_es": "Atenuación de la ansiedad y la paranoia asociadas al THC",
+      "description_es": "La presencia de limoneno junto al THC se asocia a una percepción menos ansiosa del mismo efecto euforiaico: el subidón y la risa se mantienen, pero la tensión y la rumiación posteriores bajan. Suaviza un paso el tono subjetivo de la experiencia.",
+      "mechanism_es": "El limoneno modula la actividad de CB1 y CB2 y, en modelos animales, interviene en sistemas GABAérgicos y serotoninérgicos asociados a la conducta ansiosa. Esa modulación a la baja es la que se propone como atenuante de la respuesta ansiosa al THC; en los estudios preclínicos el efecto aparece ligado a la dosis.",
+      "evidence_es": "Los datos provienen de modelos animales y de ensayos in vitro. No hay evidencia clínica en personas de que el limoneno de una mezcla de cannabis reduzca la paranoia: se describe como una hipótesis mecanicista razonable, no como un resultado comprobado.",
+      "strains_es": ["Amnesia Haze", "Super Lemon Haze", "Tangie", "Lemon Kush", "Durban Poison", "Zkittlez"],
+      "interaction_es": ""
+    },
+    {
+      "id": "thc_linalool",
+      "cannabinoids": ["THC"],
+      "terpenes": ["LINALOOL"],
+      "profiles": ["SEDANTE", "ANSIOLITICO"],
+      "outcome_es": "Euforia atenuada con sedación suave",
+      "description_es": "El linalool junto al THC suaviza el pico euforiaico y añade una sedación suave y calmante, sin el peso característico de un perfil con CBN. También se le atribuye un efecto desensibilizante y de alivio de la tensión muscular.",
+      "mechanism_es": "El linalool actúa como modulador negativo alostérico de CB1, inhibe la acetilcolinesterasa (la enzima que degrada la acetilcolina) y tiene efecto anestésico local. La combinación con THC se ha propuesto para bajar la intensidad del pico euforiaico y sumar un efecto calmante de inicio rápido.",
+      "evidence_es": "Ensayos in vitro y modelos animales, sin datos de interacción en personas. El papel modulador sobre CB1 es mecanicista, no clínico.",
+      "strains_es": ["Lavender Kush", "Sweet Dreams", "Girl Scout Cookies", "Wedding Cake", "Blue Dream", "LA Confidential"],
+      "interaction_es": "El linalool tiene efecto anestésico local y sedante. Puede reforzar el efecto de pastillas sedantes, de alcohol y de benzodiacepinas."
+    },
+    {
+      "id": "thc_pinene",
+      "cannabinoids": ["THC"],
+      "terpenes": ["ALPHA_PINENE", "BETA_PINENE"],
+      "profiles": ["FOCO_CREATIVIDAD", "ANSIOLITICO"],
+      "outcome_es": "Atenuación de la paranoia con atención sostenida",
+      "description_es": "Un perfil rico en pinenos junto al THC se asocia a una euforia más nítida y con menos carga ansiosa, y a una atención sostenida mejor que la del THC solo: el efecto sigue presente, pero se apoya en un fondo mental más despejado.",
+      "mechanism_es": "El alfa-pineno y el beta-pineno inhiben la acetilcolinesterasa, la enzima que degrada la acetilcolina, lo que podría sostener la atención. Además se les ha propuesto como moduladores alostéricos de CB1 que suavizan el pico euforiaico del THC sin desviar el efecto hacia el sedante.",
+      "evidence_es": "La inhibición de la acetilcolinesterasa se ha medido in vitro y en modelos animales; no hay confirmación en personas de un efecto medible sobre la atención. La modulación de CB1 es mecanicista.",
+      "strains_es": ["Pinene Rich", "Jack Herer", "Super Silver Haze", "Durban Poison", "Zkittlez", "Ghost Train Haze"],
+      "interaction_es": ""
+    },
+    {
+      "id": "cbd_caryophyllene",
+      "cannabinoids": ["CBD"],
+      "terpenes": ["BETA_CARYOPHYLLENE"],
+      "profiles": ["ANALGESICO"],
+      "outcome_es": "Analgesia y antiinflamación sistémica",
+      "description_es": "El perfil CBD más cariofileno beta es el más citado para el dolor y los procesos inflamatorios: el dolor baja con menos sedación y el efecto antiinflamatorio parece más amplio que el de uno de los dos componentes por separado.",
+      "mechanism_es": "El cariofileno beta es un agonista directo de CB2, con afinidad por encima de la de la anandamida, y por eso se le llama cannabinoide dietario. Su activación de CB2 reduce la liberación de citoquinas proinflamatorias y desensibiliza nociceptores periféricos. El CBD actúa sobre CB2, modula el receptor TRPV1 (implicado en la sensibilidad al dolor y a los irritantes) y es agonista de 5-HT1A. Los dos convergen en la misma vía inflamatoria por mecanismos distintos, lo que hace plausible la aditividad.",
+      "evidence_es": "La activación de CB2 por el cariofileno beta está bien caracterizada en modelos animales. La aditividad específica de CBD más cariofileno beta en analgesia sistémica no está probada en ensayos clínicos en personas; la vía de uso tópico con cariofileno es la mejor documentada. Preséntalo como mecanismo plausible, no como resultado clínico.",
+      "strains_es": ["GSC", "Gorilla Glue #4", "Chemdawg", "Bubba Kush", "White Widow", "Candyland", "Chemdog"],
+      "interaction_es": "El CBD inhibe CYP2C19 y CYP3A4, y en menor grado CYP2C9, en preparaciones in vitro. Puede alterar los niveles de fármacos metabolizados por esas vías, como anticoagulantes (warfarina), antiagregantes (clopidogrel) y algunos antidepresivos o anticonvulsivantes. Consulta con un profesional de la salud antes de combinar."
+    },
+    {
+      "id": "cbg_limonene_myrcene",
+      "cannabinoids": ["CBG"],
+      "terpenes": ["LIMONENE", "MYRCENE"],
+      "profiles": ["ANSIOLITICO", "FOCO_CREATIVIDAD"],
+      "outcome_es": "Claridad y bienestar sin sedación pesada",
+      "description_es": "Un perfil con CBG acompañado de limoneno y mirceno se asocia a alivio de la tensión y a un efecto sobre el estado de ánimo, sin la carga sedante de una dominante alta en THC ni el pico euforiaico intenso.",
+      "mechanism_es": "El CBG tiene muy baja afinidad por CB1 y actúa como agonista parcial; también es agonista de TRPV1 y TRPA1. En modelos animales ha mostrado efecto neuroprotector y un perfil de acción similar al antidepresivo, en parte aumentando la señalización de anandamida. El limoneno y el mirceno modulan la señalización de CB1 y CB2 en sentidos distintos, y el mirceno aporta una relajación muscular suave, diferente de la sedación profunda que se le atribuye al CBN.",
+      "evidence_es": "El CBG es el tercer cannabinoide más abundante en muchas variedades, pero casi toda la evidencia es preclínica, en roedores o in vitro. No hay ensayos en personas que confirmen un efecto antidepresivo o neuroprotector, y esta combinación exacta no está estudiada.",
+      "strains_es": ["Golden Leaf", "Clementine", "Wedding Cake", "Zkittlez", "Blue Cheese", "Tangie", "Mimosa Evo"],
+      "interaction_es": ""
+    },
+    {
+      "id": "cbn_linalool_myrcene",
+      "cannabinoids": ["CBN"],
+      "terpenes": ["LINALOOL", "MYRCENE"],
+      "profiles": ["SEDANTE"],
+      "outcome_es": "Inducción de sueño y relajación muscular prolongada",
+      "description_es": "El CBN se asocia tradicionalmente con el sueño, y con linalool y mirceno el perfil se describe como inductor de sueño, con relajación muscular de inicio rápido y larga duración. Conviene leerlo con prudencia: mira la evidencia.",
+      "mechanism_es": "El CBN tiene una afinidad por CB1 entre diez y veinte veces menor que la del THC y actúa como agonista parcial; esa baja afinidad es la razón por la que se le atribuye un efecto sedante suave y no un efecto psicoactivo fuerte. El linalool inhibe la acetilcolinesterasa y modula CB1 de forma negativa alostérica, y el mirceno refuerza la señalización de CB1: la combinación se ha propuesto para sumar sedación y relajación muscular. El efecto real del CBN en humanos sigue sin estar bien establecido.",
+      "evidence_es": "El CBN se ha popularesado como el cannabinoide del sueño sin que datos en personas lo respalden. Los estudios que lo describen como más sedante que el THC son antiguos y no se han replicado de forma concluyente. Preséntalo como hipótesis.",
+      "strains_es": ["Sweet Dreams", "Critical Kush", "Granddaddy Purple", "Purple Kush", "Bubba Kush", "Lemon Kush"],
+      "interaction_es": "El CBN y el mirceno suman sedación: combinarlos con alcohol, benzodiacepinas o pastillas sedantes aumenta la somnolencia y reduce la capacidad de conducir."
+    }
+  ],
+  "profiles": [
+    {
+      "key": "ANSIOLITICO",
+      "label_es": "Ansiolítico",
+      "description_es": "Perfil orientado a bajar la ansiedad y la tensión sin carga sedante. Apunta a CBD y CBG con limoneno, linalool y pinenos.",
+      "cannabinoids": [{ "cannabinoid": "CBD", "weight": 0.65 }, { "cannabinoid": "CBG", "weight": 0.35 }],
+      "terpenes": [
+        { "terpene": "LIMONENE", "share": 0.30 },
+        { "terpene": "LINALOOL", "share": 0.25 },
+        { "terpene": "ALPHA_PINENE", "share": 0.20 },
+        { "terpene": "MYRCENE", "share": 0.15 },
+        { "terpene": "TERPINOLENE", "share": 0.10 }
+      ],
+      "note_es": "La evidencia de estos terpenos es mayoritariamente preclínica. El CBD y el CBG no producen el efecto euforiaico del THC: son la base del perfil, no un aditivo."
+    },
+    {
+      "key": "ANALGESICO",
+      "label_es": "Analgésico",
+      "description_es": "Perfil orientado al dolor y a la inflamación, con la menor carga sedante posible. El cariofileno beta es el eje y el CBD la base.",
+      "cannabinoids": [{ "cannabinoid": "CBD", "weight": 0.65 }, { "cannabinoid": "CBN", "weight": 0.20 }, { "cannabinoid": "THC", "weight": 0.15 }],
+      "terpenes": [
+        { "terpene": "BETA_CARYOPHYLLENE", "share": 0.35 },
+        { "terpene": "MYRCENE", "share": 0.20 },
+        { "terpene": "HUMULENE", "share": 0.15 },
+        { "terpene": "LIMONENE", "share": 0.15 },
+        { "terpene": "LINALOOL", "share": 0.15 }
+      ],
+      "note_es": "El cariofileno beta es un agonista directo de CB2 bien caracterizado en modelos animales. La analgesia sistémica en personas sigue sin estar demostrada."
+    },
+    {
+      "key": "SEDANTE",
+      "label_es": "Sedante",
+      "description_es": "Perfil orientado al descanso profundo y a la relajación muscular prolongada. Domina el mirceno, con apoyo de CBN y linalool.",
+      "cannabinoids": [{ "cannabinoid": "CBN", "weight": 0.45 }, { "cannabinoid": "THC", "weight": 0.35 }, { "cannabinoid": "CBD", "weight": 0.20 }],
+      "terpenes": [
+        { "terpene": "MYRCENE", "share": 0.35 },
+        { "terpene": "LINALOOL", "share": 0.25 },
+        { "terpene": "BETA_CARYOPHYLLENE", "share": 0.15 },
+        { "terpene": "LIMONENE", "share": 0.15 },
+        { "terpene": "TERPINOLENE", "share": 0.10 }
+      ],
+      "note_es": "El peso del CBN es hipotético: su efecto sedante en personas no está demostrado. Si buscas descanso, el mirceno y el linalool tienen mejor sustento mecanicista que el CBN."
+    },
+    {
+      "key": "FOCO_CREATIVIDAD",
+      "label_es": "Foco y creatividad",
+      "description_es": "Perfil orientado a la atención sostenida y a la producción con baja carga sedante. Domina el pineno, con limoneno y terpinoleno.",
+      "cannabinoids": [{ "cannabinoid": "THC", "weight": 0.40 }, { "cannabinoid": "THCV", "weight": 0.30 }, { "cannabinoid": "CBD", "weight": 0.30 }],
+      "terpenes": [
+        { "terpene": "ALPHA_PINENE", "share": 0.40 },
+        { "terpene": "LIMONENE", "share": 0.25 },
+        { "terpene": "TERPINOLENE", "share": 0.20 },
+        { "terpene": "OCIMENE", "share": 0.15 }
+      ],
+      "note_es": "El efecto del THCV sobre el enfoque es objeto de debate en la literatura y la mayoría de los datos son preclínicos. El THC en dosis altas deteriora la memoria de trabajo: este perfil asume dosis bajas o moderadas."
+    }
+  ],
+  "vaporisation": [
+    {
+      "terpene": "ALPHA_PINENE",
+      "boilingPointC": 156,
+      "minTempC": 156,
+      "maxTempC": 180,
+      "note_es": "Es el primero en salir. Por encima de 180 °C el aroma se vuelve resinoso y dominan otros compuestos."
+    },
+    {
+      "terpene": "BETA_PINENE",
+      "boilingPointC": 166,
+      "minTempC": 166,
+      "maxTempC": 190,
+      "note_es": "Muy estable hasta 190 °C. Comparte comportamiento con el alfa-pineno con una temperatura algo mayor."
+    },
+    {
+      "terpene": "CAMPHENE",
+      "boilingPointC": 160,
+      "minTempC": 160,
+      "maxTempC": 185,
+      "note_es": "Aroma fresco y cónico. Por encima de 185 °C se vuelve demasiado pungente."
+    },
+    {
+      "terpene": "HUMULENE",
+      "boilingPointC": 166,
+      "minTempC": 166,
+      "maxTempC": 195,
+      "note_es": "Sesquiterpeno de ebullición baja para su tamaño molecular: se extrae antes que el cariofileno beta."
+    },
+    {
+      "terpene": "MYRCENE",
+      "boilingPointC": 167,
+      "minTempC": 167,
+      "maxTempC": 195,
+      "note_es": "Rango amplio y estable: es el terpeno más fácil de conservar. Por encima de 195 °C empieza a perder su aroma terroso."
+    },
+    {
+      "terpene": "LIMONENE",
+      "boilingPointC": 176,
+      "minTempC": 176,
+      "maxTempC": 200,
+      "note_es": "El más citado de la lista: 176 °C de ebullición y 176-200 °C como rango de trabajo. Por encima de 200 °C se pierde el carácter cítrico."
+    },
+    {
+      "terpene": "OCIMENE",
+      "boilingPointC": 176,
+      "minTempC": 176,
+      "maxTempC": 200,
+      "note_es": "Muy volátil: se pierde pronto si se calienta el conjunto por encima de 200 °C."
+    },
+    {
+      "terpene": "TERPINOLENE",
+      "boilingPointC": 186,
+      "minTempC": 186,
+      "maxTempC": 210,
+      "note_es": "Terpeno muy reactivo: se oxida con facilidad una vez evaporado."
+    },
+    {
+      "terpene": "LINALOOL",
+      "boilingPointC": 198,
+      "minTempC": 198,
+      "maxTempC": 220,
+      "note_es": "Uno de los puntos más altos de la lista floral. Exige al menos 198 °C, lo que puede exponer a los terpenos más volátiles."
+    },
+    {
+      "terpene": "BETA_CARYOPHYLLENE",
+      "boilingPointC": 262,
+      "minTempC": 250,
+      "maxTempC": 280,
+      "note_es": "Sesquiterpeno de ebullición alta: necesita un equipo capaz de 250 °C o más, o un carrier de terpenos. En una vaporización a 180 °C apenas se extrae, y a esas temperaturas la mayor parte de los monoterpenos ya se ha perdido."
+    }
+  ],
+  "cases": [
+    {
+      "id": "insomnio_alta_tolerancia",
+      "title_es": "Insomnio con tolerancia alta a THC",
+      "brief_es": "Paciente con insomnio persistente, tolerancia alta a THC y taquicardia al superar dosis moderadas. Los intentos con dosis altas de THC empeoran el sueño: la taquicardia y la ansiedad residual lo mantienen despierto.",
+      "goalProfile": "SEDANTE",
+      "forbiddenCannabinoids": [],
+      "maxCannabinoidShare": { "THC": 0.20 },
+      "sideEffectCeilings": { "ANSIEDAD": 0.30, "TACHYCARDIA": 0.25, "SEDACION": 1.00, "IMPAIRMENT_COGNITIVO": 0.80 },
+      "explanation_es": "La clave del caso es separar eficacia de carga. Con tolerancia alta, subir el THC no compra sueño: compra taquicardia. La solución es bajar el aporte de THC hasta el límite del caso y construir la sedación con mirceno y linalool, que no dependen de CB1 de forma intensa. El CBN aparece en el perfil sedante del catálogo, pero su peso real no está demostrado: no lo cuentes como garantía."
+    },
+    {
+      "id": "bloque_trabajo_antes_presentar",
+      "title_es": "Bloque de trabajo antes de presentar",
+      "brief_es": "Paciente con dos horas de trabajo profundo antes de una presentación, sin tolerancia previa. Busca foco sin sedación y con el menor riesgo posible de perder el hilo.",
+      "goalProfile": "FOCO_CREATIVIDAD",
+      "forbiddenCannabinoids": ["CBN"],
+      "maxCannabinoidShare": { "THC": 0.55 },
+      "sideEffectCeilings": { "ANSIEDAD": 0.50, "TACHYCARDIA": 0.50, "SEDACION": 0.40, "IMPAIRMENT_COGNITIVO": 0.50 },
+      "explanation_es": "El CBN está descartado en este caso porque su carga sedante es justo lo que no se puede permitir. La atención se apoya en los pinenos y el limoneno, y el techo de THC protege la memoria de trabajo, que se deteriora con dosis altas de THC aunque el efecto se sienta como enfoque."
+    },
+    {
+      "id": "dolor_articular_cronico",
+      "title_es": "Dolor articular crónico",
+      "brief_es": "Paciente con dolor articular crónico que quiere mantener la jornada laboral. Necesita alivio sin sedación ni deterioro de la concentración.",
+      "goalProfile": "ANALGESICO",
+      "forbiddenCannabinoids": [],
+      "maxCannabinoidShare": { "THC": 0.40 },
+      "sideEffectCeilings": { "ANSIEDAD": 0.60, "TACHYCARDIA": 0.70, "SEDACION": 0.65, "IMPAIRMENT_COGNITIVO": 0.60 },
+      "explanation_es": "El perfil analgésico del catálogo apoya CBD y cariofileno beta, con algo de CBN y THC. El cariofileno beta es el único de la lista que actúa de forma directa sobre CB2, así que es el eje; el mirceno y el humuleno acompañan. Vigila el techo de sedación: el mirceno es útil, pero en exceso pesa."
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1_cariofileno_cb2",
+      "prompt_es": "El cariofileno beta aparece en la literatura como el único terpeno con actividad directa sobre un receptor del sistema endocannabinoide. ¿Cuál es ese receptor y por qué se le llama cannabinoide dietario?",
+      "options_es": [
+        "CB2, porque es un agonista directo sobre una vía que regula el sistema inmunitario",
+        "CB1, porque compite con el THC por el mismo sitio de unión",
+        "PPAR-gamma, porque activa los peroxisomas",
+        "TRPV1, porque es un agonista de los receptores del calor"
+      ],
+      "correctIndex": 0,
+      "explanation_es": "El cariofileno beta es un agonista directo de CB2 con afinidad por encima de la de la anandamida. CB2 regula el sistema inmunitario y es la base del efecto antiinflamatorio y antinociceptivo que se le atribuye."
+    },
+    {
+      "id": "q2_limonene_ansiedad",
+      "prompt_es": "El THC produce euforia intensa y, en algunas personas, ansiedad y paranoia. ¿Qué terpeno se ha propuesto en la literatura para modular a la baja esa respuesta ansiosa?",
+      "options_es": ["Mirceno", "Limoneno", "Cariofileno beta", "Humuleno"],
+      "correctIndex": 1,
+      "explanation_es": "El limoneno modula CB1 y CB2 y, en modelos animales, interviene en sistemas GABAérgicos y serotoninérgicos asociados a la conducta ansiosa. La evidencia es preclínica: no está demostrado en personas."
+    },
+    {
+      "id": "q3_pineno_acetilcolina",
+      "prompt_es": "Varios terpenos de la biblioteca se describen como inhibidores de la acetilcolinesterasa, la enzima que degrada la acetilcolina. ¿Cuáles son los que esta biblioteca usa como eje del perfil de foco?",
+      "options_es": ["Alfa-pineno y beta-pineno", "Camfeno", "Ocimeno", "Mirceno"],
+      "correctIndex": 0,
+      "explanation_es": "Los pinenos son los que sostienen el perfil de foco en esta biblioteca. El linalool también presenta inhibición de acetilcolinesterasa in vitro, pero el perfil de foco se apoya en los pinenos. Todas estas mediciones son in vitro o en modelos animales."
+    },
+    {
+      "id": "q4_mirceno_hipotesis",
+      "prompt_es": "El mirceno se ha propuesto como modulador alostérico del receptor CB1 y como facilitador del paso de otros cannabinoids al sistema nervioso central. ¿Cómo hay que leer esa hipótesis?",
+      "options_es": [
+        "Es una hipótesis mecanicista sostenida por datos preclínicos, no un hallazgo clínico",
+        "Está comprobada en ensayos en personas",
+        "Solo actúa sobre CB2 y no sobre CB1",
+        "El mirceno es un cannabinoide más potente que el THC"
+      ],
+      "correctIndex": 0,
+      "explanation_es": "La modulación alostérica de CB1 tiene respaldo mecanicista y preclínico. El aumento de la permeabilidad de la barrera hematoencefálica no está medido en personas: es la parte que se repite de más en la cultura del cannabis y conviene separarla de lo que sí tiene datos."
+    },
+    {
+      "id": "q5_cbn_afinidad",
+      "prompt_es": "El CBN tiene una afinidad por CB1 entre diez y veinte veces menor que la del THC. ¿Qué consecuencia práctica tiene esa baja afinidad?",
+      "options_es": [
+        "Se le atribuye un efecto sedante suave y poco psicoactivo, que es la base de su asociación con el sueño",
+        "Es más potente que el THC por la misma razón",
+        "No actúa sobre el sistema endocannabinoide",
+        "Solo funciona cuando se aplica por vía dérmica"
+      ],
+      "correctIndex": 0,
+      "explanation_es": "Con afinidad baja y como agonista parcial, el CBN se sitúa muy por debajo del THC en cuanto a unión al receptor. De ahí se le atribuye un efecto más suave. Ojo: que la mecánica sea esperable no significa que el efecto sobre el sueño esté demostrado en personas, y no lo está."
+    },
+    {
+      "id": "q6_limonene_temperatura",
+      "prompt_es": "El limoneno hierve alrededor de 176 °C. ¿Qué temperatura de trabajo mantiene sus notas cítricas en una vaporización?",
+      "options_es": ["Alrededor de 176 a 200 °C", "Por debajo de 60 °C", "Por encima de 300 °C", "Exactamente a 0 °C"],
+      "correctIndex": 0,
+      "explanation_es": "El limoneno tiene un punto de ebullición de 176 °C y un rango de trabajo de 176 a 200 °C. Por encima de 200 °C se pierde el carácter cítrico; muy por debajo no se evapora."
+    },
+    {
+      "id": "q7_cariofileno_temperatura",
+      "prompt_es": "El cariofileno beta hierve alrededor de 262 °C, muy por encima del resto de monoterpenos de la biblioteca. ¿Qué implica eso al vaporizar?",
+      "options_es": [
+        "Necesita 250 °C o más; en una vaporización a 180 °C apenas se extrae",
+        "Se extrae igual que el limoneno a la misma temperatura",
+        "Se destruye antes que los demás por ser más volátil",
+        "No es un terpeno de la planta, es un aditivo de laboratorio"
+      ],
+      "correctIndex": 0,
+      "explanation_es": "Es un sesquiterpeno de ebullición alta. Subir a 250 °C para extraerlo significa que los monoterpenos, que hierven entre 155 y 198 °C, ya se han perdido: son objetivos que se contradicen en el mismo equipo."
+    },
+    {
+      "id": "q8_cbd_trpv1",
+      "prompt_es": "El CBD modula el receptor TRPV1, implicado en la percepción del dolor y de los irritantes. ¿Qué otra acción del CBD converge con la del cariofileno beta en el efecto antiinflamatorio?",
+      "options_es": [
+        "La activación de CB2 y la señalización por 5-HT1A",
+        "La inhibición irreversible de la acetilcolinesterasa",
+        "El bloqueo de los receptores opioides",
+        "El aumento de la producción de serotonina en el intestino"
+      ],
+      "correctIndex": 0,
+      "explanation_es": "El CBD actúa sobre CB2, es agonista de 5-HT1A y modula TRPV1. El cariofileno beta activa CB2 de forma directa. Los dos convergen en la vía inflamatoria por mecanismos distintos: ese es el fundamento mecanicista de la aditividad que se les atribuye."
+    },
+    {
+      "id": "q9_interaccion_cbd",
+      "prompt_es": "Una persona toma warfarina y consume una mezcla rica en CBD y cariofileno beta. ¿Por qué el CBD merece atención en este caso?",
+      "options_es": [
+        "Inhibe enzimas del citocromo P450 (CYP2C19, CYP3A4) y puede alterar los niveles de otros fármacos",
+        "No interactúa con ningún medicamento",
+        "Solo interactúa si se toma por vía intravenosa",
+        "El cariofileno beta neutraliza el efecto de la warfarina"
+      ],
+      "correctIndex": 0,
+      "explanation_es": "El CBD inhibe CYP2C19 y CYP3A4, y en menor grado CYP2C9, en preparaciones in vitro. Puede alterar los niveles de anticoagulantes y de otros fármacos metabolizados por esas vías. Consulta con un profesional de la salud: esto es una advertencia, no una guía de dosis."
+    },
+    {
+      "id": "q10_evidencia_entourage",
+      "prompt_es": "¿Por qué el efecto entourage se describe en la literatura como un fenómeno preclínico y no como un hecho clínico?",
+      "options_es": [
+        "Porque casi todos los estudios son in vitro o en modelos animales, y los ensayos en personas no aíslan el papel de cada terpeno",
+        "Porque los terpenos no existen en la planta",
+        "Porque la proporción de terpenos no se puede medir",
+        "Porque solo se estudia en extracciones concentradas"
+      ],
+      "correctIndex": 0,
+      "explanation_es": "Aislar el efecto de un terpeno dentro de una mezcla en personas es metodológicamente muy difícil, y casi toda la mecanística viene de roedores o de ensayos de unión. La consecuencia práctica: usa estas proporciones como guía de perfil, no como predicción de efecto."
+    }
+  ]
+}
