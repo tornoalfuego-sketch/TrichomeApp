@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.trichome.app.ui.components.SolidPanel
 import com.trichome.app.ui.theme.AppTheme
@@ -79,6 +80,21 @@ fun ColorRolesDialog(
     val palette = SolidPalettes.forTheme(theme)
     val textBackdrop = palette.surface
 
+    // Which of the four stored picks are actually in effect. A refused pick is
+    // still stored, so the colours alone cannot answer this, and everything that
+    // reports on a role -- the summary, the readout, the swatch ring -- has to be
+    // told or the dialog contradicts itself.
+    //
+    // The button role is deliberately absent. `solidSchemeFor` takes the button
+    // pick as-is and only derives its label with `readableOnStrict`, so a fill
+    // that fails the non-text bar is still painted; reporting it as dropped
+    // would trade one false report for another.
+    val rejectedPicks = RejectedPicks(
+        primaryText = pickIsRejected(primaryText, textBackdrop, BODY_TEXT_CONTRAST),
+        secondaryText = pickIsRejected(secondaryText, textBackdrop, BODY_TEXT_CONTRAST),
+        tertiaryText = pickIsRejected(tertiaryText, textBackdrop, BODY_TEXT_CONTRAST)
+    )
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Colores de la app") },
@@ -97,7 +113,9 @@ fun ColorRolesDialog(
                 // "What have I actually changed?" in one line, above the four
                 // panels that each only speak for themselves.
                 Text(
-                    colorOverrideSummary(primaryText, secondaryText, tertiaryText, buttonColor),
+                    colorOverrideSummary(
+                        primaryText, secondaryText, tertiaryText, buttonColor, rejectedPicks
+                    ),
                     style = MaterialTheme.typography.labelMedium,
                     color = scheme.onSurface
                 )
@@ -113,6 +131,7 @@ fun ColorRolesDialog(
                     currentRole = scheme.onSurface,
                     backdrop = textBackdrop,
                     minimumContrast = BODY_TEXT_CONTRAST,
+                    dropsUnreadablePick = true,
                     onPick = onPickPrimaryText
                 )
 
@@ -125,6 +144,7 @@ fun ColorRolesDialog(
                     currentRole = scheme.onSurfaceVariant,
                     backdrop = textBackdrop,
                     minimumContrast = BODY_TEXT_CONTRAST,
+                    dropsUnreadablePick = true,
                     onPick = onPickSecondaryText
                 )
 
@@ -137,6 +157,7 @@ fun ColorRolesDialog(
                     currentRole = tertiaryCurrent,
                     backdrop = textBackdrop,
                     minimumContrast = BODY_TEXT_CONTRAST,
+                    dropsUnreadablePick = true,
                     onPick = onPickTertiaryText
                 )
 
@@ -154,6 +175,9 @@ fun ColorRolesDialog(
                     // as non-text content: a fill only has to read as a shape.
                     backdrop = scheme.background,
                     minimumContrast = NON_TEXT_CONTRAST,
+                    // Applied even when it fails that bar -- see the rejected
+                    // picks above -- so it is never reported as dropped.
+                    dropsUnreadablePick = false,
                     onPick = onPickButton
                 )
             }
@@ -179,6 +203,63 @@ private const val BODY_TEXT_CONTRAST = 4.5f
 private const val NON_TEXT_CONTRAST = 3.0f
 
 /**
+ * True when a pick is stored but never reaches the screen.
+ *
+ * The preview shows the RESOLVED colour, so it shows the palette fallback
+ * whenever this is true -- and the ring and the readout used to claim the
+ * opposite in the same breath. One rule, one function: the swatch dot reports
+ * the identical condition as its `warning` flag, so the two cannot drift.
+ *
+ * Same shape as `textOverrideOrNull` in the theme, which is what actually
+ * decides it: a `null` pick is never rejected, it is simply the absence of one.
+ */
+fun pickIsRejected(pick: Color?, backdrop: Color, minimumContrast: Float): Boolean =
+    pick != null && contrastRatio(pick, backdrop) < minimumContrast
+
+/**
+ * Which of the four roles hold a pick that was dropped at resolution time.
+ *
+ * A refused pick stays in the store, so the four colours cannot say on their own
+ * which of them the app is honouring. This is that missing half, and it has to
+ * reach the summary: naming a role as customised when its pick was refused is
+ * the claim the user acted on and the app did not keep.
+ *
+ * @property button never set by this dialog. `solidSchemeFor` paints the button
+ *   pick as-is and only derives its label, so a fill that fails the non-text
+ *   bar is still in effect and saying otherwise would be a fresh lie.
+ */
+data class RejectedPicks(
+    val primaryText: Boolean = false,
+    val secondaryText: Boolean = false,
+    val tertiaryText: Boolean = false,
+    val button: Boolean = false
+) {
+    companion object {
+        /** No role was refused, i.e. every stored pick is in effect. */
+        val NONE = RejectedPicks()
+    }
+}
+
+/**
+ * The line under a swatch row: what colour this role is painting RIGHT NOW.
+ *
+ * Three states, because "the pick you made" and "the colour in use" are not the
+ * same thing. Presenting a refused pick as the value in use -- and printing its
+ * hex to prove it -- is how the dialog told the user a colour was set while the
+ * app rendered another one, so the refused case names the hex of the colour
+ * actually in use and says the pick was discarded.
+ *
+ * @param inUse the role's resolved colour, the one the preview just painted.
+ */
+fun roleReadout(selected: Color?, rejected: Boolean, inUse: Color): String = when {
+    selected == null -> "Ahora: el color del tema"
+    rejected ->
+        "Descartado: #${selected.toArgbHex()} no se lee sobre esta superficie. " +
+            "Se usa el del tema: #${inUse.toArgbHex()}."
+    else -> "Ahora: #${selected.toArgbHex()}"
+}
+
+/**
  * One line naming which roles are customised and which are on the theme default.
  *
  * Four panels that each report a colour cannot answer "what did I actually
@@ -190,21 +271,29 @@ private const val NON_TEXT_CONTRAST = 3.0f
  * picks, never on the resolved colours: a role the theme happens to resolve to
  * the colour the user picked is still *customised*, and calling it a default
  * would be a lie.
+ *
+ * A pick named in [rejected] is the one exception, and it is not a nicety. The
+ * store keeps a pick the app refused, so splitting on the picks alone counted it
+ * as customised and the summary claimed a change that was never in effect. Such a
+ * role reads as a default, exactly as it paints.
  */
 fun colorOverrideSummary(
     primaryText: Color?,
     secondaryText: Color?,
     tertiaryText: Color?,
-    buttonColor: Color?
+    buttonColor: Color?,
+    rejected: RejectedPicks = RejectedPicks.NONE
 ): String {
     val roles = listOf(
-        "Texto primario" to primaryText,
-        "Texto secundario" to secondaryText,
-        "Texto terciario" to tertiaryText,
-        "Color de los botones" to buttonColor
+        // Customised means "this role is painting a colour the user chose", which
+        // is false both when nothing was picked and when the pick was refused.
+        "Texto primario" to (primaryText != null && !rejected.primaryText),
+        "Texto secundario" to (secondaryText != null && !rejected.secondaryText),
+        "Texto terciario" to (tertiaryText != null && !rejected.tertiaryText),
+        "Color de los botones" to (buttonColor != null && !rejected.button)
     )
-    val customised = roles.filter { it.second != null }.map { it.first }
-    val onTheme = roles.filter { it.second == null }.map { it.first }
+    val customised = roles.filter { it.second }.map { it.first }
+    val onTheme = roles.filter { !it.second }.map { it.first }
     if (customised.isEmpty()) {
         return "Ningún color personalizado: los cuatro usan el del tema."
     }
@@ -237,8 +326,19 @@ private fun ColorRoleSection(
     currentRole: Color,
     backdrop: Color,
     minimumContrast: Float,
+    /**
+     * Whether resolution drops a pick for this role that cannot clear
+     * [minimumContrast]. True for the three text levels, false for the button
+     * fill, which the app paints either way.
+     */
+    dropsUnreadablePick: Boolean,
     onPick: (Color?) -> Unit
 ) {
+    // Decided once, from the same predicate the swatch dot reports as its
+    // `warning` flag, so the ring, the readout and the summary cannot end up
+    // telling three different stories about one pick.
+    val rejected = dropsUnreadablePick && pickIsRejected(selected, backdrop, minimumContrast)
+
     SolidPanel(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(12.dp)) {
             Text(title, style = MaterialTheme.typography.titleSmall)
@@ -278,17 +378,14 @@ private fun ColorRoleSection(
                         color = color,
                         selected = selected == color,
                         warning = contrastRatio(color, backdrop) < minimumContrast,
+                        rejected = rejected && selected == color,
                         onClick = { onPick(color) }
                     )
                 }
             }
             Box(Modifier.padding(top = 8.dp))
             Text(
-                text = if (selected == null) {
-                    "Ahora: el color del tema"
-                } else {
-                    "Ahora: #${selected.toArgbHex()}"
-                },
+                text = roleReadout(selected, rejected, currentRole),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -402,8 +499,35 @@ private fun ColorSwatch(
     color: Color,
     selected: Boolean,
     warning: Boolean,
+    /**
+     * This is the pick the user made and the app refused.
+     *
+     * Distinct from [selected], and the distinction is the point: the accent ring
+     * is the dialog's promise that the colour is in use, and painting it on a
+     * refused pick is one of the three contradictions this file used to show at
+     * once. It still gets a ring of its own, so the choice remains visible, in
+     * the scheme's error colour so nothing reads it as "applied".
+     */
+    rejected: Boolean = false,
     onClick: () -> Unit
 ) {
+    val ringWidth: Dp
+    val ringColor: Color
+    when {
+        rejected -> {
+            ringWidth = 2.dp
+            ringColor = MaterialTheme.colorScheme.error
+        }
+        selected -> {
+            ringWidth = 3.dp
+            ringColor = MaterialTheme.colorScheme.primary
+        }
+        else -> {
+            ringWidth = 1.dp
+            ringColor = MaterialTheme.colorScheme.outline
+        }
+    }
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
@@ -415,9 +539,8 @@ private fun ColorSwatch(
                 .size(36.dp)
                 .background(color, CircleShape)
                 .border(
-                    width = if (selected) 3.dp else 1.dp,
-                    color = if (selected) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.outline,
+                    width = ringWidth,
+                    color = ringColor,
                     shape = CircleShape
                 ),
             contentAlignment = Alignment.Center

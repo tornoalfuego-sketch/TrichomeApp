@@ -4,12 +4,14 @@ import androidx.compose.ui.graphics.Color
 import com.trichome.app.ui.theme.AccentPalette
 import com.trichome.app.ui.theme.AppTheme
 import com.trichome.app.ui.theme.ColorOverrides
+import com.trichome.app.ui.theme.MINIMUM_NON_TEXT_CONTRAST
 import com.trichome.app.ui.theme.MINIMUM_TEXT_CONTRAST
 import com.trichome.app.ui.theme.SolidPalettes
 import com.trichome.app.ui.theme.contrastRatio
 import com.trichome.app.ui.theme.readableOnStrict
 import com.trichome.app.ui.theme.resolvedTextColors
 import com.trichome.app.ui.theme.solidSchemeFor
+import com.trichome.app.ui.theme.toArgbHex
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
@@ -310,5 +312,242 @@ class ColorRolesDialogPreviewTest {
             }
         }
         assertEquals("the sweep did not cover all sixteen combinations", 16, combinations)
+    }
+
+    /* ── A refused pick must not read as applied anywhere ─────────────────── */
+
+    /**
+     * Unreadable on every dark surface, so it stands in for the reported case: the
+     * user taps a swatch, the store keeps the colour, and the app paints the
+     * palette instead.
+     */
+    private val unreadable = Color(0xFF102010)
+
+    /** Amber: clears the text bar on every palette shipped. */
+    private val readable = Color(0xFFFFC107)
+
+    @Test
+    fun theDialogRefusesExactlyWhatTheThemeDrops() {
+        // Two implementations of one rule: this predicate in the dialog, and
+        // `textOverrideOrNull` in the theme. If they ever disagree, the dialog
+        // re-opens the original lie in one direction or the other -- claiming a
+        // pick is applied when the app painted the palette, or claiming it was
+        // dropped when the app painted the pick.
+        (darkThemes + lightThemes).forEach { theme ->
+            val surface = SolidPalettes.forTheme(theme).surface
+            AccentSwatches.forEach { (name, candidate) ->
+                // A kept pick resolves to itself; a dropped one resolves to the
+                // palette, or to a level derived from a pick that was not kept.
+                val droppedByTheTheme =
+                    candidate != resolvedTextColors(theme, ColorOverrides(primaryText = candidate))
+                        .primary
+                assertEquals(
+                    "the dialog and the theme disagree about \"$name\" on theme " +
+                        "${theme.index}",
+                    droppedByTheTheme,
+                    pickIsRejected(candidate, surface, MINIMUM_TEXT_CONTRAST)
+                )
+            }
+        }
+    }
+
+    @Test
+    fun aRejectedPickIsNotCountedAsCustomisedByTheSummary() {
+        // The half of the report the summary got wrong: the store holds the pick,
+        // so the line announced a customisation that was never in effect.
+        assertTrue(
+            "the fixture has to be a refused pick to prove anything",
+            pickIsRejected(unreadable, SolidPalettes.NIGHT.surface, MINIMUM_TEXT_CONTRAST)
+        )
+        val summary = colorOverrideSummary(
+            unreadable, null, null, null,
+            RejectedPicks(primaryText = true)
+        )
+        assertEquals(
+            "a refused pick was still reported as a customisation: $summary",
+            "Ningún color personalizado: los cuatro usan el del tema.",
+            summary
+        )
+    }
+
+    @Test
+    fun aRejectedPickIsListedWithTheThemeDefaultsAndAnAcceptedOneIsNot() {
+        // The partition has to survive a refusal: one role really was customised
+        // and one only looks it, so the line has to put them on opposite sides.
+        val summary = colorOverrideSummary(
+            unreadable, readable, null, null,
+            RejectedPicks(primaryText = true)
+        )
+        assertEquals(
+            "Personalizado: Texto secundario. Del tema: Texto primario, Texto terciario " +
+                "y Color de los botones.",
+            summary
+        )
+    }
+
+    @Test
+    fun aSuccessfulPickIsStillCountedAsCustomised() {
+        // The other side of the same rule. Refusing a pick must not turn the
+        // summary into a wall of "Del tema" for picks that did apply.
+        assertFalse(
+            "the fixture has to clear the text bar to prove anything",
+            pickIsRejected(readable, SolidPalettes.NIGHT.surface, MINIMUM_TEXT_CONTRAST)
+        )
+        assertTrue(
+            "a pick that cleared the bar was not reported as customised: " +
+                colorOverrideSummary(readable, null, null, null),
+            colorOverrideSummary(readable, null, null, null)
+                .startsWith("Personalizado: Texto primario.")
+        )
+    }
+
+    @Test
+    fun aButtonFillThatFailsTheNonTextBarIsStillAppliedAndSoIsStillCustomised() {
+        // `dropsUnreadablePick = false` on the button role is a claim about the
+        // app, not a shortcut: `solidSchemeFor` takes that pick as-is and only
+        // derives its label, so calling it dropped would make the dialog lie in
+        // the opposite direction -- a fresh report of a change that did happen.
+        val weak = Color(0xFF1A1A2E)
+        assertTrue(
+            "the fixture has to fail the non-text bar to prove anything",
+            contrastRatio(weak, SolidPalettes.NIGHT.background) < MINIMUM_NON_TEXT_CONTRAST
+        )
+        assertEquals(
+            "the app no longer applies a button pick that fails the non-text bar, " +
+                "so this exemption is no longer true",
+            weak,
+            solidSchemeFor(
+                AppTheme.NIGHT, AccentPalette.DEFAULT_ACCENT, ColorOverrides(button = weak)
+            ).primary
+        )
+        assertTrue(
+            "a button pick that is in effect was not reported as customised: " +
+                colorOverrideSummary(null, null, null, weak),
+            colorOverrideSummary(null, null, null, weak)
+                .startsWith("Personalizado: Color de los botones.")
+        )
+    }
+
+    @Test
+    fun theReadoutSaysAPickWasDiscardedAndNamesTheColourActuallyInUse() {
+        val inUse = SolidPalettes.NIGHT.onSurface
+        val readout = roleReadout(unreadable, rejected = true, inUse = inUse)
+
+        assertFalse(
+            "the readout still presents the refused pick as the value in use: $readout",
+            readout.contains("Ahora: #${unreadable.toArgbHex()}")
+        )
+        assertTrue(
+            "the readout does not say the pick was discarded: $readout",
+            readout.startsWith("Descartado: #${unreadable.toArgbHex()}")
+        )
+        assertTrue(
+            "the readout does not give the reason it was discarded: $readout",
+            readout.contains("no se lee sobre esta superficie")
+        )
+        assertTrue(
+            "the readout does not name the colour the role is painting: $readout",
+            readout.contains("Se usa el del tema: #${inUse.toArgbHex()}")
+        )
+    }
+
+    @Test
+    fun theReadoutDiffersBetweenAnAcceptedAndARejectedPick() {
+        // The one contrast that broke: same stored colour, same section, and the
+        // line has to stop claiming it is in use once the app refuses it.
+        val inUse = SolidPalettes.NIGHT.onSurface
+        assertNotEquals(
+            "an accepted and a refused pick read the same",
+            roleReadout(readable, rejected = false, inUse = readable),
+            roleReadout(readable, rejected = true, inUse = inUse)
+        )
+    }
+
+    @Test
+    fun theAcceptedAndDefaultReadoutWordingIsUnchanged() {
+        // Neither of these two was the complaint, and the refusal fix must not
+        // have moved a word of them.
+        assertEquals(
+            "the wording for a pick that applied changed",
+            "Ahora: #FFFFC107",
+            roleReadout(readable, rejected = false, inUse = readable)
+        )
+        assertEquals(
+            "the wording for a role left on the theme changed",
+            "Ahora: el color del tema",
+            roleReadout(null, rejected = false, inUse = SolidPalettes.NIGHT.onSurface)
+        )
+        // And a role on the theme has no pick to refuse, so the flag cannot
+        // change what it says.
+        assertEquals(
+            "the theme wording became conditional on a flag that cannot apply to it",
+            "Ahora: el color del tema",
+            roleReadout(null, rejected = true, inUse = SolidPalettes.NIGHT.onSurface)
+        )
+    }
+
+    @Test
+    fun theSummaryAndTheReadoutAgreeOnTheSameRefusedPick() {
+        // The defect was three answers at once. A pick the summary calls a
+        // default must not have a readout calling it the value in use.
+        val inUse = SolidPalettes.NIGHT.onSurface
+        val summary = colorOverrideSummary(
+            unreadable, null, null, null,
+            RejectedPicks(primaryText = true)
+        )
+        val readout = roleReadout(unreadable, rejected = true, inUse = inUse)
+
+        assertTrue(
+            "the readout claims the refused pick is in use: $readout",
+            readout.contains("Descartado:")
+        )
+        assertTrue(
+            "the summary claims the refused pick is customised: $summary",
+            summary.contains("Ningún color personalizado")
+        )
+    }
+
+    /* ── The wiring, which the behavioural tests above cannot see ──────────── */
+
+    @Test
+    fun theDialogThreadsTheRefusedPicksIntoTheSummaryAndEverySection() {
+        // The rules above are testable in isolation; this pins the wiring, because
+        // a summary called without the refusals counts a refused pick as
+        // customised again -- and every behavioural test here still passes.
+        assertTrue(
+            "the summary is never told which picks were refused",
+            Regex("""colorOverrideSummary\([\s\S]*?rejectedPicks""").containsMatchIn(dialogCode)
+        )
+        assertEquals(
+            "a role section was not told whether resolution drops an unreadable pick",
+            4,
+            Regex("""dropsUnreadablePick\s*=\s*(true|false)""").findAll(dialogCode).count()
+        )
+        assertTrue(
+            "a role section computes the readout without the refusal",
+            Regex("""roleReadout\(selected,\s*rejected,""").containsMatchIn(dialogCode)
+        )
+    }
+
+    @Test
+    fun aRefusedSwatchHasItsOwnRingAndIsNotDrawnAsSelected() {
+        val swatch = dialogCode.substringAfter("private fun ColorSwatch(")
+        assertTrue(
+            "the swatch ring has no state of its own for a refused pick",
+            Regex("""rejected\s*->""").containsMatchIn(swatch)
+        )
+        assertTrue(
+            "the refused flag never reaches the swatch row, so the ring cannot differ",
+            Regex("""rejected\s*=\s*rejected\s*&&\s*selected\s*==\s*color""")
+                .containsMatchIn(dialogCode)
+        )
+        // "Del tema" keeps the ordinary ring. When nothing is picked it really is
+        // in effect, so a refused pick must not have redefined what selected means.
+        val themeSwatch = dialogCode.substringAfter("private fun ThemeSwatch(")
+            .substringBefore("private fun ColorSwatch(")
+        assertTrue(
+            "the theme swatch lost the ring that marks it as the colour in use",
+            Regex("""width\s*=\s*if\s*\(\s*selected\s*\)""").containsMatchIn(themeSwatch)
+        )
     }
 }
