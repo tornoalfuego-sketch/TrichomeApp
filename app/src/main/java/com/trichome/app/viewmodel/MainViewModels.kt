@@ -460,18 +460,31 @@ class SuperCycleViewModel(container: AppContainer) : ViewModel() {
     val configsWithoutTent: StateFlow<List<SuperCycleConfig>> = repo.getConfigsWithoutTent()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    fun load(plantId: Long) {
-        viewModelScope.launch {
-            val existing = repo.getConfigForPlant(plantId)
-            config = existing
-            if (existing != null) {
-                result = SuperCycleEngine.calculateSuperCycle(
-                    cycleStartAt = existing.cycleStartAt,
-                    lightHours = existing.lightHours,
-                    darkHours = existing.darkHours
-                )
-            }
+    /**
+     * Loads the tent's config and returns it.
+     *
+     * Suspending, and returning the row it resolved, is the fix for a data-loss
+     * bug: the screen used to call a fire-and-forget `load` and read `config` on
+     * the next line, which ran before the query resolved, so the sliders kept
+     * their 18/6 defaults and saving without touching a slider overwrote the
+     * saved photoperiod. Handing the value back makes that window impossible —
+     * the caller cannot observe a half-finished load, because it is the one
+     * being awaited.
+     *
+     * Returns null when the tent has no config yet, which is a resolved load
+     * with nothing to show, not a failure.
+     */
+    suspend fun load(plantId: Long): SuperCycleConfig? {
+        val existing = repo.getConfigForPlant(plantId)
+        config = existing
+        if (existing != null) {
+            result = SuperCycleEngine.calculateSuperCycle(
+                cycleStartAt = existing.cycleStartAt,
+                lightHours = existing.lightHours,
+                darkHours = existing.darkHours
+            )
         }
+        return existing
     }
 
     fun liveUpdate(lightHours: Int, darkHours: Int, cycleStartAt: Long) {

@@ -33,7 +33,9 @@ import kotlinx.coroutines.launch
  * Opened from a plant, but what it writes is the *tent's* configuration — every
  * plant under that tent runs on it. The config it loads is resolved by
  * `SuperCycleRepository.getConfigForPlant`, never read off the plant id here.
- * State lives in [SuperCycleViewModel].
+ * The saved row and the live result live in [SuperCycleViewModel]; the photoperiod
+ * being edited lives in [SuperCycleForm], because it has to be one piece of state
+ * with a loaded flag — see its KDoc for the data-loss bug that enforces it.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,24 +49,32 @@ fun SuperCycleScreen(
     val accent = themeState.colorScheme().primary
     val configsWithoutTent by vm.configsWithoutTent.collectAsState()
 
-    var lightHours by remember { mutableIntStateOf(18) }
-    var darkHours by remember { mutableIntStateOf(6) }
-    var selectedPreset by remember { mutableStateOf("18/6") }
+    // One state object owns the sliders, and it starts out explicitly not
+    // loaded. The previous shape kept three independent `mutableIntStateOf`
+    // defaults and assigned them from `vm.config` on the line after a
+    // fire-and-forget load, so the assignment always ran against a null config:
+    // the sliders showed 18/6 while the result card showed the saved cycle, and
+    // saving without dragging a slider overwrote the tent's photoperiod. Now the
+    // only thing that writes the hours is `SuperCycleForm.onLoaded`, fed by the
+    // row `vm.load` returned, and Save stays disabled until that happened.
+    var form by remember { mutableStateOf(SuperCycleForm()) }
     var savedAt by remember { mutableStateOf<Long?>(null) }
     var showSaved by remember { mutableStateOf(false) }
 
     LaunchedEffect(plantId) {
-        vm.load(plantId)
-        vm.config?.let { config ->
-            lightHours = config.lightHours
-            darkHours = config.darkHours
-            selectedPreset = config.presetType
-        }
+        form = SuperCycleForm().onLoaded(vm.load(plantId))
     }
 
-    // Live update whenever sliders/presets change.
-    LaunchedEffect(lightHours, darkHours) {
-        val startAt = vm.config?.cycleStartAt ?: System.currentTimeMillis()
+    val lightHours = form.lightHours
+    val darkHours = form.darkHours
+    val selectedPreset = form.presetType
+
+    // Live update whenever sliders/presets change. Held back until the load
+    // resolved, because before that the hours are defaults and the result card
+    // would briefly advertise a 18/6 cycle the tent is not running.
+    LaunchedEffect(lightHours, darkHours, form.loaded) {
+        if (!form.loaded) return@LaunchedEffect
+        val startAt = form.savedCycleStartAt ?: System.currentTimeMillis()
         vm.liveUpdate(lightHours, darkHours, startAt)
     }
 
@@ -104,14 +114,7 @@ fun SuperCycleScreen(
                         listOf("18/6", "12/12", "24/0", "custom").forEach { preset ->
                             FilterChip(
                                 selected = selectedPreset == preset,
-                                onClick = {
-                                    selectedPreset = preset
-                                    when (preset) {
-                                        "18/6" -> { lightHours = 18; darkHours = 6 }
-                                        "12/12" -> { lightHours = 12; darkHours = 12 }
-                                        "24/0" -> { lightHours = 24; darkHours = 0 }
-                                    }
-                                },
+                                onClick = { form = form.withPreset(preset) },
                                 label = { Text(preset.uppercase()) }
                             )
                         }
@@ -122,14 +125,14 @@ fun SuperCycleScreen(
                     Text("☀️ Horas de Luz: $lightHours h", style = MaterialTheme.typography.bodyMedium)
                     Slider(
                         value = lightHours.toFloat(),
-                        onValueChange = { lightHours = it.toInt() },
+                        onValueChange = { form = form.withLightHours(it.toInt()) },
                         valueRange = 0f..24f,
                         steps = 23
                     )
                     Text("🌙 Horas de Oscuridad: $darkHours h", style = MaterialTheme.typography.bodyMedium)
                     Slider(
                         value = darkHours.toFloat(),
-                        onValueChange = { darkHours = it.toInt() },
+                        onValueChange = { form = form.withDarkHours(it.toInt()) },
                         valueRange = 0f..24f,
                         steps = 23
                     )
@@ -167,19 +170,22 @@ fun SuperCycleScreen(
             // ── Save ────────────────────────────────────────────────
             Button(
                 onClick = {
-                    val startAt = vm.config?.cycleStartAt ?: System.currentTimeMillis()
+                    // Null while the load is unresolved: the screen never writes
+                    // photoperiod it has not shown.
+                    val request = form.saveRequest(System.currentTimeMillis()) ?: return@Button
                     scope.launch {
                         vm.save(
                             plantId = plantId,
-                            lightHours = lightHours,
-                            darkHours = darkHours,
-                            cycleStartAt = startAt,
-                            preset = selectedPreset
+                            lightHours = request.lightHours,
+                            darkHours = request.darkHours,
+                            cycleStartAt = request.cycleStartAt,
+                            preset = request.presetType
                         )
                         savedAt = System.currentTimeMillis()
                         showSaved = true
                     }
                 },
+                enabled = form.canSave,
                 modifier = Modifier.fillMaxWidth(),
                 colors = accentButtonColors(accent)
             ) {

@@ -162,3 +162,20 @@ docs/FEATURES.md
 docs/GLASSMORPHISM_DESIGN.md
 
 README.md
+
+🔐 11. Seguridad, Datos y Estándares de Release
+
+| Regla | Detalle |
+| :--- | :--- |
+| **Sin secretos en el código** | Prohibido commitear contraseñas, claves de API reales, tokens JWT, secretos de producción, keystores o datos reales de usuarios/clientes en **ningún** archivo versionado. |
+| **Llaves externas** | Toda llave de API externa futura debe entrar por `BuildConfig`, leído desde `local.properties` en el momento de compilar. Ese archivo **ya está** en `.gitignore`, junto con `keystore.properties` y `*.keystore`: verificado, no es una afirmación pendiente. |
+| **Propiedad intelectual** | El código generado debe permanecer neutro y parametrizado. No exponer algoritmos propietarios ni lógica de negocio sensible: la app es local y offline por diseño. |
+| **Estandares de release** | `./gradlew assembleRelease` y `./gradlew bundleRelease` deben pasar **ambos**. La minificación con R8 (`isMinifyEnabled = true`) y el recorte de recursos (`isShrinkResources = true`) **ya están activos** en el build type `release`: es la realidad actual, no algo que haya que activar. |
+| **Recursos válidos** | Los recursos vectoriales, `strings.xml` y los esquemas de Room deben permanecer válidos y sin referencias colgantes. |
+| **Presupuesto de pérdida de datos: CERO** | Ningún cambio puede eliminar ni descartar silenciosamente filas del usuario. Toda alteración de esquema Room requiere una `Migration` explícita **y** su test. `fallbackToDestructiveMigration()` está prohibido sin excepción. |
+
+Notas de implementación:
+
+- Una referencia rota en `strings.xml` o en un drawable no rompe la compilación: rompe la app en el dispositivo. La verificación en unit tests no la cubre.
+- Una `Migration` sin su test es una migración sin verificar: el test es lo que demuestra que no se pierde ni una fila.
+- R8 solo falla en release. Un build debug en verde no dice nada sobre si el release arranca.
