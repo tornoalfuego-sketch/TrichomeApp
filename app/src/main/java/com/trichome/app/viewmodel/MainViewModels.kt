@@ -346,6 +346,128 @@ class PlantDetailViewModel(container: AppContainer) : ViewModel() {
         }
     }
 
+    /* ── Tent migration ───────────────────────────────────────────── */
+
+    private val tentRepo = container.tentRepository
+
+    /** Tents, for the "Cambiar de carpa" destination list. */
+    val tents: StateFlow<List<GrowTent>> = tentRepo.getAllTents()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /**
+     * The photoperiod each tent runs, keyed by `tentId`.
+     *
+     * Read through [SuperCycleRepository] rather than off the config id, because the
+     * v3 precedence — the tent's row wins, the per-plant row is history — lives in
+     * exactly one place and answering it anywhere else is how the two halves drift.
+     * A tent with no config row is absent from the map, which is the state
+     * [PlantMigrationPlanner] resolves against.
+     */
+    private val tentPhotoperiods = mutableStateOf<Map<Long, PhotoperiodConfig>>(emptyMap())
+
+    /**
+     * The supercycle each candidate tent owns, keyed by `tentId`.
+     *
+     * An absent key means the tent has **no config row at all** — a real state, not a
+     * missing argument, and the one `PlantMigrationPlanner` resolves against with
+     * `requiresDestinationConfigWrite`. That is why an unread or incomplete map is
+     * dangerous: it would make every destination look unconfigured and quietly plan
+     * 18/6 writes. Hence suspending and returning, so the screen cannot read a
+     * half-resolved map.
+     *
+     * @param tentIds the tents to resolve. Passed in from the observed list rather than
+     *   re-queried, so this needs no new DAO method.
+     */
+    suspend fun loadMigrationInputs(tentIds: List<Long>): Map<Long, PhotoperiodConfig> {
+        val resolved = mutableMapOf<Long, PhotoperiodConfig>()
+        tentIds.forEach { tentId ->
+            superCycleRepo.getConfigByTent(tentId)?.let { config ->
+                val photoperiod = PhotoperiodConfig(config.lightHours, config.darkHours)
+                // Invalid hours are dropped rather than passed on: `PlantMigrationPlanner`
+                // sanitizes them too, and a map that carried a 0/0 row would make the
+                // destination look configured when it has nothing usable.
+                if (photoperiod.isValid) resolved[tentId] = photoperiod
+            }
+        }
+        tentPhotoperiods.value = resolved
+        return resolved
+    }
+
+    /**
+     * The plant's state as [PlantMigrationPlanner] wants it.
+     *
+     * The photoperiod comes from [SuperCycleRepository.getConfigForPlant], which is the
+     * one place the v3 precedence — tent row first, legacy per-plant row as history —
+     * is resolved. Reading the config off the plant id here would be a second
+     * implementation of a rule the repository already owns.
+     */
+    suspend fun migrationStateFor(plant: Plant): PlantCycleState {
+        val config = superCycleRepo.getConfigForPlant(plant.id)
+        val photoperiod = config?.let { PhotoperiodConfig(it.lightHours, it.darkHours) }
+            ?.takeIf { it.isValid }
+        return PlantCycleState(
+            plantId = plant.id,
+            plantName = plant.name,
+            photoperiod = photoperiod,
+            cycleStartAt = config?.cycleStartAt
+        )
+    }
+
+    /**
+     * Applies a resolved [plan] for a move into [destinationTentId].
+     *
+     * The write is [PlantRepository.assignPlantToTent], the same single
+     * `UPDATE plants SET tentId = …` the rest of the app uses. Nothing here touches
+     * `grow_events`: journal rows are keyed by `plantId`, so a tent move cannot drop
+     * one, and the dialog says so rather than asking.
+     *
+     * When `plan.requiresDestinationConfigWrite` is true the destination tent is given
+     * the config row it never had, keyed by `tentId`. That write is what makes the
+     * tent's 18/6 (or the plant's own hours) stick; skipping it would leave the tent
+     * still unconfigured while the plant reported a cycle nothing owned.
+     *
+     * [onMoved] receives the real outcome, so a failed write is never reported as a
+     * successful move.
+     */
+    fun applyMigration(
+        plantId: Long,
+        destinationTentId: Long,
+        plan: PlantMigrationPlan,
+        now: Long = System.currentTimeMillis(),
+        onMoved: (Boolean) -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            val ok = runCatching {
+                // Give the tent its config before the plant arrives in it, so there is
+                // no window where the plant inherits a tent with no supercycle.
+                if (plan.requiresDestinationConfigWrite) {
+                    val photoperiod = plan.photoperiod
+                    if (photoperiod != null) {
+                        superCycleRepo.insertSuperCycle(
+                            SuperCycleConfig(
+                                tentId = destinationTentId,
+                                // Obsolete since v3 and deliberately null on a new row.
+                                plantId = null,
+                                lightHours = photoperiod.lightHours,
+                                darkHours = photoperiod.darkHours,
+                                cycleStartAt = plan.cycleStartAt,
+                                presetType = "migrated"
+                            )
+                        )
+                    }
+                }
+                plantRepo.assignPlantToTent(plantId, destinationTentId)
+            }.isSuccess
+            if (ok) {
+                // The plant now resolves a different tent's config, so the phase card
+                // on this screen is stale.
+                superCycleResult = null
+                loadSuperCycle(plantId, now)
+            }
+            onMoved(ok)
+        }
+    }
+
     /**
      * Writes an edited plant.
      *
@@ -715,9 +837,22 @@ class CalendarViewModel(container: AppContainer) : ViewModel() {
     private val eventRepo = container.eventRepository
     private val reminderRepo = container.reminderRepository
     private val plantRepo = container.plantRepository
+    private val tentRepo = container.tentRepository
     private val appContext = container.application.applicationContext
 
     val plants: StateFlow<List<Plant>> = plantRepo.getAllPlants()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /**
+     * Tents, for the estimated-climate card's latitude.
+     *
+     * This app has no location permission and no geocoder — it is offline by design —
+     * so the only place a latitude can come from is a tent's free-text `location`
+     * field. [com.trichome.app.model.ClimateCardCopy.resolveLocation] decides whether
+     * that text actually contains coordinates and falls back to a documented default
+     * when it does not; the card says which of the two it used.
+     */
+    val tents: StateFlow<List<GrowTent>> = tentRepo.getAllTents()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     var events by mutableStateOf<List<GrowEvent>>(emptyList())

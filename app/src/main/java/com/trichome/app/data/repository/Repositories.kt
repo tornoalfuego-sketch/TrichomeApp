@@ -140,6 +140,18 @@ class SuperCycleRepository(
     }
 
     /**
+     * The config [tentId] owns, or null when it has none.
+     *
+     * Exposed because "does this tent have a supercycle yet" is a question the move
+     * dialog must ask, and answering it by calling [getConfigForPlant] with a plant
+     * would be wrong: that returns the *legacy per-plant* row when the plant has no
+     * tent, which is history and not the destination tent's configuration.
+     *
+     * Same DAO query, no new one — this is a pass-through, not a second rule.
+     */
+    suspend fun getConfigByTent(tentId: Long): SuperCycleConfig? = dao.getConfigByTent(tentId)
+
+    /**
      * The tent a config saved from [plantId] belongs to, or null when that plant
      * has no tent.
      *

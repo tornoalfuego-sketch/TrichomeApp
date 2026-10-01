@@ -22,9 +22,15 @@ import androidx.navigation.NavHostController
 import com.trichome.app.data.entity.GrowEvent
 import com.trichome.app.data.entity.Plant
 import com.trichome.app.data.entity.Reminder
+import com.trichome.app.model.ClimateCardCopy
+import com.trichome.app.model.ClimateCardCopyFormatter
+import com.trichome.app.model.LunarCardCopy
+import com.trichome.app.model.LunarEngine
 import com.trichome.app.ui.components.accentButtonColors
 import com.trichome.app.ui.components.accentContentOn
 import com.trichome.app.ui.components.AppTopBar
+import com.trichome.app.ui.components.EstimatedClimateCard
+import com.trichome.app.ui.components.LunarPhaseBar
 import com.trichome.app.ui.components.MainBottomBar
 import com.trichome.app.ui.components.SelectableChip
 import com.trichome.app.ui.components.SolidPanel
@@ -33,10 +39,21 @@ import com.trichome.app.ui.screens.plant.dateShort
 import com.trichome.app.ui.theme.TrichomeThemeState
 import com.trichome.app.viewmodel.CalendarViewModel
 import com.trichome.app.viewmodel.appViewModel
+import kotlinx.coroutines.delay
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
+
+/**
+ * How often the lunar snapshot is re-read.
+ *
+ * A minute is far more often than the phase can move — the fastest transition is
+ * about 3.7 days per eighth — so the tick exists to keep the bar honest if the screen
+ * is left open across a boundary, not to animate anything. A per-frame read would
+ * recompose the whole calendar sixty times a second for a value that is constant.
+ */
+private const val LUNAR_REFRESH_INTERVAL_MS = 60_000L
 
 /**
  * Monthly grow calendar: event/task markers per day, plant filters and a
@@ -55,6 +72,27 @@ fun CalendarScreen(
     var selectedDay by remember { mutableStateOf(LocalDate.now()) }
     var filterPlantId by remember { mutableStateOf<Long?>(null) }
     var showAddSheet by remember { mutableStateOf(false) }
+
+    // ── Lunar phase ────────────────────────────────────────────────
+    //
+    // One snapshot for the whole screen, recomputed on a minute tick rather than on
+    // every frame: the phase changes on the order of hours, so a per-frame read would
+    // churn the composition for a value that cannot have moved. The engine is pure, so
+    // the copy resolves from this snapshot through `LunarCardCopy`.
+    var nowMillis by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(LUNAR_REFRESH_INTERVAL_MS)
+            nowMillis = System.currentTimeMillis()
+        }
+    }
+    var lunarExpanded by remember { mutableStateOf(false) }
+    val lunarContent = remember(nowMillis, lunarExpanded) {
+        LunarCardCopy.contentOf(
+            snapshot = LunarEngine.snapshot(nowMillis),
+            expanded = lunarExpanded
+        )
+    }
 
     val viewEvents = remember(vm.events, filterPlantId) {
         if (filterPlantId == null) vm.events
@@ -79,6 +117,28 @@ fun CalendarScreen(
             java.time.Instant.ofEpochMilli(e.timestamp).atZone(ZoneId.systemDefault()).toLocalDate()
         }
     }
+    // ── Estimated climate ───────────────────────────────────────────
+    //
+    // One card for the selected day, resolved from the tents' stored `location`. That
+    // field is free text ("cuarto cultivo" in practice), so `ClimateCardCopy` decides
+    // whether it parses as coordinates and, when it does not, uses a documented
+    // default latitude and *says so on the card*. There is no location permission and
+    // no network call anywhere in that path — this app is offline by design.
+    val tents by vm.tents.collectAsState()
+    val climateLocation = remember(tents) {
+        ClimateCardCopy.resolveLocation(tents.firstOrNull()?.location)
+    }
+    val climateContent = remember(selectedDay, climateLocation) {
+        ClimateCardCopyFormatter.contentOf(
+            climate = com.trichome.app.model.AmbientClimate.estimate(
+                date = selectedDay,
+                latitudeDegrees = climateLocation.latitudeDegrees,
+                elevationMeters = ClimateCardCopy.DEFAULT_ELEVATION_METERS
+            ),
+            location = climateLocation
+        )
+    }
+
     val remindersByDay = remember(vm.reminders, month) {
         vm.reminderDaysInRange(
             month.atDay(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli(),
@@ -90,10 +150,22 @@ fun CalendarScreen(
 
     Scaffold(
         topBar = {
-            AppTopBar(
-                title = "📅 Calendario de Cultivo",
-                onNavigateBack = { navController.popBackStack() }
-            )
+            Column {
+                AppTopBar(
+                    title = "📅 Calendario de Cultivo",
+                    onNavigateBack = { navController.popBackStack() }
+                )
+                // The lunar button lives in the top bar's own column, NOT inside the
+                // screen's `verticalScroll`. A scrollable child of a scrollable is the
+                // shape that shipped as a crash once — see `ScrollOwnershipTest` —
+                // so nothing here scrolls, and `Scaffold`'s padding is what shrinks
+                // the calendar when the panel expands.
+                LunarPhaseBar(
+                    content = lunarContent,
+                    expanded = lunarExpanded,
+                    onToggle = { lunarExpanded = !lunarExpanded }
+                )
+            }
         },
         floatingActionButton = {
             // The calendar was read-only: there was no way to add anything,
@@ -191,6 +263,9 @@ if (showAddSheet) {
         }
     )
 }
+            // ── Estimated climate ───────────────────────────────────
+            EstimatedClimateCard(content = climateContent)
+
             // ── Selected day detail ──────────────────────────────────
             SolidPanel {
                 Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {

@@ -16,6 +16,8 @@ import androidx.navigation.NavHostController
 import com.trichome.app.data.entity.GrowEvent
 import com.trichome.app.data.entity.Plant
 import com.trichome.app.model.Phase
+import com.trichome.app.model.PhotoperiodConfig
+import com.trichome.app.model.PlantCycleState
 import com.trichome.app.model.StageProgressEngine
 import com.trichome.app.model.SuperCycleEngine
 import com.trichome.app.model.SuperCycleResult
@@ -32,6 +34,7 @@ import com.trichome.app.ui.theme.TrichomeThemeState
 import com.trichome.app.viewmodel.PlantDetailUiState
 import com.trichome.app.viewmodel.PlantDetailViewModel
 import com.trichome.app.viewmodel.appViewModel
+import kotlinx.coroutines.launch
 
 /**
  * Plant detail. `daysInGrow` uses [StageProgressEngine.daysInGrow] — created
@@ -56,12 +59,28 @@ fun PlantDetailScreen(
     val uiState = vm.uiState
     val plant = (uiState as? PlantDetailUiState.Success)?.plant
     val tintAccent = themeState.accentColor
+    val scope = rememberCoroutineScope()
 
     // The screen had no action icons at all: a plant could only be renamed or
     // deleted from a tent row, and `PlantDetailViewModel` had neither method.
     // `rememberDestructiveConfirmation` is the shared one every other delete
     // uses; a tap only arms it, the write happens after the grower confirms.
     var editing by remember { mutableStateOf(false) }
+
+    // ── Cambiar de carpa ───────────────────────────────────────────
+    //
+    // Snapshot state, same discipline as `rememberDestructiveConfirmation`: a plain
+    // `var` would not invalidate the composition, and the dialog would not appear
+    // until something else forced a recomposition. Both the destination tents and the
+    // per-tent supercycle inputs are awaited before the dialog opens, so the plan can
+    // never be resolved against an empty map — which would make every destination
+    // look unconfigured and quietly plan an 18/6 write.
+    var migrating by remember { mutableStateOf(false) }
+    var migrationInputs by remember { mutableStateOf<Map<Long, PhotoperiodConfig>>(emptyMap()) }
+    var migrationState by remember { mutableStateOf<PlantCycleState?>(null) }
+    var migrationError by remember { mutableStateOf<String?>(null) }
+    val tents by vm.tents.collectAsState()
+
     val deleteConfirmation = rememberDestructiveConfirmation<Plant>(
         title = { "Eliminar planta" },
         message = { PlantDeletionNotice.message(it) },
@@ -85,6 +104,30 @@ fun PlantDetailScreen(
                     // nothing to edit or delete while it is still loading,
                     // and a wrong id is worse than no button.
                     plant?.let { current ->
+                        // The move needs the destination tents and the per-tent
+                        // supercycle rows resolved before it opens, so both loads are
+                        // awaited here rather than inside the dialog. A dialog planned
+                        // against an empty map would tell the grower the destination has
+                        // no config when it actually does.
+                        IconButton(
+                            onClick = {
+                                migrationError = null
+                                scope.launch {
+                                    val inputs = vm.loadMigrationInputs(tents.map { it.id })
+                                    val state = vm.migrationStateFor(current)
+                                    migrationInputs = inputs
+                                    migrationState = state
+                                    migrating = true
+                                }
+                            },
+                            enabled = tents.any { it.id != current.tentId }
+                        ) {
+                            Icon(
+                                Icons.Default.SwapHoriz,
+                                "Cambiar de carpa",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                         IconButton(onClick = { editing = true }) {
                             Icon(Icons.Default.Edit, "Editar planta")
                         }
@@ -186,6 +229,49 @@ fun PlantDetailScreen(
                     )
                 }
             }
+        }
+    }
+
+    if (migrating && plant != null && migrationState != null) {
+        PlantMigrationDialog(
+            plantId = plant.id,
+            plantName = plant.name,
+            current = migrationState!!,
+            currentTentId = plant.tentId,
+            tents = tents,
+            tentPhotoperiods = migrationInputs,
+            accent = accent,
+            onDismiss = {
+                migrating = false
+                migrationState = null
+            },
+            onConfirm = { destination, plan ->
+                // Cleared before the write: the write recomposes, and a dialog still on
+                // screen for that frame would be a second target for a double tap.
+                migrating = false
+                migrationState = null
+                migrationError = null
+                vm.applyMigration(plant.id, destination.id, plan) { moved ->
+                    if (moved) {
+                        vm.loadPlant(plant.id)
+                    } else {
+                        // The write failed, so say so rather than leaving the grower
+                        // believing the plant moved.
+                        migrationError = "No se pudo mover la planta de carpa."
+                    }
+                }
+            }
+        )
+    }
+
+    migrationError?.let { problem ->
+        SolidPanel {
+            Text(
+                text = problem,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(16.dp)
+            )
         }
     }
 
