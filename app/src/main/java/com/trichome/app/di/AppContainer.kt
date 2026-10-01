@@ -47,6 +47,16 @@ interface AppContainer {
     val breedingContentRepository: BreedingContentRepository
     val diagnosisContentRepository: DiagnosisContentRepository
 
+    /**
+     * The Séquito (entourage) content library.
+     *
+     * Third of the read-only content repositories, and for the same reason as
+     * the other two: the content is parsed once from `assets/`, cached for the
+     * process lifetime, and shared by every screen of its module rather than
+     * built per screen.
+     */
+    val entourageContentRepository: EntourageContentRepository
+
     /** Short alias used by the diagnosis ViewModel. */
     val diagnosisContent: DiagnosisContentRepository
 }
@@ -88,6 +98,7 @@ class DefaultAppContainer(app: Application) : AppContainer {
     override val terpenesRepository: TerpenesRepository by lazy { TerpenesRepository(app) }
     override val breedingContentRepository: BreedingContentRepository by lazy { BreedingContentRepository(app) }
     override val diagnosisContentRepository: DiagnosisContentRepository by lazy { DiagnosisContentRepository(app) }
+    override val entourageContentRepository: EntourageContentRepository by lazy { EntourageContentRepository(app) }
     override val diagnosisContent: DiagnosisContentRepository get() = diagnosisContentRepository
 
     override val growRepository: GrowRepository by lazy {

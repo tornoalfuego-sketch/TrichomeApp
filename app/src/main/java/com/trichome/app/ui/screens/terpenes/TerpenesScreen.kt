@@ -43,6 +43,7 @@ import com.trichome.app.ui.components.MainBottomBar
 import com.trichome.app.ui.components.accentLabelOn
 import com.trichome.app.ui.components.SelectableChip
 import com.trichome.app.ui.components.SolidPanel
+import com.trichome.app.ui.screens.entourage.entourageRoute
 import com.trichome.app.ui.theme.TrichomeThemeState
 import com.trichome.app.viewmodel.TerpenesViewModel
 import com.trichome.app.viewmodel.appViewModel
@@ -249,6 +250,17 @@ fun TerpenesScreen(
             }
         }
 
+        /* ── Acceso al módulo Séquito ────────────────────────────── */
+        // Outside the collapsing header on purpose. The header exists to get out
+        // of the way of a search across 158 compounds, and the Séquito entry is
+        // not part of that search: a user who scrolled deep into the list and
+        // wants the synergy network must not have to scroll all the way back up
+        // to find it. One row, always present, above the filters.
+        EntourageEntryCard(
+            onClick = { navController.navigate(entourageRoute()) },
+            themeState = themeState
+        )
+
         /* ── Lista ───────────────────────────────────────────────── */
         if (vm.terpenes.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -373,6 +385,49 @@ private fun ProgressionCard(
                 style = MaterialTheme.typography.labelSmall,
                 color = scheme.onSurfaceVariant
             )
+        }
+    }
+}
+
+/**
+ * The one always-visible door into the Séquito module.
+ *
+ * A full-width row rather than a fifth header icon: the title row already spends
+ * its width on the title and three actions, and an icon with no label reads as
+ * another encyclopedia tool rather than as the cannabinoid-side module it is.
+ * The subtitle carries the state the module works in — it explains cannabinoid
+ * x terpene combinations, it does not score the flower — so the entry does not
+ * promise a number the module will not give.
+ */
+@Composable
+private fun EntourageEntryCard(onClick: () -> Unit, themeState: TrichomeThemeState) {
+    val scheme = themeState.colorScheme()
+    SolidPanel(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .clickable(onClick = onClick),
+        contentColor = scheme.onSurface
+    ) {
+        Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("🧬", style = MaterialTheme.typography.headlineSmall)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    "Efecto Séquito",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = scheme.onSurface
+                )
+                Text(
+                    "Sinergias entre terpenos yannabinoides",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = scheme.onSurfaceVariant
+                )
+            }
+            Text("→", color = scheme.primary, style = MaterialTheme.typography.titleMedium)
         }
     }
 }

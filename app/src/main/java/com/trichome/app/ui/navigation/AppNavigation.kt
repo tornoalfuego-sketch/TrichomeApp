@@ -14,6 +14,11 @@ import com.trichome.app.ui.screens.calendar.CalendarScreen
 import com.trichome.app.ui.screens.charts.ChartsScreen
 import com.trichome.app.ui.screens.cycle.SuperCycleScreen
 import com.trichome.app.ui.screens.diagnosis.DiagnosisScreen
+import com.trichome.app.model.EntourageTab
+import com.trichome.app.ui.screens.entourage.ENTOURAGE_ROUTE
+import com.trichome.app.ui.screens.entourage.ENTOURAGE_TAB_ARG
+import com.trichome.app.ui.screens.entourage.ENTOURAGE_TERPENE_ARG
+import com.trichome.app.ui.screens.entourage.EntourageModuleScreen
 import com.trichome.app.ui.screens.home.HomeScreen
 import com.trichome.app.ui.screens.journal.JournalScreen
 import com.trichome.app.ui.screens.plant.PlantDetailScreen
@@ -37,7 +42,7 @@ val DECLARED_ROUTES: Set<String> = setOf(
     "home", "tents", "journal", "diagnosis", "settings",
     "calendar", "charts", "terpenes", "breeding",
     PLANT_ID_ROUTE, PROTOCOL_ID_ROUTE, SUPER_CYCLE_ID_ROUTE, JOURNAL_ID_ROUTE,
-    TERPENE_ID_ROUTE
+    TERPENE_ID_ROUTE, ENTOURAGE_ROUTE
 )
 
 /** Argument name shared by every plant-scoped route. */
@@ -156,6 +161,32 @@ fun AppNavigation(
         }
         composable("breeding") {
             BreedingScreen(navController, themeState)
+        }
+        // The Séquito module. Both arguments are optional query parameters with
+        // declared defaults rather than path segments, so the module is reachable
+        // three ways — bare, on a named section, and on a section pre-filtered
+        // to one terpene — from one destination. A path segment would force
+        // three destinations, and the third would be a second place for the
+        // terpene's identity to be typed.
+        composable(
+            route = ENTOURAGE_ROUTE,
+            arguments = listOf(
+                navArgument(ENTOURAGE_TAB_ARG) {
+                    type = NavType.StringType
+                    defaultValue = EntourageTab.NETWORK.key
+                },
+                navArgument(ENTOURAGE_TERPENE_ARG) {
+                    type = NavType.StringType
+                    defaultValue = ""
+                }
+            )
+        ) { backStackEntry ->
+            EntourageModuleScreen(
+                initialTabKey = backStackEntry.arguments?.getString(ENTOURAGE_TAB_ARG),
+                initialTerpeneKey = backStackEntry.arguments?.getString(ENTOURAGE_TERPENE_ARG),
+                navController = navController,
+                themeState = themeState
+            )
         }
         composable("diagnosis") {
             DiagnosisScreen(navController, themeState)

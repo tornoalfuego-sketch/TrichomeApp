@@ -23,7 +23,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.trichome.app.data.repository.Terpene
+import com.trichome.app.model.EntourageFilters
+import com.trichome.app.model.EntourageTab
 import com.trichome.app.ui.components.SolidPanel
+import com.trichome.app.ui.components.accentTextButtonColors
+import com.trichome.app.ui.screens.entourage.entourageRoute
 import com.trichome.app.ui.theme.TrichomeThemeState
 import com.trichome.app.viewmodel.TerpenesViewModel
 import com.trichome.app.viewmodel.appViewModel
@@ -178,6 +182,43 @@ fun TerpeneDetailScreen(
                 item {
                     DetailCard("⚠️ Toxicidad y precauciones") {
                         DetailParagraph("", entry.toxicity)
+                    }
+                }
+            }
+
+            // The Séquito action, for the terpenes the module models. The join
+            // from a `terpenes.json` id to an `EntourageTerpene` goes through
+            // `EntourageFilters.terpeneForCatalogId`, which reads
+            // `EntourageTerpene.catalogId` — so the two catalogs cannot disagree
+            // about which id means which compound. A terpene the module does not
+            // model gets no button rather than one that opens an empty filter.
+            //
+            // Not wrapped in `remember`: it is a linear scan over ten enum
+            // entries, and the value only has to exist while this list is built.
+            val entourageTerpene = EntourageFilters.terpeneForCatalogId(entry.id)
+            if (entourageTerpene != null) {
+                item {
+                    DetailCard("🧬 Efecto Séquito") {
+                        Text(
+                            "Ver las sinergias documentadas que contienen ${entourageTerpene.labelEs}.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = scheme.onSurfaceVariant
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        TextButton(
+                            onClick = {
+                                navController.navigate(
+                                    entourageRoute(
+                                        tab = EntourageTab.NETWORK,
+                                        terpene = entourageTerpene
+                                    )
+                                )
+                            },
+                            colors = accentTextButtonColors(scheme, scheme.primary),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Ver sinergias del Efecto Séquito", maxLines = 1)
+                        }
                     }
                 }
             }

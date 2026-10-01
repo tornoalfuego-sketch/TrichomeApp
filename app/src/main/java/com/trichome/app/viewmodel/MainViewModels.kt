@@ -1155,6 +1155,86 @@ class TerpenesViewModel(container: AppContainer) : ViewModel() {
     suspend fun partners(terpene: Terpene): List<Terpene> = repo.resolve(terpene.pairsWith)
 }
 
+/* ─────────────────────────── Entourage (Séquito) ────────────────────────── */
+
+/**
+ * State and rewards for the Séquito module.
+ *
+ * Reads its content from [EntourageContentRepository] and pays into the
+ * **existing** `achievements` table through [AchievementRepository]. There is
+ * no second XP ledger here: the table's `xpReward` is what the app already sums
+ * into the player's total, and a module that kept its own counter would drift
+ * from it.
+ *
+ * [awardedNames] is the snapshot that makes granting idempotent. The table
+ * primary key is an auto-generated id, so re-inserting a reward would add a
+ * second row rather than update the first — replaying the same Lab case would
+ * pay again, forever. The reward's display name is the stable handle, and
+ * [EntourageRewards.pending] drops what has already been paid.
+ */
+class EntourageViewModel(container: AppContainer) : ViewModel() {
+    private val content = container.entourageContentRepository
+    private val achievements = container.achievementRepository
+
+    /** The parsed library, or null while it loads. */
+    var library by mutableStateOf<EntourageContent?>(null)
+        private set
+
+    /**
+     * True when the asset could not be read at all.
+     *
+     * A separate flag rather than a null [library] so the screen can tell "still
+     * loading" from "the file is missing": both are a null library, and
+     * reporting a spinner forever for a broken asset is the app looking busy
+     * while it has nothing.
+     */
+    var loadFailed by mutableStateOf(false)
+        private set
+
+    /** Reward names already in the `achievements` table. */
+    private var awardedNames by mutableStateOf<Set<String>>(emptySet())
+        private set
+
+    /** The last reward granted, so the screen can acknowledge it once. */
+    var lastReward by mutableStateOf<EntourageReward?>(null)
+        private set
+
+    init {
+        viewModelScope.launch {
+            // The repository parses the asset with no fallback, so an unreadable
+            // or malformed file throws. Left unhandled that kills the coroutine
+            // and the screen sits on its spinner forever; reported, the user can
+            // say so instead.
+            runCatching { content.getContent() }
+                .onSuccess { loaded ->
+                    library = loaded
+                    loadFailed = false
+                }
+                .onFailure { loadFailed = true }
+
+            awardedNames = achievements.getAllAchievements().first().map { it.name }.toSet()
+        }
+    }
+
+    /**
+     * Pays [rewards] that have not been paid yet.
+     *
+     * The filter happens here rather than in the DAO, and it is the whole
+     * idempotency guarantee: a double tap on "Evaluar", a replayed quiz, or
+     * simply coming back to a solved case all land on the same empty list.
+     */
+    fun grant(rewards: List<EntourageReward>) {
+        if (rewards.isEmpty()) return
+        viewModelScope.launch {
+            val fresh = EntourageRewards.pending(rewards, awardedNames)
+            if (fresh.isEmpty()) return@launch
+            fresh.forEach { achievements.insertAchievement(it.toAchievementRow()) }
+            awardedNames = awardedNames + fresh.map { it.nameEs }
+            lastReward = fresh.last()
+        }
+    }
+}
+
 /* ─────────────────────────── Breeding ─────────────────────────────────── */
 
 class BreedingViewModel(container: AppContainer) : ViewModel() {

@@ -1,5 +1,6 @@
 package com.trichome.app.ui.navigation
 
+import com.trichome.app.ui.screens.entourage.ENTOURAGE_ROUTE
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -72,7 +73,7 @@ class AppNavigationRouteTest {
             "home", "tents", "journal", "diagnosis", "settings",
             "calendar", "charts", "terpenes", "breeding",
             PLANT_ID_ROUTE, PROTOCOL_ID_ROUTE, SUPER_CYCLE_ID_ROUTE,
-            JOURNAL_ID_ROUTE, TERPENE_ID_ROUTE
+            JOURNAL_ID_ROUTE, TERPENE_ID_ROUTE, ENTOURAGE_ROUTE
         )
         assertEquals(
             "DECLARED_ROUTES is out of sync with the graph",
