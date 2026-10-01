@@ -80,7 +80,7 @@ class DefaultAppContainer(app: Application) : AppContainer {
     }
     override val stageEntryRepository: StageEntryRepository by lazy { StageEntryRepository(database.stageEntryDao()) }
     override val eventRepository: EventRepository by lazy { EventRepository(database.eventDao()) }
-    override val superCycleRepository: SuperCycleRepository by lazy { SuperCycleRepository(database.superCycleDao()) }
+    override val superCycleRepository: SuperCycleRepository by lazy { SuperCycleRepository(database.superCycleDao(), database.plantDao()) }
     override val achievementRepository: AchievementRepository by lazy { AchievementRepository(database.achievementDao()) }
     override val reminderRepository: ReminderRepository by lazy { ReminderRepository(database.reminderDao(), database.plantDao()) }
     override val breedingRepository: BreedingRepository by lazy { BreedingRepository(database.breedingDao()) }

@@ -330,7 +330,7 @@ class PlantDetailViewModel(container: AppContainer) : ViewModel() {
 
     fun loadSuperCycle(plantId: Long, now: Long = System.currentTimeMillis()) {
         viewModelScope.launch {
-            superCycleRepo.getSuperCycleByPlant(plantId)?.let { config ->
+            superCycleRepo.getConfigForPlant(plantId)?.let { config ->
                 superCycleResult = SuperCycleEngine.calculateSuperCycle(
                     cycleStartAt = config.cycleStartAt,
                     lightHours = config.lightHours,
@@ -343,13 +343,6 @@ class PlantDetailViewModel(container: AppContainer) : ViewModel() {
     fun loadLatestStage(plantId: Long) {
         viewModelScope.launch {
             latestStageEntry = stageEntryRepo.getLatestStageEntry(plantId)
-        }
-    }
-
-    fun saveSuperCycle(config: SuperCycleConfig, isNew: Boolean) {
-        viewModelScope.launch {
-            if (isNew) superCycleRepo.insertSuperCycle(config) else superCycleRepo.updateSuperCycle(config)
-            loadSuperCycle(config.plantId)
         }
     }
 
@@ -458,9 +451,18 @@ class SuperCycleViewModel(container: AppContainer) : ViewModel() {
     var result by mutableStateOf<SuperCycleResult?>(null)
         private set
 
+    /**
+     * Configs the v2 -> v3 migration could not attach to a tent.
+     *
+     * Observed rather than read once, so deleting one from the screen removes it
+     * from the list without the screen having to reconcile anything.
+     */
+    val configsWithoutTent: StateFlow<List<SuperCycleConfig>> = repo.getConfigsWithoutTent()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     fun load(plantId: Long) {
         viewModelScope.launch {
-            val existing = repo.getSuperCycleByPlant(plantId)
+            val existing = repo.getConfigForPlant(plantId)
             config = existing
             if (existing != null) {
                 result = SuperCycleEngine.calculateSuperCycle(
@@ -485,7 +487,11 @@ class SuperCycleViewModel(container: AppContainer) : ViewModel() {
             val existing = config
             val next = SuperCycleConfig(
                 id = existing?.id ?: 0L,
-                plantId = plantId,
+                // Keyed by the tent from now on. plantId stays on an existing
+                // row so a pre-v3 config keeps its provenance; a new row has none,
+                // because there is no plant left to point at.
+                tentId = repo.tentIdForPlant(plantId),
+                plantId = existing?.plantId,
                 lightHours = lightHours,
                 darkHours = darkHours,
                 cycleStartAt = cycleStartAt,
@@ -497,6 +503,17 @@ class SuperCycleViewModel(container: AppContainer) : ViewModel() {
                 cycleStartAt = cycleStartAt, lightHours = lightHours, darkHours = darkHours
             )
         }
+    }
+
+    /**
+     * Deletes a config the migration left behind, at the grower's request.
+     *
+     * Nothing in the app calls this on its own. The rows are kept by default and
+     * shown under "Sin carpa" precisely so the decision to lose one stays with
+     * the person who owns it.
+     */
+    fun deleteWithoutTent(config: SuperCycleConfig) {
+        viewModelScope.launch { repo.deleteSuperCycle(config) }
     }
 }
 

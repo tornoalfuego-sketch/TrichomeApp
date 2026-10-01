@@ -248,11 +248,14 @@ class CycleCheckWorker(
                 )
                 // Notify only when a new superday's light phase has just begun.
                 if (result.isLight && result.phaseProgress < 0.02f && result.superday > 1) {
-                    val plant = container.plantRepository.getPlantById(config.plantId)
-                    if (plant != null) {
+                    // A config belongs to a tent now, so the plants it covers are
+                    // resolved, not read off `plantId`. A config whose tent never
+                    // resolved yields no plants and therefore no notification,
+                    // which is the honest outcome for an orphan.
+                    container.superCycleRepository.plantsInheriting(config).forEach { plant ->
                         ReminderNotifications.showDailyCheckin(
                             applicationContext,
-                            notificationId = (7000 + config.plantId.toInt()),
+                            notificationId = (7000 + plant.id.toInt()),
                             title = "☀️ Nuevo Superday ${result.superday}",
                             message = "${plant.name} comenzó el ciclo de luz (${config.lightHours}/${config.darkHours})."
                         )

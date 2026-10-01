@@ -187,14 +187,64 @@ interface EventDao {
 
 @Dao
 interface SuperCycleDao {
-    @Query("SELECT * FROM super_cycle_configs WHERE plantId = :plantId")
-    suspend fun getSuperCycleByPlant(plantId: Long): SuperCycleConfig?
+
+    /**
+     * The config a tent runs on.
+     *
+     * `LIMIT 1` because a tent may legitimately end up with more than one row —
+     * `insertSuperCycle` is called from a screen that knows only the plant — and
+     * the newest one is the one the grower last saved. `id DESC` makes that
+     * choice explicit instead of letting SQLite pick.
+     */
+    @Query("SELECT * FROM super_cycle_configs WHERE tentId = :tentId ORDER BY id DESC LIMIT 1")
+    suspend fun getConfigByTent(tentId: Long): SuperCycleConfig?
+
+    /**
+     * A config still addressed by plant, which after v3 means one written before
+     * the tent became the owner.
+     *
+     * Never preferred over [getConfigByTent] — the tent's supercycle wins, and
+     * the per-plant row stays as history. It is still needed because a plant with
+     * no tent has nothing else to resolve against.
+     */
+    @Query("SELECT * FROM super_cycle_configs WHERE tentId IS NULL AND plantId = :plantId ORDER BY id DESC LIMIT 1")
+    suspend fun getLegacyConfigByPlant(plantId: Long): SuperCycleConfig?
+
+    /**
+     * Configs whose tent could not be resolved — the rows v2 left pointing at
+     * plants that no longer exist.
+     *
+     * The same defect the plant list already had: `getAllConfigs` counts these,
+     * and until now no query could return one, so they existed and were
+     * unreachable. Same remedy, same naming as `getUnassignedPlants`.
+     */
+    @Query("SELECT * FROM super_cycle_configs WHERE tentId IS NULL ORDER BY id ASC")
+    fun getConfigsWithoutTent(): Flow<List<SuperCycleConfig>>
+
+    /**
+     * The plants a config applies to.
+     *
+     * Both branches live in one query on purpose. A tent-scoped config resolves
+     * to the whole tent; a pre-v3 row, or a config whose plant has no tent,
+     * resolves to its single plant. Splitting this into two queries and letting
+     * each caller pick is exactly how the two scopes would drift apart again.
+     */
+    @Query("""
+        SELECT * FROM plants
+        WHERE (:tentId IS NOT NULL AND tentId = :tentId)
+           OR (:tentId IS NULL AND :plantId IS NOT NULL AND id = :plantId)
+        ORDER BY sortOrder ASC, createdAt DESC
+    """)
+    suspend fun getPlantsInheriting(tentId: Long?, plantId: Long?): List<Plant>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSuperCycle(config: SuperCycleConfig): Long
 
     @Update
     suspend fun updateSuperCycle(config: SuperCycleConfig)
+
+    @Delete
+    suspend fun deleteSuperCycle(config: SuperCycleConfig)
 
     @Query("SELECT * FROM super_cycle_configs")
     suspend fun getAllConfigs(): List<SuperCycleConfig>

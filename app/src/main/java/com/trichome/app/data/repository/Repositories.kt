@@ -110,10 +110,56 @@ class EventRepository(private val dao: EventDao) {
     suspend fun getActiveEpochDays(): List<Long> = dao.getActiveEpochDays()
 }
 
-class SuperCycleRepository(private val dao: SuperCycleDao) {
-    suspend fun getSuperCycleByPlant(plantId: Long): SuperCycleConfig? = dao.getSuperCycleByPlant(plantId)
+/**
+ * The one place the tent/plant supercycle rule is resolved.
+ *
+ * Since v3 a supercycle belongs to a tent and that tent's plants inherit it. Two
+ * directions have to be answered, and answering either of them at the call site
+ * is how the two halves drift apart again:
+ *
+ *  - [plantsInheriting]: config -> the plants it applies to.
+ *  - [getConfigForPlant]: plant -> the config that applies to it.
+ *
+ * Same discipline the theme already follows with `solidSchemeFor` for colours:
+ * one function, everyone calls it, no screen re-derives the rule. The worker that
+ * notifies phase changes needs the same answer as the screen that displays it,
+ * and it must not be a second implementation.
+ *
+ * Precedence is the grower's decision, not an implementation detail: the tent's
+ * supercycle wins over the per-plant row, which stays as history.
+ */
+class SuperCycleRepository(
+    private val dao: SuperCycleDao,
+    private val plantDao: PlantDao
+) {
+    suspend fun getConfigForPlant(plantId: Long): SuperCycleConfig? {
+        val tentId = plantRepoTentId(plantId)
+        // A plant with no tent has nothing else to ask, which is the only case
+        // where the pre-v3 row is the answer rather than history.
+        return tentId?.let { dao.getConfigByTent(it) } ?: dao.getLegacyConfigByPlant(plantId)
+    }
+
+    /**
+     * The tent a config saved from [plantId] belongs to, or null when that plant
+     * has no tent.
+     *
+     * Writes go through here so a new row is keyed by tent from the start rather
+     * than by plant and migrated later.
+     */
+    suspend fun tentIdForPlant(plantId: Long): Long? = plantRepoTentId(plantId)
+
+    private suspend fun plantRepoTentId(plantId: Long): Long? =
+        plantDao.getPlantById(plantId)?.tentId
+
+    suspend fun plantsInheriting(config: SuperCycleConfig): List<Plant> =
+        dao.getPlantsInheriting(config.tentId, config.plantId)
+
+    /** Configs left without a tent by the v2 -> v3 migration. See the DAO. */
+    fun getConfigsWithoutTent(): Flow<List<SuperCycleConfig>> = dao.getConfigsWithoutTent()
+
     suspend fun insertSuperCycle(config: SuperCycleConfig): Long = dao.insertSuperCycle(config)
     suspend fun updateSuperCycle(config: SuperCycleConfig) = dao.updateSuperCycle(config)
+    suspend fun deleteSuperCycle(config: SuperCycleConfig) = dao.deleteSuperCycle(config)
     suspend fun getAllConfigs(): List<SuperCycleConfig> = dao.getAllConfigs()
 }
 

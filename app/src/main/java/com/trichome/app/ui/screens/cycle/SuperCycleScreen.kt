@@ -1,8 +1,11 @@
 package com.trichome.app.ui.screens.cycle
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -13,6 +16,7 @@ import androidx.navigation.NavHostController
 import com.trichome.app.model.Phase
 import com.trichome.app.model.SuperCycleEngine
 import com.trichome.app.model.SuperCycleResult
+import com.trichome.app.data.entity.SuperCycleConfig
 import com.trichome.app.ui.components.accentButtonColors
 import com.trichome.app.ui.components.AppTopBar
 import com.trichome.app.ui.components.SolidPanel
@@ -24,8 +28,12 @@ import kotlinx.coroutines.launch
 
 /**
  * SuperCycle motor: edit the photoperiod (light/dark) with presets, watch the
- * calculation live (superday, current phase, % remaining) and persist it for
- * the plant. State lives in [SuperCycleViewModel].
+ * calculation live (superday, current phase, % remaining) and persist it.
+ *
+ * Opened from a plant, but what it writes is the *tent's* configuration — every
+ * plant under that tent runs on it. The config it loads is resolved by
+ * `SuperCycleRepository.getConfigForPlant`, never read off the plant id here.
+ * State lives in [SuperCycleViewModel].
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,6 +45,7 @@ fun SuperCycleScreen(
     val vm = appViewModel { SuperCycleViewModel(it) }
     val scope = rememberCoroutineScope()
     val accent = themeState.colorScheme().primary
+    val configsWithoutTent by vm.configsWithoutTent.collectAsState()
 
     var lightHours by remember { mutableIntStateOf(18) }
     var darkHours by remember { mutableIntStateOf(6) }
@@ -76,7 +85,13 @@ fun SuperCycleScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
+                .padding(16.dp)
+                // Without this the column is taller than the viewport on a real
+                // phone and the last panel is simply clipped off. That is not a
+                // cosmetic issue here: the clipped panel is the "Sin carpa" list,
+                // so its rows would exist and be unreachable — the same defect
+                // class as the orphans themselves.
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             // ── Photoperiod configuration ───────────────────────────
@@ -179,6 +194,69 @@ fun SuperCycleScreen(
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 )
             }
+
+            // ── Configurations the migration could not attach to a tent ──
+            //
+            // The v2 -> v3 migration moved the supercycle onto the tent, and two
+            // rows on the install that motivated it pointed at plants that no
+            // longer existed. They are kept, per the grower's decision, so this
+            // is where they have to be visible: same precedent and same wording
+            // as the "Sin carpa" panel in TentListScreen, which is what stopped
+            // detached plants from being invisible. Deleting one is possible and
+            // is the only thing in the app that removes one.
+            if (configsWithoutTent.isNotEmpty()) {
+                SolidPanel {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Text("🧺 Sin carpa", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            "Estas configuraciones apuntan a plantas que ya no existen, " +
+                                "así que no se pudieron asociar a ninguna carpa. No se han " +
+                                "borrado: bórralas tú si ya no las necesitas.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        configsWithoutTent.forEach { config ->
+                            OrphanConfigRow(config = config, onDelete = { vm.deleteWithoutTent(config) })
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * One config that no tent owns.
+ *
+ * A row you can see but cannot act on is the same defect with a label on it, so
+ * this carries a delete — named, because an unnamed icon button is announced to
+ * TalkBack as just a button.
+ */
+@Composable
+private fun OrphanConfigRow(config: SuperCycleConfig, onDelete: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                "${config.lightHours}h luz / ${config.darkHours}h oscuridad",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Text(
+                "Configuración #${config.id}" +
+                    (config.plantId?.let { " · planta #$it" } ?: ""),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        IconButton(onClick = onDelete) {
+            Icon(
+                Icons.Default.Delete,
+                "Eliminar configuración sin carpa",
+                tint = MaterialTheme.colorScheme.error
+            )
         }
     }
 }

@@ -122,3 +122,96 @@ val MIGRATION_1_2: Migration = object : Migration(1, 2) {
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_breeding_crosses_projectId` ON `breeding_crosses` (`projectId`)")
     }
 }
+
+/**
+ * Explicit migration from schema v2 to v3.
+ *
+ * v3 (1.4.0): the supercycle moves from the plant to the **tent**. `protocols`
+ * keeps its per-plant photoperiod as history; `super_cycle_configs` gains a
+ * nullable `tentId` and becomes tent-scoped.
+ *
+ * ## Why the table is rebuilt instead of ALTERed
+ *
+ * Two columns change and neither can be reached with `ADD COLUMN`:
+ *  - `tentId` is new and nullable, which `ADD COLUMN` could have done.
+ *  - `plantId` becomes nullable, because a config written from v3 onwards has no
+ *    plant to point at. SQLite cannot drop a `NOT NULL` constraint on a column
+ *    in place, and Room compares nullability between the entity and the live
+ *    table, so leaving the constraint would fail validation on the first open.
+ *
+ * Hence the Room rebuild sequence: create the v3 shape, copy the rows, drop the
+ * old table, rename, recreate the index. No foreign keys, views or triggers
+ * reference this table, so there is nothing else to re-point.
+ *
+ * ## Why `tentId` is nullable
+ *
+ * This is not a convenience. On the install that prompted the change, two of the
+ * three configs pointed at plant ids that do not exist (`plantId` 0 and 1), so
+ * resolving them against `plants` yields nothing. `NOT NULL` here fails the
+ * upgrade at that row and the app does not open. They are copied with
+ * `tentId = NULL` — the grower's explicit decision — and are listed under
+ * "Sin carpa" in the supercycle screen instead of being dropped.
+ *
+ * ## Reversibility
+ *
+ * `plantId` is deliberately kept and deliberately nullable. It is the only link
+ * the orphaned configs have left, and keeping the column is what keeps v3
+ * reversible; dropping it here would make it unrecoverable by any later
+ * migration. Nothing reads it to decide which config applies — that is
+ * `SuperCycleRepository.getConfigForPlant`, in one place.
+ *
+ * The copy resolves the tent inline, which is the same statement as the
+ * `UPDATE super_cycle_configs SET tentId = (SELECT tentId FROM plants WHERE id
+ * = plantId)` it replaces, with the aliases made explicit so the correlated
+ * subquery cannot be misread:
+ *
+ *     UPDATE super_cycle_configs SET tentId =
+ *         (SELECT tentId FROM plants WHERE plants.id = super_cycle_configs.plantId)
+ *
+ * A config whose plant does not exist resolves the subquery to NULL and stays
+ * NULL, which is the intended outcome rather than an accident.
+ */
+val MIGRATION_2_3: Migration = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // 1. The v3 shape. Column order and constraints are copied verbatim from
+        //    the Room-generated schema in app/schemas/.../3.json; Room validates
+        //    the live table against that file, not against this comment.
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS `super_cycle_configs_new` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `tentId` INTEGER,
+                `plantId` INTEGER,
+                `lightHours` INTEGER NOT NULL,
+                `darkHours` INTEGER NOT NULL,
+                `cycleStartAt` INTEGER NOT NULL,
+                `presetType` TEXT NOT NULL
+            )
+        """)
+
+        // 2. Copy every row. No WHERE clause: a filter here is a silent data
+        //    loss, and the orphan rows are the ones we cannot afford to drop.
+        db.execSQL("""
+            INSERT INTO `super_cycle_configs_new`
+                (`id`, `tentId`, `plantId`, `lightHours`, `darkHours`, `cycleStartAt`, `presetType`)
+            SELECT
+                s.`id`,
+                (SELECT p.`tentId` FROM `plants` p WHERE p.`id` = s.`plantId`),
+                s.`plantId`,
+                s.`lightHours`,
+                s.`darkHours`,
+                s.`cycleStartAt`,
+                s.`presetType`
+            FROM `super_cycle_configs` s
+        """)
+
+        // 3. The old table goes before the rename, so the rename target is free.
+        db.execSQL("DROP TABLE `super_cycle_configs`")
+        db.execSQL("ALTER TABLE `super_cycle_configs_new` RENAME TO `super_cycle_configs`")
+
+        // 4. The index Room expects for the new column.
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_super_cycle_configs_tentId` " +
+                "ON `super_cycle_configs` (`tentId`)"
+        )
+    }
+}
