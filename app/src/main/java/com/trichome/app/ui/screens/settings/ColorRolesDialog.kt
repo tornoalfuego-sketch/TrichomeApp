@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ColorScheme
@@ -22,7 +23,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -91,9 +94,21 @@ fun ColorRolesDialog(
                     color = scheme.onSurfaceVariant
                 )
 
+                // "What have I actually changed?" in one line, above the four
+                // panels that each only speak for themselves.
+                Text(
+                    colorOverrideSummary(primaryText, secondaryText, tertiaryText, buttonColor),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = scheme.onSurface
+                )
+
                 ColorRoleSection(
                     title = "Texto primario",
                     description = "Títulos, nombres y valores.",
+                    previewText = "Amnesia Blue",
+                    // Painted as a title on screen, so previewed as one: a
+                    // secondary-sized sample would hide which level this is.
+                    previewStyle = MaterialTheme.typography.titleMedium,
                     selected = primaryText,
                     currentRole = scheme.onSurface,
                     backdrop = textBackdrop,
@@ -104,6 +119,8 @@ fun ColorRolesDialog(
                 ColorRoleSection(
                     title = "Texto secundario",
                     description = "Subtítulos, metadatos y descripciones.",
+                    previewText = "Último ciclo · 12 días",
+                    previewStyle = MaterialTheme.typography.bodyMedium,
                     selected = secondaryText,
                     currentRole = scheme.onSurfaceVariant,
                     backdrop = textBackdrop,
@@ -114,6 +131,8 @@ fun ColorRolesDialog(
                 ColorRoleSection(
                     title = "Texto terciario",
                     description = "Contadores, rótulos y ayudas.",
+                    previewText = "Riego cada 3 días",
+                    previewStyle = MaterialTheme.typography.labelSmall,
                     selected = tertiaryText,
                     currentRole = tertiaryCurrent,
                     backdrop = textBackdrop,
@@ -124,6 +143,11 @@ fun ColorRolesDialog(
                 ColorRoleSection(
                     title = "Color de los botones",
                     description = "Botones rellenos, la pestaña activa y los acentos.",
+                    // A fill, not an ink: the sample has to sit on top of the
+                    // colour it previews, exactly as a real button's label does.
+                    previewText = "Guardar",
+                    previewStyle = MaterialTheme.typography.labelLarge,
+                    previewOnFill = true,
                     selected = buttonColor,
                     currentRole = scheme.primary,
                     // Buttons sit on the page, not on a card, and they are judged
@@ -154,11 +178,61 @@ private const val BODY_TEXT_CONTRAST = 4.5f
 /** WCAG 2.1 AA for non-text UI parts such as a control fill. */
 private const val NON_TEXT_CONTRAST = 3.0f
 
+/**
+ * One line naming which roles are customised and which are on the theme default.
+ *
+ * Four panels that each report a colour cannot answer "what did I actually
+ * change?" without being read one by one, and the answer is the question this
+ * dialog exists to raise. Split out of the composable so the rule is testable
+ * without a device: it reads nothing but four nullable colours.
+ *
+ * A `null` override means the theme decides -- so the split is made on the stored
+ * picks, never on the resolved colours: a role the theme happens to resolve to
+ * the colour the user picked is still *customised*, and calling it a default
+ * would be a lie.
+ */
+fun colorOverrideSummary(
+    primaryText: Color?,
+    secondaryText: Color?,
+    tertiaryText: Color?,
+    buttonColor: Color?
+): String {
+    val roles = listOf(
+        "Texto primario" to primaryText,
+        "Texto secundario" to secondaryText,
+        "Texto terciario" to tertiaryText,
+        "Color de los botones" to buttonColor
+    )
+    val customised = roles.filter { it.second != null }.map { it.first }
+    val onTheme = roles.filter { it.second == null }.map { it.first }
+    if (customised.isEmpty()) {
+        return "Ningún color personalizado: los cuatro usan el del tema."
+    }
+    if (onTheme.isEmpty()) {
+        return "Personalizados los cuatro: ${joinInSpanish(customised)}."
+    }
+    val prefix = if (customised.size == 1) "Personalizado: " else "Personalizados: "
+    return "$prefix${joinInSpanish(customised)}. Del tema: ${joinInSpanish(onTheme)}."
+}
+
+/**
+ * `a`, `a y b`, `a, b y c` -- the Spanish list form, where only the last item
+ * takes the conjunction.
+ */
+private fun joinInSpanish(items: List<String>): String = when {
+    items.isEmpty() -> ""
+    items.size == 1 -> items.single()
+    else -> "${items.dropLast(1).joinToString(", ")} y ${items.last()}"
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ColorRoleSection(
     title: String,
     description: String,
+    previewText: String,
+    previewStyle: TextStyle,
+    previewOnFill: Boolean = false,
     selected: Color?,
     currentRole: Color,
     backdrop: Color,
@@ -172,6 +246,17 @@ private fun ColorRoleSection(
                 description,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Box(Modifier.padding(top = 8.dp))
+            // Show, do not tell. The description says what the role paints; this
+            // paints it, so the user can see which one owns the big text instead
+            // of picking on faith.
+            RolePreview(
+                text = previewText,
+                style = previewStyle,
+                role = currentRole,
+                backdrop = backdrop,
+                onFill = previewOnFill
             )
             Box(Modifier.padding(top = 10.dp))
             FlowRow(
@@ -206,6 +291,62 @@ private fun ColorRoleSection(
                 },
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+/**
+ * One line of sample text in the colour this role actually paints with.
+ *
+ * @param role the role's RESOLVED colour, never the stored pick. The two differ
+ *   whenever a pick was dropped for contrast or a level was derived from the
+ *   primary, and a preview built from the pick would then show a colour the app
+ *   is not using -- which is the same class of lie as the one this dialog was
+ *   written to stop telling.
+ * @param onFill true for a fill role: the sample sits on a block of [role], the
+ *   way a button's label sits on the button, instead of being inked with it.
+ */
+@Composable
+private fun RolePreview(
+    text: String,
+    style: TextStyle,
+    role: Color,
+    backdrop: Color,
+    onFill: Boolean
+) {
+    val shape = RoundedCornerShape(8.dp)
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(backdrop)
+            .padding(horizontal = 10.dp, vertical = 6.dp)
+    ) {
+        if (onFill) {
+            Box(
+                modifier = Modifier
+                    .clip(shape)
+                    .background(role)
+                    .padding(horizontal = 12.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    text = text,
+                    style = style,
+                    // The label on a fill is resolved from the fill, not from the
+                    // theme, exactly as `solidSchemeFor` builds `onPrimary`.
+                    color = readableOnStrict(role),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        } else {
+            Text(
+                text = text,
+                style = style,
+                color = role,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }
