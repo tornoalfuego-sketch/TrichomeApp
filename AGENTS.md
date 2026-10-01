@@ -25,7 +25,7 @@ Este documento define las reglas de arquitectura, convenciones de código, restr
 | **Inyección de Dependencias** | Manual vía `AppContainer` | **PROHIBIDO:** No usar Hilt, Koin ni Dagger. |
 | **Base de Datos** | Room Database | Migraciones explícitas v1→v2. `exportSchema = true`. |
 | **Persistencia KV** | DataStore Preferences | Para ajustes de UI, opacidad, contraste y temas. |
-| **Procesamiento de Imagen** | OpenCV + TensorFlow Lite | Análisis local offline de tricomas y salud foliar. |
+| **Procesamiento de Imagen** | TensorFlow Lite + ML Kit | Análisis local offline de tricomas y salud foliar. **OpenCV no es una dependencia**: no hay artefacto, import ni .so de OpenCV en el proyecto (verificado en `gradle/libs.versions.toml`, en `releaseRuntimeClasspath` y en el árbol de fuentes). No asumirlo al escribir código. |
 | **Hardware Externo** | USB Camera (UVC Driver Open-Source) | Soporte para endoscopios / lupas digitales USB. |
 | **Tareas en Segundo Plano** | WorkManager | Inyección estricta de repositorios mediante `AppContainer`. |
 | **Carga de Imágenes** | Coil | Renderizado eficiente de galerías y capturas. |
@@ -56,7 +56,7 @@ com.trichome.app/
 │   ├── theme/          # Sistema de Color, Tipografía, Glassmorphism Tokens
 │   ├── viewmodel/      # ViewModels e Inicializadores (viewModelFactory)
 │   └── screens/        # Pantallas (Terpenes, Trichomes, Calendar, Log, etc.)
-├── vision/             # Clasificador TFLite, Filtros OpenCV, Varianza Laplacian
+├── vision/             # Clasificador TFLite. Sin OpenCV: no hay filtros de ese tipo
 └── worker/             # Workers de WorkManager
 
 
@@ -99,10 +99,10 @@ Respaldo de Actualización:
 Al actualizar la app, la estructura de la base de datos Room y las preferencias de DataStore deben preservarse intactas.
 
 🔬 7. Módulos Especializados
-7.1. Visor y Análisis de Tricomas (Open Code / Vision)
+7.1. Visor y Análisis de Tricomas (Visión)
 TFLite Model: Integrar modelos cuantitativos locales para clasificar tricomas: Clear (Transparente), Milky (Lechoso), Amber (Ámbar).
 
-OpenCV processing: Usar algoritmos locales para calcular varianza de Laplacian (asistente de enfoque) y segmentación de color en espacio HSV.
+Pila de visión real: TensorFlow Lite para la clasificación y ML Kit (`libimage_processing_util_jni.so`, `libtask_vision_jni.so`) para el preprocesado. **La varianza de Laplacian y la segmentación en HSV no están implementadas**: pertenecían al supuesto pipeline de OpenCV. Si hacen falta, hay que escribirlas sobre la pila que existe, no sobre OpenCV.
 
 UVC Support: Integrar drivers universales para microscopios y lupas USB externos.
 
@@ -146,7 +146,7 @@ fix(plant-detail): correct off-by-one error in daysInGrow calculation
 
 refactor(workers): unify database access using AppContainer
 
-feat(vision): integrate OpenCV Laplacian focus assistant for USB microscopes
+feat(vision): integrate a Laplacian focus assistant for USB microscopes
 
 docs(publishing): update store release preparation guidelines
 
