@@ -95,7 +95,7 @@ fun ProtocolScreen(
             Spacer(Modifier.height(14.dp))
 
             if (vm.protocols.isEmpty()) {
-                SolidPanel(accentColor = accent) {
+                SolidPanel {
                     Column(
                         modifier = Modifier.padding(32.dp).fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally
@@ -113,7 +113,6 @@ fun ProtocolScreen(
                         ProtocolCard(
                             protocol = protocol,
                             blocks = vm.blocks[protocol.id].orEmpty(),
-                            accent = accent,
                             onEdit = { editingProtocol = protocol; showEditor = true },
                             onDelete = { deleteConfirmation.request(protocol) },
                             onLogStage = { stageName ->
@@ -185,12 +184,11 @@ fun ProtocolScreen(
 private fun ProtocolCard(
     protocol: Protocol,
     blocks: List<com.trichome.app.data.entity.ProtocolStage>,
-    accent: Color,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onLogStage: (String) -> Unit
 ) {
-    SolidPanel(accentColor = accent) {
+    SolidPanel {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {

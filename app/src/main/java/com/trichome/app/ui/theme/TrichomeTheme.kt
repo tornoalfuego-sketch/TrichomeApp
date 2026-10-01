@@ -112,13 +112,24 @@ data class AppTheme(
 const val MINIMUM_TEXT_CONTRAST = 4.5f
 
 /**
- * WCAG 2.1 AA ratio for non-text UI: borders, dividers, panel edges.
+ * WCAG 2.1 AA ratio for non-text UI: dividers, the row separators inside a panel,
+ * and the boundary a container draws around itself.
  *
- * Separate from [MINIMUM_TEXT_CONTRAST] because a panel outline carries no
- * text, so 4.5:1 is the wrong bar for it — but 3:1 is the right one, and it is
- * still a real requirement. The solid themes exist to draw a *visible* edge
- * around each panel, and an outline sitting at 2.5:1 against its own surface
- * fails that while passing every text assertion.
+ * Separate from [MINIMUM_TEXT_CONTRAST] because none of those carries text, so
+ * 4.5:1 is the wrong bar for it -- but 3:1 is the right one, and it is still a
+ * real requirement. The first hand-written palettes landed `outline` at 2.55:1
+ * (`Cuidado Nocturno`), 2.65:1 (`Cosecha de Otoño`) and 3.45:1 (`Brote Verde`)
+ * and every text assertion still passed, because nothing looked at a non-text
+ * role.
+ *
+ * **Not** the bar for the panel edge. The edge drawn by `SolidPanel` is
+ * `panelBorderColor`, a deliberate neutral step of the surface that measures
+ * 1.28-1.40:1 -- deliberately below this number, because it is structure rather
+ * than a state indicator and an edge at 3:1 out-shouted the text it framed. That
+ * edge is bounded by its own measured band in `OpaqueThemeContrastTest`, not by
+ * this constant. The two must not be confused: raising this constant does not
+ * make the panel edge more visible, it makes the dividers and container
+ * boundaries heavier.
  */
 const val MINIMUM_NON_TEXT_CONTRAST = 3f
 

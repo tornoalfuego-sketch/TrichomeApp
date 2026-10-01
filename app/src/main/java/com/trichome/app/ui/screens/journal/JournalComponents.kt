@@ -180,7 +180,7 @@ fun ReminderQuickCard(
     var minute by remember { mutableStateOf(0) }
     var error by remember { mutableStateOf(false) }
 
-    SolidPanel(accentColor = accent) {
+    SolidPanel {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("⏰ Crear recordatorio recurrente", style = MaterialTheme.typography.titleSmall)
             OutlinedTextField(

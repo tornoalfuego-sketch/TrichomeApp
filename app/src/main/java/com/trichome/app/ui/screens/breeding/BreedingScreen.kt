@@ -245,7 +245,6 @@ private fun TheoryTab(
                 generations = generations,
                 techniques = techniques,
                 glossary = glossary,
-                accent = accent,
             )
         }
     }
@@ -263,7 +262,6 @@ private fun LibraryReference(
     generations: List<BreedingGeneration>,
     techniques: List<BreedingTechnique>,
     glossary: List<BreedingTerm>,
-    accent: Color,
 ) {
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -271,7 +269,7 @@ private fun LibraryReference(
     ) {
         Text("Generaciones", style = MaterialTheme.typography.titleMedium)
         generations.forEach { g ->
-            SolidPanel(accentColor = accent) {
+            SolidPanel {
                 Column(modifier = Modifier.padding(14.dp)) {
                     Text(g.label + " — " + g.titleEs, style = MaterialTheme.typography.titleMedium)
                     Text(g.descriptionEs, style = MaterialTheme.typography.bodyMedium)
@@ -293,7 +291,7 @@ private fun LibraryReference(
 
         Text("Técnicas", style = MaterialTheme.typography.titleMedium)
         techniques.forEach { t ->
-            SolidPanel(accentColor = accent) {
+            SolidPanel {
                 Column(modifier = Modifier.padding(14.dp)) {
                     Text(t.labelEs, style = MaterialTheme.typography.titleMedium)
                     Text(t.descriptionEs, style = MaterialTheme.typography.bodyMedium)
@@ -306,7 +304,7 @@ private fun LibraryReference(
 
         Text("Glosario", style = MaterialTheme.typography.titleMedium)
         glossary.forEach { term ->
-            SolidPanel(accentColor = accent) {
+            SolidPanel {
                 Column(modifier = Modifier.padding(12.dp)) {
                     Text(term.term, style = MaterialTheme.typography.titleSmall)
                     Text(term.definitionEs, style = MaterialTheme.typography.bodySmall)
@@ -328,7 +326,7 @@ private fun ProjectsTab(
     onDeleteCross: (BreedingCross) -> Unit
 ) {
     if (projects.isEmpty()) {
-        SolidPanel(accentColor = accent) {
+        SolidPanel {
             Column(
                 modifier = Modifier.padding(32.dp).fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -342,7 +340,7 @@ private fun ProjectsTab(
 
     LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         items(projects, key = { it.id }) { project ->
-            SolidPanel(accentColor = accent) {
+            SolidPanel {
                 Column(modifier = Modifier.padding(14.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(modifier = Modifier.weight(1f)) {

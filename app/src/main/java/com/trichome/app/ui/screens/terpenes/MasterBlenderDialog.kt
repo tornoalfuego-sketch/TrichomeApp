@@ -171,7 +171,6 @@ private fun BlendReport(
 ) {
     val scheme = themeState.colorScheme()
     SolidPanel(
-        accentColor = scheme.primary,
         contentColor = scheme.onSurface
     ) {
         Column(Modifier.padding(14.dp)) {

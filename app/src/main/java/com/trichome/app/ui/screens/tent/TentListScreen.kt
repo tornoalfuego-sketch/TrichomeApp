@@ -117,7 +117,7 @@ fun TentListScreen(
             Spacer(Modifier.height(16.dp))
 
             if (tents.isEmpty()) {
-                SolidPanel(accentColor = accent) {
+                SolidPanel {
                     Column(
                         modifier = Modifier.padding(32.dp).fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally
@@ -168,7 +168,6 @@ fun TentListScreen(
                     if (unassigned.isNotEmpty()) {
                         item(key = "unassigned") {
                             SolidPanel(
-                                accentColor = accent,
                                 contentColor = scheme.onSurface
                             ) {
                                 Column(Modifier.padding(16.dp)) {
@@ -312,7 +311,7 @@ private fun TentCard(
     onDeletePlant: (Plant) -> Unit,
     onAddPlant: (String) -> Unit
 ) {
-    SolidPanel(accentColor = accent) {
+    SolidPanel {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {

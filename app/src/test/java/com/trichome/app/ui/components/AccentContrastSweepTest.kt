@@ -4,7 +4,6 @@ import androidx.compose.ui.graphics.Color
 import com.trichome.app.ui.screens.settings.AccentSwatches
 import com.trichome.app.ui.theme.AccentPalette
 import com.trichome.app.ui.theme.AppTheme
-import com.trichome.app.ui.theme.MINIMUM_NON_TEXT_CONTRAST
 import com.trichome.app.ui.theme.MINIMUM_TEXT_CONTRAST
 import com.trichome.app.ui.theme.contrastRatio
 import com.trichome.app.ui.theme.readableOnStrict
@@ -331,10 +330,13 @@ class AccentContrastSweepTest {
         // can pick changing the weight of the frame is exactly what this removed.
         // Held to 1.2:1 rather than the 3:1 non-text bar: the edge is structure,
         // not a state indicator, and the accent-filled surfaces carry the states.
+        // Only the lower bound is swept here; the upper one lives in
+        // `OpaqueThemeContrastTest`, which pins the whole band, and this sweep
+        // would only repeat it for the same four themes eight times over.
         everyAccent.forEach { accent ->
             AppTheme.ALL.forEach { theme ->
                 val scheme = solidSchemeFor(theme, accent)
-                val edge = panelBorderColor(scheme.surface, scheme.onSurface)
+                val edge = panelBorderColor(scheme.surface)
                 assertTrue(
                     "${theme.label}/${label(accent)}: panel edge is " +
                         "${contrastRatio(edge, scheme.surface)}:1",

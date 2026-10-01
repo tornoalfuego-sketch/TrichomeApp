@@ -192,7 +192,7 @@ if (showAddSheet) {
     )
 }
             // ── Selected day detail ──────────────────────────────────
-            SolidPanel(accentColor = accent) {
+            SolidPanel {
                 Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
                         "Detalle · ${selectedDay.dayOfMonth}/${selectedDay.monthValue}",
@@ -334,7 +334,7 @@ private fun DayDot(color: Color, count: Int) {
 
 @Composable
 private fun MonthEventRow(event: GrowEvent, plantName: String) {
-    SolidPanel(accentColor = MaterialTheme.colorScheme.primary, cornerRadius = 12) {
+    SolidPanel(cornerRadius = 12) {
         Row(
             modifier = Modifier.padding(10.dp),
             verticalAlignment = Alignment.CenterVertically

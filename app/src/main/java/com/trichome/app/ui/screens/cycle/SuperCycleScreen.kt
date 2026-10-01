@@ -80,7 +80,7 @@ fun SuperCycleScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             // ── Photoperiod configuration ───────────────────────────
-            SolidPanel(accentColor = accent) {
+            SolidPanel {
                 Column(modifier = Modifier.padding(14.dp)) {
                     Text("Configuración de Fotoperiodo", style = MaterialTheme.typography.titleMedium)
                     Spacer(Modifier.height(10.dp))
@@ -138,10 +138,9 @@ fun SuperCycleScreen(
             vm.result?.let { result ->
                 SuperCycleResultCard(
                     result = result,
-                    progress = animatedProgress,
-                    accent = accent
+                    progress = animatedProgress
                 )
-            } ?: SolidPanel(accentColor = accent) {
+            } ?: SolidPanel {
                 Column(
                     modifier = Modifier.padding(24.dp).fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -187,10 +186,9 @@ fun SuperCycleScreen(
 @Composable
 private fun SuperCycleResultCard(
     result: SuperCycleResult,
-    progress: Float,
-    accent: Color
+    progress: Float
 ) {
-    SolidPanel(accentColor = accent) {
+    SolidPanel {
         Column(modifier = Modifier.padding(14.dp)) {
             Text("📊 Resultados del SuperCycle", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(12.dp))

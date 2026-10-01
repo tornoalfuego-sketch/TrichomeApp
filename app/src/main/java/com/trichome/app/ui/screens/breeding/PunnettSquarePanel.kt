@@ -88,7 +88,7 @@ fun PunnettSquarePanel(
         )
 
         when (result) {
-            is PunnettResult.Invalid -> SolidPanel(accentColor = accent) {
+            is PunnettResult.Invalid -> SolidPanel {
                 Column(Modifier.padding(14.dp)) {
                     Text("No se pudo calcular el cruce", style = MaterialTheme.typography.titleSmall)
                     Text(result.reason, style = MaterialTheme.typography.bodyMedium)
@@ -172,7 +172,7 @@ private fun SquareResult(
 
         PunnettGrid(square, accent)
 
-        SolidPanel(accentColor = accent) {
+        SolidPanel {
             Column(
                 modifier = Modifier.padding(14.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)

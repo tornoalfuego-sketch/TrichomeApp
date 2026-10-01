@@ -122,7 +122,7 @@ private fun ChapterCard(
 
     val best = medals.maxByOrNull { it.ordinal }
 
-    SolidPanel(accentColor = accent) {
+    SolidPanel {
         Column(
             modifier = Modifier.padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -294,7 +294,7 @@ private fun QuizSection(
     val scored = outcome as? BreedingQuizResult.Scored
     val answered = answers.size == chapter.questions.size
 
-    SolidPanel(accentColor = accent) {
+    SolidPanel {
         Column(
             modifier = Modifier.padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)

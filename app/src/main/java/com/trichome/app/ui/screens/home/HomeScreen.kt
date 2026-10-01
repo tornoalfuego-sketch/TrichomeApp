@@ -29,7 +29,6 @@ fun HomeScreen(
     themeState: TrichomeThemeState
 ) {
     val vm = appViewModel { HomeViewModel(it) }
-    val accent = themeState.colorScheme().primary
     // Read as state, not as `.value`: sampling the flow during composition would
     // capture whatever happened to be there when the screen was first drawn and
     // never recompose when the database emits a change.
@@ -90,7 +89,7 @@ fun HomeScreen(
             }
 
             if (vm.streak > 0) {
-                SolidPanel(accentColor = accent) {
+                SolidPanel {
                     Row(
                         modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -108,7 +107,7 @@ fun HomeScreen(
                 }
             }
 
-            SolidPanel(accentColor = accent) {
+            SolidPanel {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("⚡ Acciones rápidas", style = MaterialTheme.typography.titleMedium)
                     ActionRow(navController, "calendar", Icons.Filled.CalendarMonth, "Calendario de cultivo")
@@ -118,7 +117,7 @@ fun HomeScreen(
                 }
             }
 
-            SolidPanel(accentColor = accent) {
+            SolidPanel {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("⏰ Próximos recordatorios", style = MaterialTheme.typography.titleMedium)
                     val next = reminders.sortedBy { it.reminderTime }.take(3)
@@ -156,7 +155,6 @@ private fun StatTile(
 ) {
     SolidPanel(
         modifier = modifier.clickable(onClick = onClick),
-        accentColor = MaterialTheme.colorScheme.primary,
         cornerRadius = 20
     ) {
         Column(
@@ -190,9 +188,10 @@ private fun ActionRow(
     //
     // The rule now: in a row, the label is the content and the two glyphs are
     // furniture, so both glyphs take the third text level. The accent keeps its
-    // meaning everywhere else -- filled buttons, the selected tab, the panel edge
-    // and the FAB -- and a list that changes colour with the accent stops being a
-    // list the user can scan.
+    // meaning everywhere else -- filled buttons, the selected tab and the FAB --
+    // and a list that changes colour with the accent stops being a list the user
+    // can scan. It does not keep it on a panel edge either: that edge is a
+    // neutral step of the surface, so it is the same line whatever the accent.
     val furniture = LocalTertiaryText.current
     Row(
         modifier = Modifier

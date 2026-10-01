@@ -152,7 +152,7 @@ fun PlantDetailScreen(
                 }
 
                 is PlantDetailUiState.Error -> {
-                    SolidPanel(accentColor = accent) {
+                    SolidPanel {
                         Column(
                             modifier = Modifier.fillMaxWidth().padding(16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
@@ -223,7 +223,7 @@ private fun PlantDetailContent(
     val plant = success.plant
 
     // ── Header info ─────────────────────────────────────────────────────
-    SolidPanel(accentColor = accent) {
+    SolidPanel {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -252,7 +252,7 @@ private fun PlantDetailContent(
 
     // ── SuperCycle status ───────────────────────────────────────────────
     superCycleResult?.let { result ->
-        SolidPanel(accentColor = accent) {
+        SolidPanel {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text("☀️ Fase actual", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
@@ -281,7 +281,7 @@ private fun PlantDetailContent(
 
     // ── Stage progress (protocol blocks) ─────────────────────────────────
     success.stageProgress?.let { sp ->
-        SolidPanel(accentColor = accent) {
+        SolidPanel {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text("📈 Progreso del protocolo", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(4.dp))
@@ -304,7 +304,7 @@ private fun PlantDetailContent(
     }
 
     // ── Latest events ───────────────────────────────────────────────────
-    SolidPanel(accentColor = accent) {
+    SolidPanel {
         Column(modifier = Modifier.padding(16.dp)) {
             Text("📒 Últimos eventos", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(8.dp))
@@ -323,7 +323,7 @@ private fun PlantDetailContent(
     }
 
     if (plant.notes.isNotBlank()) {
-        SolidPanel(accentColor = accent) {
+        SolidPanel {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text("📝 Notas", style = MaterialTheme.typography.titleMedium)
                 Text(plant.notes, style = MaterialTheme.typography.bodyMedium)

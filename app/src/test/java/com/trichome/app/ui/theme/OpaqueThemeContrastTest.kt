@@ -13,8 +13,8 @@ import org.junit.Test
  *
  * The app used to ship eight palettes: a translucent one and an opaque one per
  * theme, chosen by a settings toggle. There is now one palette per theme, and
- * this file is what holds it to its promise — every role opaque, every `on*`
- * role legible against the surface it is drawn on, and every panel edge visible.
+ * this file is what holds it to its promise — every role opaque and every `on*`
+ * role legible against the surface it is drawn on.
  *
  * Everything asserted here is pure colour math, so none of it needs a
  * composition, a Context or Robolectric. Relative luminance and the contrast
@@ -374,11 +374,15 @@ class OpaqueThemeContrastTest {
     }
 
     /**
-     * Borders are not text, so 4.5:1 is the wrong bar for them — but 3:1 is
-     * WCAG 1.4.11 and it still matters: the whole point of an opaque theme is a
-     * visible edge around each panel. The first hand-written palettes landed at
-     * 2.55:1 (NIGHT), 2.65:1 (AUTUMN) and 3.45:1 (GREEN) and every text
-     * assertion still passed, because nothing looked at a non-text role.
+     * `outline` carries no text, so 4.5:1 is the wrong bar for it — 3:1 is
+     * WCAG 1.4.11 and the bar that applies. It is *not* the panel edge: the edge
+     * a panel draws is `panelBorderColor`, measured and bounded separately in
+     * section 4 below. `outline` is what the remaining role-driven borders are
+     * drawn with, a chip border being the one that ships.
+     *
+     * The first hand-written palettes landed at 2.55:1 (NIGHT), 2.65:1 (AUTUMN)
+     * and 3.45:1 (GREEN) and every text assertion still passed, because nothing
+     * looked at a non-text role.
      */
     @Test
     fun panelOutlineIsVisibleAgainstItsOwnSurface() {
@@ -387,7 +391,7 @@ class OpaqueThemeContrastTest {
             val ratio = contrastRatio(scheme.outline, scheme.surface)
             assertTrue(
                 "${theme.label}: outline on surface is $ratio:1, " +
-                    "need ${MINIMUM_NON_TEXT_CONTRAST}:1 for a visible panel edge",
+                    "need ${MINIMUM_NON_TEXT_CONTRAST}:1 for a visible outline",
                 ratio >= MINIMUM_NON_TEXT_CONTRAST
             )
         }
@@ -444,7 +448,24 @@ class OpaqueThemeContrastTest {
         )
     }
 
-    /* ── 4. The accent never becomes an invisible panel edge ──────────────── */
+    /* ── 4. The panel edge stays a visible, quiet, neutral line ───────────── */
+
+    /**
+     * The band the panel edge has to stay inside.
+     *
+     * The lower bound is the one that existed: `surface` against `background` is
+     * only 1.11:1 to 1.26:1, so a card with no edge sinks into the page and stops
+     * being a card.
+     *
+     * The upper bound is the half that was missing, and it is the reason the edge
+     * moved at all. The frame it replaced was *loud*: `outline` measured 3.6:1 on
+     * the three dark themes and 4.5:1 on the light one while body text sits at
+     * 4.5:1, and the accent substituted into that edge reached 10.65:1. Every
+     * other assertion in this section — visible, no chroma of its own, quieter
+     * than the text, unchanged by the accent — still passes at 0.45, because none
+     * of them asks how loud the line is. Only an upper bound can fail there.
+     */
+    private val panelEdgeBand = 1.2f..2f
 
     @Test
     fun thePanelEdgeIsVisibleOnEveryTheme() {
@@ -453,12 +474,39 @@ class OpaqueThemeContrastTest {
         // edge every card would sink into the page. The edge is load-bearing.
         for (theme in AppTheme.ALL) {
             val scheme = solidSchemeFor(theme, accent)
-            val edge = panelBorderColor(scheme.surface, scheme.onSurface)
+            val edge = panelBorderColor(scheme.surface)
             val ratio = contrastRatio(edge, scheme.surface)
             assertTrue(
                 "${theme.label}: the panel edge is $ratio:1 against its own surface; " +
                     "a card would be indistinguishable from the page",
-                ratio >= 1.2f
+                ratio >= panelEdgeBand.start
+            )
+        }
+    }
+
+    @Test
+    fun thePanelEdgeNeverBecomesTheLoudFrameItReplaced() {
+        // Measured today: 1.28:1 to 1.40:1 across the four themes, at a step of
+        // 0.11. The bound is 2:1, and both margins are deliberate.
+        //
+        // Above the measurement, so the step can be retuned without a spurious
+        // failure: 1.40:1 leaves 43% of headroom to the bound.
+        // Below the regression, so restoring the frame fails loudly instead of by
+        // a hair: raising the step to 0.45 lands the edge at 3.35-4.52:1, which
+        // is 67% past this bound.
+        //
+        // It also sits deliberately under MINIMUM_NON_TEXT_CONTRAST. That constant
+        // governs dividers and container boundaries; the panel edge opts out of
+        // it, and this number is where that opt-out stops being an accident and
+        // becomes a stated, enforced limit.
+        for (theme in AppTheme.ALL) {
+            val scheme = solidSchemeFor(theme, accent)
+            val ratio = contrastRatio(panelBorderColor(scheme.surface), scheme.surface)
+            assertTrue(
+                "${theme.label}: the panel edge is $ratio:1 against its own surface; " +
+                    "a hairline must stay under ${panelEdgeBand.endInclusive}:1 or it " +
+                    "is the frame this design removed, shouting over its own text",
+                ratio <= panelEdgeBand.endInclusive
             )
         }
     }
@@ -477,7 +525,7 @@ class OpaqueThemeContrastTest {
         for (theme in AppTheme.ALL) {
             val scheme = solidSchemeFor(theme, accent)
             val surface = scheme.surface
-            val edge = panelBorderColor(surface, scheme.onSurface)
+            val edge = panelBorderColor(surface)
 
             fun spread(color: Color) =
                 maxOf(color.red, color.green, color.blue) - minOf(color.red, color.green, color.blue)
@@ -500,7 +548,7 @@ class OpaqueThemeContrastTest {
         for (theme in AppTheme.ALL) {
             val scheme = solidSchemeFor(theme, accent)
             val edge = contrastRatio(
-                panelBorderColor(scheme.surface, scheme.onSurface), scheme.surface
+                panelBorderColor(scheme.surface), scheme.surface
             )
             val text = contrastRatio(scheme.onSurface, scheme.surface)
             assertTrue(
@@ -517,13 +565,13 @@ class OpaqueThemeContrastTest {
         // no longer change the shape of the frame. It is a property of the theme,
         // not of a swatch.
         val scheme = solidSchemeFor(AppTheme.NIGHT, AccentPalette.DEFAULT_ACCENT)
-        val neutral = panelBorderColor(scheme.surface, scheme.onSurface)
+        val neutral = panelBorderColor(scheme.surface)
         AccentPalette.SELECTABLE_ARGB.forEach { candidate ->
             val other = solidSchemeFor(AppTheme.NIGHT, Color(candidate))
             assertEquals(
                 "the accent $candidate changed the panel edge",
                 neutral,
-                panelBorderColor(other.surface, other.onSurface)
+                panelBorderColor(other.surface)
             )
         }
     }

@@ -225,7 +225,6 @@ private fun OnboardingPageContent(
         Spacer(Modifier.height(16.dp))
 
         SolidPanel(
-            accentColor = scheme.primary,
             contentColor = scheme.onSurface
         ) {
             Column(modifier = Modifier.padding(20.dp)) {

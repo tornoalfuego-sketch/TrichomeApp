@@ -118,7 +118,7 @@ class AccentRoleSeparationTest {
     fun accentIsStillUsedForTheThingsThatMeanIt() {
         // The rule is a separation, not a purge. If this ever fails, the accent has
         // been stripped from the places it carries meaning -- buttons, the selected
-        // tab, the panel edge -- which would be a different kind of inconsistency.
+        // tab -- which would be a different kind of inconsistency.
         val navigation = source("components/NavigationComponents.kt")
         assertTrue(
             "the selected tab must still be painted with the accent",
@@ -127,8 +127,34 @@ class AccentRoleSeparationTest {
 
         val panels = source("components/Panels.kt")
         assertTrue(
-            "a panel edge must still be able to carry the accent",
-            panels != null && panels.contains("panelBorderColor")
+            "Panels.kt must still publish the accent-filled button helpers, or the " +
+                "accent has no home left in the panel layer at all",
+            panels != null &&
+                panels.contains("fun accentButtonColors") &&
+                panels.contains("fun accentLabelOn")
+        )
+    }
+
+    @Test
+    fun thePanelEdgeCannotBeGivenAColourBack() {
+        // The other half of the separation, and the half this file used to state
+        // backwards. It asserted that `Panels.kt` still *mentions*
+        // `panelBorderColor`, which stayed true forever because only the argument
+        // went away, and its message claimed the edge "must still be able to carry
+        // the accent" while the code has done the opposite since the edge became a
+        // neutral step of the surface.
+        //
+        // The real contract is that the edge is a pure function of the panel's own
+        // surface. A second colour parameter is precisely how a saturated user
+        // colour ended up framing every card and out-shouting its text, so the
+        // signature is pinned instead of the name. Comments are already stripped
+        // from this scan, so the KDoc around it cannot satisfy the assertion.
+        val panels = source("components/Panels.kt")
+        assertTrue(
+            "panelBorderColor must take the surface and nothing else: a second " +
+                "parameter is how the accent came back to the panel edge",
+            panels != null &&
+                Regex("""fun panelBorderColor\(\s*surface:\s*Color\s*\)""").containsMatchIn(panels)
         )
     }
 

@@ -126,7 +126,7 @@ fun TerpeneDetailScreen(
 
             // Identity: formula, mass, family, boiling point, richness.
             item {
-                DetailCard("🧪 Identidad química", themeState) {
+                DetailCard("🧪 Identidad química") {
                     DataRow("Fórmula", entry.formula)
                     DataRow("Masa molar", entry.molarMass)
                     DataRow("Familia química", entry.family)
@@ -136,7 +136,7 @@ fun TerpeneDetailScreen(
             }
 
             item {
-                DetailCard("👃 Perfil sensorial", themeState) {
+                DetailCard("👃 Perfil sensorial") {
                     DetailParagraph("Aroma", entry.aroma)
                     DetailParagraph("Sabor", entry.taste)
                 }
@@ -144,7 +144,7 @@ fun TerpeneDetailScreen(
 
             if (entry.effects.isNotEmpty()) {
                 item {
-                    DetailCard("🧠 Efectos", themeState) {
+                    DetailCard("🧠 Efectos") {
                         ChipList(entry.effects, scheme.primary)
                     }
                 }
@@ -152,7 +152,7 @@ fun TerpeneDetailScreen(
 
             if (entry.medicalProperties.isNotEmpty()) {
                 item {
-                    DetailCard("⚕️ Propiedades médicas", themeState) {
+                    DetailCard("⚕️ Propiedades médicas") {
                         ChipList(entry.medicalProperties, scheme.tertiary)
                     }
                 }
@@ -160,7 +160,7 @@ fun TerpeneDetailScreen(
 
             if (entry.mechanism.isNotBlank()) {
                 item {
-                    DetailCard("🎯 Mecanismo de acción", themeState) {
+                    DetailCard("🎯 Mecanismo de acción") {
                         DetailParagraph("", entry.mechanism)
                     }
                 }
@@ -168,7 +168,7 @@ fun TerpeneDetailScreen(
 
             if (entry.biosynthesis.isNotBlank()) {
                 item {
-                    DetailCard("🧬 Biosíntesis", themeState) {
+                    DetailCard("🧬 Biosíntesis") {
                         DetailParagraph("", entry.biosynthesis)
                     }
                 }
@@ -176,7 +176,7 @@ fun TerpeneDetailScreen(
 
             if (entry.toxicity.isNotBlank()) {
                 item {
-                    DetailCard("⚠️ Toxicidad y precauciones", themeState) {
+                    DetailCard("⚠️ Toxicidad y precauciones") {
                         DetailParagraph("", entry.toxicity)
                     }
                 }
@@ -184,7 +184,7 @@ fun TerpeneDetailScreen(
 
             if (partners.isNotEmpty()) {
                 item {
-                    DetailCard("🤝 Efecto entourage", themeState) {
+                    DetailCard("🤝 Efecto entourage") {
                         Text(
                             "Estos compuestos actúan como sinergistas: " +
                                 "modulan el receptor y amplifican o matizan el efecto.",
@@ -205,7 +205,7 @@ fun TerpeneDetailScreen(
 
             if (entry.foundIn.isNotEmpty()) {
                 item {
-                    DetailCard("🌍 También se encuentra en", themeState) {
+                    DetailCard("🌍 También se encuentra en") {
                         ChipList(entry.foundIn, scheme.secondary)
                     }
                 }
@@ -213,7 +213,7 @@ fun TerpeneDetailScreen(
 
             if (entry.strains.isNotEmpty()) {
                 item {
-                    DetailCard("🌿 Cepas con alto contenido", themeState) {
+                    DetailCard("🌿 Cepas con alto contenido") {
                         ChipList(entry.strains, scheme.primary)
                     }
                 }
@@ -229,9 +229,7 @@ private fun TerpeneHeader(
     isNew: Boolean
 ) {
     val scheme = themeState.colorScheme()
-    SolidPanel(
-        accentColor = scheme.primary,
-    ) {
+    SolidPanel {
         Column(Modifier.padding(18.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
@@ -280,13 +278,9 @@ private fun TerpeneHeader(
 @Composable
 private fun DetailCard(
     title: String,
-    themeState: TrichomeThemeState,
     content: @Composable () -> Unit
 ) {
-    val scheme = themeState.colorScheme()
-    SolidPanel(
-        accentColor = scheme.primary,
-    ) {
+    SolidPanel {
         Column(Modifier.padding(16.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(10.dp))

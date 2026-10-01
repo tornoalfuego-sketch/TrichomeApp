@@ -68,7 +68,7 @@ fun ChartsScreen(
         ) {
             // ── Gamification summary ────────────────────────────────
             item {
-                SolidPanel(accentColor = accent) {
+                SolidPanel {
                     Column(modifier = Modifier.padding(14.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Column(modifier = Modifier.weight(1f)) {
@@ -121,7 +121,7 @@ fun ChartsScreen(
 
             // ── Chart ───────────────────────────────────────────────
             item {
-                SolidPanel(accentColor = accent) {
+                SolidPanel {
                     Column(modifier = Modifier.padding(14.dp)) {
                         val label = metrics.first { it.first == metric }.second
                         Text("$label a lo largo del cultivo", style = MaterialTheme.typography.titleMedium)
@@ -179,7 +179,7 @@ private fun MetricRow(event: GrowEvent, metric: String, accent: Color) {
         "height" -> " cm"
         else -> ""
     }
-    SolidPanel(accentColor = accent, cornerRadius = 12) {
+    SolidPanel(cornerRadius = 12) {
         Row(
             modifier = Modifier.padding(10.dp),
             verticalAlignment = Alignment.CenterVertically

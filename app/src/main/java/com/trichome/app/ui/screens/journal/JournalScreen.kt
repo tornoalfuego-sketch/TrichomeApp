@@ -119,7 +119,7 @@ fun JournalScreen(
         ) {
             // ── Plant selector ───────────────────────────────────────
             if (plantId == null) {
-                SolidPanel(accentColor = accent) {
+                SolidPanel {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Checkbox(checked = multiSelection, onCheckedChange = { multiSelection = it })
@@ -159,7 +159,7 @@ fun JournalScreen(
             )
 
             // ── Dynamic event form (horizontal carousel of types) ───
-            SolidPanel(accentColor = accent) {
+            SolidPanel {
                 Column(modifier = Modifier.padding(12.dp)) {
                     Text("Tipo de evento", style = MaterialTheme.typography.titleSmall)
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -227,7 +227,6 @@ fun JournalScreen(
                     ReminderRow(
                         reminder = reminder,
                         plantName = reminder.plantId?.let { plantNames[it] },
-                        accent = accent,
                         onEdit = { editingReminder = reminder },
                         onDelete = { deleteReminderConfirmation.request(reminder) }
                     )
@@ -247,7 +246,7 @@ fun JournalScreen(
             // ── List ─────────────────────────────────────────────────
             Text("Registro de eventos", style = MaterialTheme.typography.titleMedium)
             if (vm.events.isEmpty()) {
-                SolidPanel(accentColor = accent) {
+                SolidPanel {
                     Column(
                         modifier = Modifier.padding(32.dp).fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally
@@ -330,7 +329,6 @@ private fun resolveTargets(
 @Composable
 private fun EventRow(event: GrowEvent, onDeleteRequest: () -> Unit) {
     SolidPanel(
-        accentColor = MaterialTheme.colorScheme.primary,
         cornerRadius = 14
     ) {
         Row(

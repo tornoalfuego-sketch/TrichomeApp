@@ -181,9 +181,7 @@ var currentImageError by remember { mutableStateOf<String?>(null) }
                 }
 
                 vm.photoFeatures != null -> {
-                    SolidPanel(
-                        accentColor = accent,
-                    ) {
+                    SolidPanel {
                         Column(Modifier.padding(12.dp)) {
                             Text("Lectura de la foto", style = MaterialTheme.typography.titleSmall)
                             Spacer(Modifier.height(6.dp))
@@ -229,7 +227,7 @@ var currentImageError by remember { mutableStateOf<String?>(null) }
             }
 
             if (currentImage != null) {
-                SolidPanel(accentColor = accent) {
+                SolidPanel {
                     AsyncImage(
                         model = currentImage,
                         contentDescription = "Foto de la planta",
@@ -242,7 +240,7 @@ var currentImageError by remember { mutableStateOf<String?>(null) }
             }
 
             // ── Symptoms ─────────────────────────────────────────────
-            SolidPanel(accentColor = accent) {
+            SolidPanel {
                 Column(modifier = Modifier.padding(14.dp)) {
                     Text("Selecciona los síntomas visibles", style = MaterialTheme.typography.titleMedium)
                     Spacer(Modifier.height(10.dp))
@@ -280,7 +278,7 @@ var currentImageError by remember { mutableStateOf<String?>(null) }
                 )
 
                 // Register in journal
-                SolidPanel(accentColor = accent) {
+                SolidPanel {
                     Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text("Registrar en Bitácora", style = MaterialTheme.typography.titleMedium)
                         plants.forEach { p ->
@@ -322,7 +320,7 @@ var currentImageError by remember { mutableStateOf<String?>(null) }
                     }
                 }
             } else {
-                SolidPanel(accentColor = accent) {
+                SolidPanel {
                     Column(
                         modifier = Modifier.padding(28.dp).fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally
@@ -352,7 +350,7 @@ private fun DiagnosisReport(
         else -> "Planta Saludable"
     }
 
-    SolidPanel(accentColor = accent) {
+    SolidPanel {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("📋 Reporte de Diagnóstico", style = MaterialTheme.typography.titleMedium)
             Row(verticalAlignment = Alignment.CenterVertically) {

@@ -19,7 +19,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.unit.dp
-import com.trichome.app.ui.theme.MINIMUM_NON_TEXT_CONTRAST
 import com.trichome.app.ui.theme.relativeLuminance
 import com.trichome.app.ui.theme.MINIMUM_TEXT_CONTRAST
 import com.trichome.app.ui.theme.contrastRatio
@@ -46,16 +45,20 @@ import com.trichome.app.ui.theme.readableOnStrict
  *   louder still, in a second colour that fought the text the user had chosen.
  *
  * So the edge is rebuilt as [EDGE_STEP] of neutral ink over the surface, which
- * measures 1.29-1.45:1 across all four themes: enough to see the edge on a real
+ * measures 1.28-1.40:1 across all four themes: enough to see the edge on a real
  * 1dp line, and well below the text it frames. Structure, not content.
  *
  * Pure and platform-free on purpose: this is a contrast decision, so it has to
  * be assertable from a JVM test instead of being eyeballed on a device.
  *
- * @param onSurface the app's neutral ink, used only as a direction to step
- *   towards. Any chosen colour works; nothing here depends on its hue.
+ * @param surface the whole input. It decides both the *direction* of the step --
+ *   white on a dark panel, black on a light one -- and the amount of it, so the
+ *   edge is a property of the palette rather than of a scheme role. That is also
+ *   why there is no second parameter: the previous `onSurface` was never read,
+ *   and threading a colour the caller can override per role through a function
+ *   that ignores it is an argument that only looks like control.
  */
-fun panelBorderColor(surface: Color, onSurface: Color): Color {
+fun panelBorderColor(surface: Color): Color {
     val toward = if (relativeLuminance(surface) < 0.2f) Color.White else Color.Black
     return blendToward(toward, surface, EDGE_STEP)
 }
@@ -66,6 +69,13 @@ fun panelBorderColor(surface: Color, onSurface: Color): Color {
  * Measured, not guessed: 0.10 lands at 1.25-1.35:1 and 0.12 at 1.32-1.45:1 across
  * the four palettes. 0.11 is the middle of the band and keeps the edge the
  * quietest thing on the screen that is still a line.
+ *
+ * Private on purpose, so this constant is nobody's contract. What callers and
+ * tests can rely on is the *band* it produces, and `OpaqueThemeContrastTest`
+ * pins that band from both sides rather than the number behind it. The upper
+ * side matters as much as the lower one: pushing this to 0.45 lands the edge at
+ * 3.35-4.52:1, which is the loud frame this design replaced, and nothing else in
+ * the suite would notice.
  */
 private const val EDGE_STEP = 0.11f
 
@@ -87,12 +97,20 @@ private fun blendToward(ink: Color, surface: Color, step: Float): Color = Color(
  *    There is no `opacity` parameter to pass, so no call site can reintroduce
  *    translucency, and text painted on top is measured against a colour that
  *    is actually on screen.
- * 2. **The accent never paints a large surface.** It is accepted because the
- *    call sites use it, and it is spent on the 1dp edge only, through
- *    [panelBorderColor] — where it carries meaning and where a bad pick is
- *    detectable. See that function for why it can fall back.
- * 3. **The edge is a real edge.** `outline` at [MINIMUM_NON_TEXT_CONTRAST] is
- *    what makes a panel read as a panel; a flat translucent bevel did not.
+ * 2. **The edge carries no colour of its own.** It is [panelBorderColor] over
+ *    that same `surface`: a neutral step towards white or black, sized so it
+ *    measures 1.28-1.40:1 on every palette. The accent is not accepted here at
+ *    all -- an argument that changes nothing is worse than no argument, because
+ *    every one of the call sites that passed it read as if the panel were
+ *    accent-tinted when it has not been since the edge stopped taking it.
+ * 3. **The edge is load-bearing.** `surface` against `background` measures only
+ *    1.11:1 on `Cuidado Nocturno` and 1.26:1 on `Brote Verde`, so a card with no
+ *    edge sinks into the page and stops being a card. The edge is deliberately
+ *    *not* held to the 3:1 of WCAG 1.4.11 -- it is structure, not a state
+ *    indicator, and `outline` at 3.6:1 was the frame that made every card shout
+ *    over its own text. `OpaqueThemeContrastTest` holds it inside a measured
+ *    band instead: visible on every theme, and quiet enough to stay under the
+ *    content it frames.
  *
  * @param cornerRadius kept as the call sites spell it, in whole `dp`. It is a
  *   shape, not a translucency knob, so it survives the refactor unchanged.
@@ -103,7 +121,6 @@ private fun blendToward(ink: Color, surface: Color, step: Float): Color = Color(
 @Composable
 fun SolidPanel(
     modifier: Modifier = Modifier,
-    accentColor: Color? = null,
     contentColor: Color = Color.Unspecified,
     borderEnabled: Boolean = true,
     cornerRadius: Int = 16,
@@ -135,10 +152,7 @@ fun SolidPanel(
         border = if (borderEnabled) {
             BorderStroke(
                 width = 1.dp,
-                color = panelBorderColor(
-                    surface = scheme.surface,
-                    onSurface = scheme.onSurface
-                )
+                color = panelBorderColor(surface = scheme.surface)
             )
         } else {
             null

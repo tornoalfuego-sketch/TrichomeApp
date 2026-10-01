@@ -102,7 +102,6 @@ fun SettingsScreen(
 
         /* ── Tema ─────────────────────────────────────────────────── */
         SolidPanel(
-            accentColor = accent,
             contentColor = scheme.onSurface
         ) {
             Column(Modifier.padding(16.dp)) {
@@ -129,7 +128,6 @@ fun SettingsScreen(
 
         /* ── Color de acento ──────────────────────────────────────── */
         SolidPanel(
-            accentColor = accent,
             contentColor = scheme.onSurface
         ) {
             Column(Modifier.padding(16.dp)) {
@@ -171,7 +169,6 @@ fun SettingsScreen(
         // surface and a colour that cannot clear the bar is marked and dropped
         // rather than applied.
         SolidPanel(
-            accentColor = accent,
             contentColor = scheme.onSurface
         ) {
             Column(Modifier.padding(16.dp)) {
@@ -216,7 +213,6 @@ fun SettingsScreen(
 
         /* ── Tipografía ───────────────────────────────────────────── */
         SolidPanel(
-            accentColor = accent,
             contentColor = scheme.onSurface
         ) {
             Column(Modifier.padding(16.dp)) {
@@ -271,7 +267,6 @@ fun SettingsScreen(
 
         /* ── Sobre la app ────────────────────────────────────────── */
         SolidPanel(
-            accentColor = accent,
             contentColor = scheme.onSurface
         ) {
             Column(Modifier.padding(16.dp)) {

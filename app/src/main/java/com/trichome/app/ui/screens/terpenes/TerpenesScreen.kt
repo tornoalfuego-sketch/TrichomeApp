@@ -315,7 +315,6 @@ private fun ProgressionCard(
     val scheme = themeState.colorScheme()
     SolidPanel(
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-        accentColor = scheme.primary,
         contentColor = scheme.onSurface
     ) {
         Column(Modifier.padding(16.dp)) {
@@ -427,7 +426,6 @@ private fun TerpeneRow(
 ) {
     val scheme = themeState.colorScheme()
     SolidPanel(
-        accentColor = scheme.primary,
         modifier = Modifier.clickable(onClick = onClick)
     ) {
         Row(

@@ -141,12 +141,18 @@ fun EditReminderDialog(
 /**
  * One active reminder, with the two actions that were previously unreachable:
  * change it, or take it down for good.
+ *
+ * Takes no accent, deliberately. Its neighbour [ReminderQuickCard] keeps one
+ * because it has an accent-filled button to spend it on; this row has only text
+ * and two icon buttons, one of which is tinted `error` on purpose. The panel
+ * edge is a neutral step of the surface (see `panelBorderColor`), so an accent
+ * threaded in here would have had nothing to paint -- which is exactly the dead
+ * argument this component used to carry.
  */
 @Composable
 fun ReminderRow(
     reminder: Reminder,
     plantName: String?,
-    accent: Color,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -155,7 +161,7 @@ fun ReminderRow(
     }
     val recurrence = ReminderEditing.presetFor(draft)
 
-    SolidPanel(accentColor = accent) {
+    SolidPanel {
         Row(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
