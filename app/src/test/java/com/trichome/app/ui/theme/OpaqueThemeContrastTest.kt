@@ -447,50 +447,85 @@ class OpaqueThemeContrastTest {
     /* ── 4. The accent never becomes an invisible panel edge ──────────────── */
 
     @Test
-    fun thePanelEdgeIsAlwaysVisibleWhicheverAccentIsPicked() {
-        // The accent is a user colour, and the panel edge is the one place the
-        // panel spends it. The amber swatch is 1.57:1 on the white surface of
-        // `Invernadero Soleado`: as a border that is not a border.
+    fun thePanelEdgeIsVisibleOnEveryTheme() {
+        // The fill cannot do this job: `surface` against `background` measures
+        // 1.11:1 on `Cuidado Nocturno` and 1.26:1 on `Brote Verde`, so without the
+        // edge every card would sink into the page. The edge is load-bearing.
         for (theme in AppTheme.ALL) {
             val scheme = solidSchemeFor(theme, accent)
-            allAccents.forEach { candidate ->
-                val edge = panelBorderColor(scheme.outline, scheme.surface, candidate)
-                val ratio = contrastRatio(edge, scheme.surface)
-                assertTrue(
-                    "${theme.label}/$candidate: the panel edge is $ratio:1, " +
-                        "need ${MINIMUM_NON_TEXT_CONTRAST}:1",
-                    ratio >= MINIMUM_NON_TEXT_CONTRAST
-                )
-            }
+            val edge = panelBorderColor(scheme.surface, scheme.onSurface)
+            val ratio = contrastRatio(edge, scheme.surface)
+            assertTrue(
+                "${theme.label}: the panel edge is $ratio:1 against its own surface; " +
+                    "a card would be indistinguishable from the page",
+                ratio >= 1.2f
+            )
         }
     }
 
     @Test
-    fun theAccentIsUsedAsTheEdgeOnlyWhenItCanCarryIt() {
-        val outline = Color(0xFF6E7A66)
-        val white = Color(0xFFFFFFFF)
-        val darkGreen = Color(0xFF1B5E20)
+    fun thePanelEdgeDoesNotTakeTheAccent() {
+        // The accent used to be spent on the edge, which put a saturated user
+        // colour around a card whose text the same user had just chosen -- two
+        // competing colours on one surface.
+        //
+        // The contract is that the edge cannot *introduce* a colour, not that it
+        // is perfectly grey: `Cuidado Nocturno`'s surface is itself slightly blue
+        // (`#0D111C`), and the edge inherits that. Stepping towards white only
+        // ever dilutes what is already there, so the edge's channel spread can
+        // never exceed the surface's. That is the property worth pinning.
+        for (theme in AppTheme.ALL) {
+            val scheme = solidSchemeFor(theme, accent)
+            val surface = scheme.surface
+            val edge = panelBorderColor(surface, scheme.onSurface)
 
-        // Clears 3:1 on white, so it is spent on the edge.
-        assertEquals(darkGreen, panelBorderColor(outline, white, darkGreen))
-        // Does not, so the verified outline takes over.
-        assertEquals(outline, panelBorderColor(outline, white, Color(0xFFFFC107)))
-        // No accent at all: the outline, always.
-        assertEquals(outline, panelBorderColor(outline, white, null))
+            fun spread(color: Color) =
+                maxOf(color.red, color.green, color.blue) - minOf(color.red, color.green, color.blue)
+
+            assertTrue(
+                "${theme.label}: the edge has more chroma than the surface it " +
+                    "steps from (${spread(edge)} vs ${spread(surface)}), so it is " +
+                    "carrying a colour of its own",
+                spread(edge) <= spread(surface) + 0.001f
+            )
+        }
     }
 
     @Test
-    fun anAccentThatFallsBackIsNotSilentlyIgnored() {
-        // A fallback that returned the accent anyway would make the guard above
-        // pass while the edge disappeared, so pin the two outcomes apart.
-        val outline = Color(0xFF6E7A66)
-        val white = Color(0xFFFFFFFF)
-        val amber = Color(0xFFFFC107)
-        assertNotEquals(
-            "an unreadable accent must not be drawn as the edge",
-            amber,
-            panelBorderColor(outline, white, amber)
-        )
+    fun thePanelEdgeStaysQuieterThanTheTextItFrames() {
+        // The whole reason the edge moved: `outline` measured 3.6:1 against the
+        // surface on every dark theme while body text sits at 4.5:1 or better, so
+        // the frame was louder than the content. The edge has to stay under the
+        // text, on every theme, or the change bought nothing.
+        for (theme in AppTheme.ALL) {
+            val scheme = solidSchemeFor(theme, accent)
+            val edge = contrastRatio(
+                panelBorderColor(scheme.surface, scheme.onSurface), scheme.surface
+            )
+            val text = contrastRatio(scheme.onSurface, scheme.surface)
+            assertTrue(
+                "${theme.label}: the edge is $edge:1 and the text is $text:1; " +
+                    "a frame must not out-shout what it frames",
+                edge < text
+            )
+        }
+    }
+
+    @Test
+    fun thePanelEdgeIsTheSameWhateverAccentIsPicked() {
+        // The consequence of dropping the accent: picking a different colour can
+        // no longer change the shape of the frame. It is a property of the theme,
+        // not of a swatch.
+        val scheme = solidSchemeFor(AppTheme.NIGHT, AccentPalette.DEFAULT_ACCENT)
+        val neutral = panelBorderColor(scheme.surface, scheme.onSurface)
+        AccentPalette.SELECTABLE_ARGB.forEach { candidate ->
+            val other = solidSchemeFor(AppTheme.NIGHT, Color(candidate))
+            assertEquals(
+                "the accent $candidate changed the panel edge",
+                neutral,
+                panelBorderColor(other.surface, other.onSurface)
+            )
+        }
     }
 
     /* ── 5. The persisted defaults still describe the shipped look ─────────── */

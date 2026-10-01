@@ -325,17 +325,20 @@ class AccentContrastSweepTest {
     }
 
     @Test
-    fun theWorstAccentOnAFillStillClearsTheNonTextBarForThePanelEdge() {
-        // The edge is a 1dp line, so it is held to the non-text bar rather than
-        // the text bar — but it still has to be a line you can see.
+    fun thePanelEdgeIsVisibleOnEveryThemeAndAccent() {
+        // The edge no longer takes the accent, so the sweep is really over the
+        // themes. It is kept over every accent anyway, because a colour the user
+        // can pick changing the weight of the frame is exactly what this removed.
+        // Held to 1.2:1 rather than the 3:1 non-text bar: the edge is structure,
+        // not a state indicator, and the accent-filled surfaces carry the states.
         everyAccent.forEach { accent ->
             AppTheme.ALL.forEach { theme ->
                 val scheme = solidSchemeFor(theme, accent)
-                val edge = panelBorderColor(scheme.outline, scheme.surface, accent)
+                val edge = panelBorderColor(scheme.surface, scheme.onSurface)
                 assertTrue(
                     "${theme.label}/${label(accent)}: panel edge is " +
                         "${contrastRatio(edge, scheme.surface)}:1",
-                    contrastRatio(edge, scheme.surface) >= MINIMUM_NON_TEXT_CONTRAST
+                    contrastRatio(edge, scheme.surface) >= 1.2f
                 )
             }
         }
