@@ -678,10 +678,22 @@ private const val PROCESSING_ENTRY_BASIS_REQUIRED_ES =
  * does not compile for [EntourageAchievement.RESIN_ENGINEER]: that badge's text
  * is derived from the shipped processing block rather than from a round count, so
  * a caller holding it has to be handed the catalog's compound count explicitly
- * ([EntourageAchievement.RESIN_ENGINEER.descriptionFor]). Making the two
+ * ([EntourageAchievement.RESIN_ENGINEER.descriptionForProcessing]).
+ * Making the two
  * incompatible is the point — a shared signature would let the resin row be
  * written from the wrong data and nobody would notice until a player read a
  * sentence that disagreed with the content they had read.
+ *
+ * ## Why `IllegalStateException` and not `error(...)`
+ *
+ * Both branches are unreachable today, and the owner settled which one this is
+ * when they saw it: a **thrown exception**, not an `error()` sentinel. `error()`
+ * on a live path means a crash when the user next claims a badge, and the
+ * `AchievementDao` has no unique index on `name`, so a client that caught it and
+ * carried on could insert the quiz sentence into the resin row and write a
+ * 300 XP row that reads wrong forever. A crash costs one session; a swallowed
+ * `error()` costs permanent data. Revert to `error(...)` if a test ever needs to
+ * assert this branch rather than only document it.
  */
 internal fun EntourageAchievement.toAchievementRow(rounds: Int): Achievement =
     when (this) {
@@ -692,7 +704,7 @@ internal fun EntourageAchievement.toAchievementRow(rounds: Int): Achievement =
             xpReward = xpReward,
             isUnlocked = false
         )
-        EntourageAchievement.RESIN_ENGINEER -> error(
+        EntourageAchievement.RESIN_ENGINEER -> throw IllegalStateException(
             "the resin engineer's text is derived from the shipped processing " +
                 "block, not from a round count: write it through " +
                 "EntourageReward.toAchievementRow() with a description built " +

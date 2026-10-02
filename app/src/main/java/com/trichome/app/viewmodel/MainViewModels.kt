@@ -1417,6 +1417,44 @@ class TerpenesViewModel(container: AppContainer) : ViewModel() {
                 val persisted = runCatching {
                     badgeAchievements.getAllAchievements().first()
                 }.getOrDefault(emptyList())
+
+                // Repair rows a pre-fix build wrote, before deciding anything.
+                //
+                // The duplicates already on a device (four rows, 1220 XP, one badge)
+                // cannot be removed from outside the app, and this app has no schema
+                // migration that would sweep them because the schema never changed —
+                // the *data* was wrong, not the table. So the app repairs its own
+                // history the first time the badge is evaluated, keeping the oldest
+                // row per name, which is the one whose description was written when
+                // the badge was first granted.
+                //
+                // Reported, never silent: the removed count is logged, because a repair
+                // nobody can verify is indistinguishable from a repair that did not
+                // happen. Idempotent — a clean table returns 0 and the work stops.
+                persisted.groupBy { it.name }
+                    .filterValues { it.size > 1 }
+                    .keys
+                    .forEach { name ->
+                        runCatching { badgeAchievements.deleteDuplicateAchievements(name) }
+                            .onSuccess { removed ->
+                                if (removed > 0) {
+                                    android.util.Log.i(
+                                        "TrichomeAchievements",
+                                        "collapsed $removed duplicate rows for badge '$name'"
+                                    )
+                                }
+                            }
+                            .onFailure { error ->
+                                // Not fatal. A failed repair leaves the duplicates and
+                                // must not stop the badge from being granted.
+                                android.util.Log.w(
+                                    "TrichomeAchievements",
+                                    "could not collapse duplicate rows for '$name'",
+                                    error
+                                )
+                            }
+                    }
+
                 val names = awardedBadgeNames + persisted.map { it.name }
                 val fresh = EntourageRewards.pending(rewards, names)
                 if (fresh.isEmpty()) return@withLock
@@ -1427,6 +1465,11 @@ class TerpenesViewModel(container: AppContainer) : ViewModel() {
                 // the only path the Séquito module has into the `achievements` table,
                 // and reusing it is what keeps one decision about `isUnlocked` and
                 // `xpReward` instead of two.
+                //
+                // `insertAchievement` is a conditional `INSERT ... WHERE NOT EXISTS`,
+                // so the statement itself refuses a second row for the same name. That
+                // is what holds even when two ViewModels race; the check above is a
+                // courtesy, not the guarantee.
                 fresh.forEach { badgeAchievements.insertAchievement(it.toAchievementRow()) }
             }
         }

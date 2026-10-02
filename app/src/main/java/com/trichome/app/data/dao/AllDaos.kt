@@ -258,8 +258,57 @@ interface AchievementDao {
     @Query("SELECT * FROM achievements WHERE isUnlocked = 1")
     suspend fun getUnlockedAchievements(): List<Achievement>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAchievement(achievement: Achievement): Long
+    /**
+     * Inserts a badge unless one with the same [Achievement.name] is already stored.
+     *
+     * Deliberately NOT `@Insert(onConflict = REPLACE)`. `REPLACE` resolves a
+     * conflict on a primary key or a unique index, and this table has neither on
+     * `name` — only an autoincrementing `id`, which is always new. So `REPLACE`
+     * never matched anything and every call appended a row: the Séquito badge paid
+     * four times on one device (+600 XP) because four calls each believed they
+     * were first. A unique index on `name` would have caught it, but adding one to
+     * a shipped table needs a migration with its own test, and this project does
+     * not add schema without one.
+     *
+     * `NOT EXISTS` inside the statement makes the guarantee live in SQL rather
+     * than in a caller: two coroutines that both pass an in-memory check still
+     * produce one row. A read-then-write guard in the ViewModel is not that
+     * guarantee, it is a hopeful version of it — which is exactly how four
+     * duplicates shipped while a guard existed.
+     *
+     * Returns the row id inserted, or `-1` when the badge was already present.
+     */
+    @Query(
+        """
+        INSERT INTO achievements (name, description, icon, xpReward, isUnlocked)
+        SELECT :name, :description, :icon, :xpReward, :isUnlocked
+        WHERE NOT EXISTS (SELECT 1 FROM achievements WHERE name = :name)
+        """
+    )
+    suspend fun insertAchievementIfAbsent(
+        name: String,
+        description: String,
+        icon: String,
+        xpReward: Int,
+        isUnlocked: Boolean
+    ): Long
+
+    /**
+     * Collapses duplicate rows for one badge, keeping the lowest id.
+     *
+     * The repair for rows a pre-fix build already wrote, for the badge whose
+     * description identifies it. Public rather than a migration because the
+     * duplicates are app-level history, not a schema change, and because
+     * `APP_DATABASE_VERSION` stays at 3: no schema change is involved.
+     */
+    @Query(
+        """
+        DELETE FROM achievements
+        WHERE name = :name
+          AND id NOT IN (SELECT MIN(id) FROM achievements WHERE name = :name)
+        """
+    )
+    suspend fun deleteDuplicateAchievements(name: String): Int
 
     @Update
     suspend fun updateAchievement(achievement: Achievement)

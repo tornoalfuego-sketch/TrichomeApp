@@ -178,7 +178,41 @@ class SuperCycleRepository(
 class AchievementRepository(private val dao: AchievementDao) {
     fun getAllAchievements(): Flow<List<Achievement>> = dao.getAllAchievements()
     suspend fun getUnlockedAchievements(): List<Achievement> = dao.getUnlockedAchievements()
-    suspend fun insertAchievement(achievement: Achievement): Long = dao.insertAchievement(achievement)
+
+    /**
+     * Stores a badge unless one with the same name is already there.
+     *
+     * The name is the identity of a badge in this app: there is no separate
+     * ledger, the app sums `xpReward` over unlocked rows, and a badge's text is
+     * derived from shipped content. So a second row with the same name is not a
+     * harmless duplicate — it is XP paid twice for one unlock, which is what
+     * happened on one device (+600 XP, four rows, one badge).
+     *
+     * The de-duplication lives in the DAO statement, not in this function and not
+     * in the caller, because a check in either of those is only a snapshot: two
+     * live ViewModels can both read "not granted" and both write.
+     *
+     * [Achievement.id] is ignored. It is autoincrementing and therefore always
+     * new, so it cannot express identity here.
+     */
+    suspend fun insertAchievement(achievement: Achievement): Long =
+        dao.insertAchievementIfAbsent(
+            name = achievement.name,
+            description = achievement.description,
+            icon = achievement.icon,
+            xpReward = achievement.xpReward,
+            isUnlocked = achievement.isUnlocked
+        )
+
+    /**
+     * Collapses rows a pre-fix build wrote for one badge, keeping the oldest.
+     *
+     * Returns how many rows it removed. The caller's job is to report that number,
+     * because a repair that silently succeeded is a repair nobody can verify.
+     */
+    suspend fun deleteDuplicateAchievements(name: String): Int =
+        dao.deleteDuplicateAchievements(name)
+
     suspend fun updateAchievement(achievement: Achievement) = dao.updateAchievement(achievement)
     suspend fun getTotalXp(): Int = dao.getTotalXp()
 }
