@@ -422,7 +422,7 @@ private fun EntourageEntryCard(onClick: () -> Unit, themeState: TrichomeThemeSta
                     color = scheme.onSurface
                 )
                 Text(
-                    "Sinergias entre terpenos yannabinoides",
+                    "Sinergias entre terpenos y cannabinoides",
                     style = MaterialTheme.typography.labelSmall,
                     color = scheme.onSurfaceVariant
                 )
