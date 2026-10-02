@@ -459,3 +459,237 @@ per-compound extraction window for the 148 exists in this repository, so the
 constant is justified only against the ten measured rows. The test can prove
 the band is coarser than the data allows to be precise about; it cannot prove it
 is accurate.
+---
+
+# F3 — the agronomic / biological dimension
+
+F3 was not in this file's task list (it was scoped to F1–F2) and is recorded here
+now. Objective: widen the module along the axis a grower acts on — **what makes
+the plant make more of a compound, and when to cut** — on top of F2's chemistry of
+the material.
+
+F1 and F2 both describe the compound. F3 describes the plant.
+
+## What is different about F3's evidence
+
+The pharmacology in this module is almost entirely pre-clinical, so F1 pinned
+every claim to its level in visible text and hedged aggressively. **Agronomy does
+not need that.** UV-B inducing secondary metabolism through UVR8 → COP1 → HY5,
+controlled water deficit as a pre-harvest technique, and harvest timing driving
+the monoterpene/sesquiterpene shift are textbook plant physiology and cultivation
+practice. F3 therefore states them directly, and only hedges where the evidence
+is genuinely mixed for the compound in question — which is recorded per lever,
+not globally.
+
+The rules from F1 still hold and are extended, not relaxed:
+
+- the evidence line is visible, never behind a disclosure;
+- a claim whose basis disclaims what it cannot establish carries its qualifier in
+  the same rendered block;
+- `EntourageAssetTest`'s banned phrases are **not** loosened, and neither is
+  `EntourageLanguage`.
+
+## Decision D-B — keyed by terpene, not by synergy pair
+
+The source spec asked for agronomic tips inside the synergy card, keyed on the
+cannabinoid x terpene pair. **Declined.** Two failure modes:
+
+- **Duplication.** `LIMONENE` appears in `thc_limonene` and in
+  `cbg_limonene_myrcene`. A pair-keyed entry writes the same harvest advice twice,
+  and the second copy is a second place for it to go stale.
+- **Orphaning.** A pair-keyed entry exists only if a synergy exists. `CAMPHENE`
+  and `TERPINOLENE` are modelled by `EntourageTerpene` and ship a vaporisation
+  row, but **no synergy contains them** — so a pair-keyed entry for those two
+  could never be reached at all.
+
+Keyed by `EntourageTerpene`, the advice is written once and is reachable from two
+surfaces: the synergy card (for every terpene of the combination) and the
+compound's own encyclopedia page (which is where a grower looks). The KDoc on
+`EntourageAgronomy` says this, and `theBlockIsReachableFromTheShippedCombinations`
+asserts the first half against the shipped asset.
+
+## T-A — the `agronomy` block
+
+`app/src/main/assets/data/entourage_data.json` gains an `agronomy` array of eight
+entries, thirteen levers. Resolved in `EntourageBible.toContent()` with five
+independent drop-and-record paths, all of them landing in the existing
+`unresolvedReferences`:
+
+| dropped when | recorded as |
+| --- | --- |
+| unknown terpene key | `agronomy.<KEY> -> unknown terpene` |
+| unknown lever kind or evidence level | `agronomy.<TERPENE>.levers -> <KEY>` / `agronomy.<TERPENE>.<KIND> -> <LEVEL>` |
+| **`basis_es` blank** | `agronomy.<TERPENE>.<KIND> -> the lever ships no basis_es and was dropped rather than shown unqualified` |
+| `detail_es` blank | `agronomy.<TERPENE>.<KIND> -> no detail declared` |
+| `response_es` blank | `agronomy.<TERPENE> -> no response declared` |
+
+The blank-`basis_es` path is the one the honesty standard turns on: a lever whose
+evidence level is missing is exactly what this module exists to not ship, so it is
+dropped rather than shown unqualified.
+
+### Which compounds got an entry, and which did not
+
+| compound | levers | why |
+| --- | --- | --- |
+| Mirceno | HARVEST_POINT, WATER_DEFICIT, UV_B | The only one with all three. Myrcene is a documented drought-responsive monoterpene in essential-oil crops, reported in cannabis without a dose-response. |
+| Limoneno | HARVEST_POINT | The canonical volatile-loss compound: oxidises to limonene oxide and carveol. Well characterised. |
+| Linalool | HARVEST_POINT | Associated with late flowering in Cannabis characterisation studies — a profile trend, not a controlled comparison, hence MIXTO. |
+| Pineno alfa | HARVEST_POINT | Early-peaking; oxidises to pinene oxide on storage. Well characterised. |
+| Pineno beta | HARVEST_POINT | Tracks alpha; the basis says outright that routine screening does not separate the isomers. |
+| Ocimeno | HARVEST_POINT | Very volatile, low absolute content; marked MIXTO because the cannabis-specific data is thin. |
+| Cariofileno beta | UV_B, HARVEST_POINT, WATER_DEFICIT | The best-characterised sesquiterpene: FPP route, documented UV-B induction, later harvest window. |
+| Humuleno | UV_B, HARVEST_POINT | Same precursor and same window as beta-caryophyllene; the basis says no measurement separates them. |
+| **Camfeno** | **none** | No documented agronomic lever of its own. Ships a vaporisation row and is modelled, but nothing in the plant's response to light, water or harvest point is specific to it. |
+| **Terpinoleno** | **none** | Same. |
+
+The two gaps are pinned by `theShippedBlockNamesTheTwoCompoundsItLeavesOut`, which
+fails if somebody adds an entry for either without arguing it. Both still get the
+block, with `TerpeneAgronomyCopy.NOT_DOCUMENTED_ES` naming the compound, plus the
+biosynthetic route — which is a fact about the compound's size and therefore
+survives an empty agronomy set.
+
+The reason is a rule, and it is deliberately stricter than "cover everything":
+**an entry earns its place when a lever's direction can be stated for that
+compound.** The generic behaviour of a chemical family is delivered once, in
+`GrowOutGuides`, not repeated eight times as a per-compound claim the literature
+does not make.
+
+## T-B — the biosynthetic routes, as one explainer
+
+`BiosynthesisExplainer` in `model/TerpeneAgronomy.kt`: MEP/DOXP (plastid, GPP, C10)
+and MVA (cytosol, FPP, C15), seven numbered steps, the capitate-stalked glandular
+trichome as the site, and the C10/C15 size rule.
+
+It is one object, not 158 rows, because the chemistry is identical for every
+compound in the encyclopedia and only the terpene synthase differs.
+`theBiosyntheticStepListIsIdenticalForEveryCompound` and
+`whatChangesBetweenCompoundsIsTheRouteSentenceAndNothingElse` assert exactly that:
+what varies per compound is the route sentence and nothing else.
+
+`CAVEAT_ES` states what the two-route picture does **not** settle: the plastid also
+exports part of the IPP/DMAPP pool the cytosolic route consumes, so the C10/C15
+partition is not a clean border. It is rendered unconditionally.
+
+## T-C — the three grow-out levers
+
+`AgronomyLeverKind`: `UV_B`, `WATER_DEFICIT`, `HARVEST_POINT`. The **per-compound**
+`AgronomyLever.detailEs` says what this compound does; the **shared**
+`AgronomyGuide.whatEs` says how the lever works on the plant. Neither restates the
+other, which is what keeps a lever from becoming eight copies of one paragraph.
+
+| lever | level shipped | what the basis says |
+| --- | --- | --- |
+| UV-B | BIEN_DOCUMENTADO at pathway level | UVR8 → COP1 → HY5 → terpene synthase is well characterised and sesquiterpene induction by UV-B is documented across species. Dose, and the effect on one terpene in one cultivar, are not fixed. UV-B also costs biomass above a certain intensity. |
+| Water deficit | MIXTO | Documented in essential-oil crops and reported in cannabis; magnitude and window vary by cultivar, substrate and stage. No published dose-response for a specific terpene in a specific cultivar. Severe/prolonged deficit is not the same technique. |
+| Harvest point | MIXTO | The mono/sesqui shift with maturity is described in the Cannabis literature, but the direction is not constant across cultivars. Drying and storage change the measured profile on their own, so a post-hoc assay does not separate maturation from process. Trichomes are a moment indicator, not a composition target. |
+
+### The mono/sesqui shift, stated in both directions
+
+The shift is only honest if both halves are present, and
+`theMonoterpeneAndSesquiterpeneEntriesDisagreeAboutTheHarvestPoint` fails if the
+block ever describes one family only:
+
+- volatile monoterpenes (limonene, myrcene, pinenos, ocimeno) **fall** with
+  maturation and keep falling through drying and storage — BIEN_DOCUMENTADO for
+  each of them individually;
+- the sesquiterpenes (cariofileno beta, humuleno) **gain relative share**, because
+  the volatiles leave first — MIXTO, because the direction is not constant.
+
+## T-D — the two surfaces
+
+1. **Synergy card.** `EntourageCardRole.AGRONOMY`, added to `linesEs` immediately
+   after `EVIDENCE` and before the optional lines, because it is the same kind of
+   statement. One line per documented compound of the combination, with every
+   lever's basis folded into the body as `Base (Evidencia mixta): …` — folded rather
+   than split into six paragraphs per combination, and folded *inside* the body so
+   the card's single `linesEs.forEach` cannot skip it.
+2. **Terpene detail page.** `AgronomyCard`, mounted as a `LazyColumn` item
+   immediately **after** `VolatilityCard`, gated on "is this a compound the Séquito
+   module models" (the same gate as the page's existing Séquito button), *not* on
+   "does it have an entry". Per-compound levers with their basis, the route line,
+   the biosynthesis explainer, the three shared guides, and a closing line that a
+   lever is not an instruction.
+
+A compound with no documented lever produces **no card line** on the synergy card
+and **the gap sentence** on its own page. That asymmetry is deliberate and is
+documented on `TerpeneAgronomyCopy.cardLinesFor`: three "no data" lines next to one
+line of content is worse than silence, and the compound's page is where the gap is
+named in full.
+
+## T-E — the tests
+
+`TerpeneAgronomyTest` (25, `model/`) — the honest-gap sentence names the compound;
+a lever with a blank basis is not drawable; every lever carries the level the user
+sees; every basis travels inside the card body verbatim; one card line per
+documented compound; an undocumented compound adds no line; a card built without
+the index is the F2 card unchanged; the agronomy line sits next to the evidence
+line and not under the optional ones; the step list is identical across families
+and only the route sentence differs; the route is chosen by carbon count; every
+explainer carries its caveat; one guide per lever kind, no duplicates; the
+authored copy passes `EntourageLanguage`.
+
+`TerpeneAgronomyAssetTest` (24, reads the real asset) — parses with no BOM; no row
+dropped; every key resolves; one entry per compound; each of the five
+drop-and-record paths verified by mutating the bible; the F1 banned phrases and
+`EntourageLanguage` over the shipped agronomy text; every lever's level and basis
+present in the card body; a disclaimer-carrying basis carries its qualifier with it
+(verified against a fixture the test asserts is non-empty); all three lever kinds
+represented; the two harvest-point directions disagree; the two gaps are named; the
+gap is stated on both paths that can show it; the rest of the parse is untouched
+(10 bands, 4 profiles, 7 synergies, 10 questions, 0 unresolved).
+
+`TerpeneDetailAgronomyTest` (17, structural) — the block sits beside the volatility
+card and not instead of it; the gate is the compound and not the entry; every
+basis, every level and the biosynthesis caveat render unconditionally; no
+disclosure affordance on either surface; the card panel has an `AGRONOMY` branch
+and still iterates every line; both call sites pass the index; no second scroll
+owner; no hardcoded colour; **no `Surface` at all** in the block; and the block
+holds **no non-blank string literal**, which is the strongest form of "every
+sentence lives in `model/`".
+
+`ModelPurityTest` now includes `TerpeneAgronomy.kt`.
+
+## F3 verification (observed)
+
+| command | observed |
+| --- | --- |
+| `:app:compileDebugKotlin --no-daemon` | BUILD SUCCESSFUL |
+| `:app:cleanTestDebugUnitTest :app:testDebugUnitTest --no-daemon` | BUILD SUCCESSFUL |
+| `:app:assembleDebug :app:installDebug --no-daemon` | BUILD SUCCESSFUL, `Installed on 1 device` |
+| `:app:lintDebug --no-daemon` | BUILD SUCCESSFUL |
+
+**1057 tests, 64 suites, 0 failures, 0 skipped.** Baseline was 991 / 61: +66 tests,
++3 suites, no suite lost. **Lint 353 issues, 0 errors** (333 warnings, 20
+information) — identical to baseline. No schema change,
+`APP_DATABASE_VERSION` still 3, no new dependency, `versionCode` 9 /
+`versionName` 1.7.0 untouched.
+
+### F3 device pass
+
+Mirceno's page: the agronomy card renders directly under "🌡️ Vaporización",
+carrying the response sentence, three levers each with its `Base: …` line, the
+route line, the full biosynthesis explainer and the three shared guides. Camfeno's
+page: the same card with the gap sentence in place of the levers, and the route and
+explainer still below it. The `thc_myrcene` synergy card: the "🌱 Mirceno" line
+sits directly under the evidence block, with every basis folded into the body.
+
+No `FATAL`, no `E AndroidRuntime`, no exception line mentioning the app across the
+session. The two competing third-party apps did not steal the foreground.
+
+**Side effect, declared:** opening the Camfeno page registered its discovery, as
+the app is designed to do — the header went from 18 to 19 discovered and 445 to 465
+XP. Mirceno was already discovered, so browsing it changed nothing.
+
+**Not verified:** `assembleRelease` / `bundleRelease` with R8. Not run in this
+phase, and it is still the only build that catches a minification problem.
+`LunarEngine`, `AmbientClimate`, `TerpeneBlender`, `EntouragePlanner` and
+`VolatilityCurves.aggregate` were not touched.
+
+## Two wording constraints worth keeping
+
+The banned-word guard contains `cura` as a **substring**, and `EntourageLanguage`
+contains `daño` and `dano`. `curado`/`curación` and `daño` are therefore both
+unavailable in this module's copy. The agronomy text uses `secado`,
+`almacenamiento`, `lesiones` and `degradación` instead. That is a real constraint
+on the vocabulary, not a preference, and no guard was loosened to accommodate a
+nicer word.
