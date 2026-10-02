@@ -244,6 +244,35 @@ class EntourageAssetTest {
     }
 
     @Test
+    fun aHeadlineWhoseEvidenceDisclaimsHumanProofCarriesItsOwnQualifierInline() {
+        // The label fix qualified the layer, but the owner asked for the
+        // headline to carry its own caveat as well: five of seven stated as fact
+        // what their evidence line denies. Five disclaimers in one layer is
+        // repetitive by design — this pins the decision so a future headline
+        // cannot quietly drop back to a bare claim.
+        val disclaims = listOf(
+            "no hay", "no está", "no se ha", "sin datos", "sin confirmación",
+            "no confirmad", "no está probad", "hipótesis", "hipotesis"
+        )
+        val qualifiers = listOf(
+            "sin confirmar", "no confirmad", "asociad", "sin respaldo",
+            "sin sensibilidad demostrada", "sin apoyo", "hipótesis", "hipotesis",
+            "propuest", "posible", "suger", "atribuible"
+        )
+
+        val unqualified = content().synergies
+            .filter { synergy -> disclaims.any { it in synergy.evidenceEs.lowercase() } }
+            .filter { synergy -> qualifiers.none { it in synergy.outcomeEs.lowercase() } }
+            .map { "${it.id}: \"${it.outcomeEs}\"" }
+
+        assertTrue(
+            "these headlines assert what their own evidence line denies, with no " +
+                "qualifier in the headline itself: $unqualified",
+            unqualified.isEmpty()
+        )
+    }
+
+    @Test
     fun anOutcomeHeadlineDeniedByItsOwnEvidenceLineCarriesTheDenialInline() {
         // The label change above covers the layer, but one headline was the
         // worst case: thc_myrcene claimed "Sedación profunda y efecto
