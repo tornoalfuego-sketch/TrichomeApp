@@ -11,11 +11,18 @@ import com.trichome.app.model.EntourageAgronomy
 import com.trichome.app.model.EntourageAgronomyIndex
 import com.trichome.app.model.EntourageCase
 import com.trichome.app.model.EntourageProfile
+import com.trichome.app.model.EntourageProcessing
+import com.trichome.app.model.EntourageProcessingIndex
 import com.trichome.app.model.EntourageQuizQuestion
 import com.trichome.app.model.EntourageSynergy
 import com.trichome.app.model.EntourageTerpene
 import com.trichome.app.model.LabAxis
 import com.trichome.app.model.PharmacologicalProfile
+import com.trichome.app.model.PreservationFactorKind
+import com.trichome.app.model.PreservationFactorNote
+import com.trichome.app.model.ProcessingEvidence
+import com.trichome.app.model.ProcessingMethod
+import com.trichome.app.model.ProcessingMethodNote
 import com.trichome.app.model.TerpeneVaporisation
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -101,6 +108,49 @@ internal data class EntourageAgronomyAsset(
     val levers: List<EntourageAgronomyLeverAsset> = emptyList()
 )
 
+/**
+ * F4: one note of one named method for one compound, as shipped.
+ *
+ * `method` and `evidence` are strings here and enums in the model, exactly like
+ * F3's `EntourageAgronomyLeverAsset`. Note what is **absent**: there is no
+ * `safety_es`. The safety framing is not shipped content, it is
+ * `ProcessingMethodGuide.safetyEs` in `model/`, which no asset edit can blank
+ * and no missing key can remove.
+ */
+@Serializable
+internal data class EntourageProcessingMethodAsset(
+    val method: String = "",
+    @SerialName("detail_es") val detailEs: String = "",
+    val evidence: String = "",
+    @SerialName("basis_es") val basisEs: String = ""
+)
+
+/** F4: one note of one preservation factor for one compound, as shipped. */
+@Serializable
+internal data class EntourageProcessingFactorAsset(
+    val factor: String = "",
+    @SerialName("detail_es") val detailEs: String = "",
+    val evidence: String = "",
+    @SerialName("basis_es") val basisEs: String = ""
+)
+
+/**
+ * F4: one compound's processing behaviour, as shipped.
+ *
+ * The entry-level `evidence` / `basis_es` pair qualifies `response_es`, the same
+ * discipline F3 applied per lever. Both are required: a processing claim with no
+ * level is dropped rather than shown unqualified.
+ */
+@Serializable
+internal data class EntourageProcessingAsset(
+    val terpene: String = "",
+    @SerialName("response_es") val responseEs: String = "",
+    val evidence: String = "",
+    @SerialName("basis_es") val basisEs: String = "",
+    val methods: List<EntourageProcessingMethodAsset> = emptyList(),
+    val preservation: List<EntourageProcessingFactorAsset> = emptyList()
+)
+
 @Serializable
 internal data class EntourageCaseAsset(
     val id: String = "",
@@ -131,7 +181,8 @@ internal data class EntourageBible(
     val vaporisation: List<EntourageVaporisationAsset> = emptyList(),
     val cases: List<EntourageCaseAsset> = emptyList(),
     val quiz: List<EntourageQuizQuestionAsset> = emptyList(),
-    val agronomy: List<EntourageAgronomyAsset> = emptyList()
+    val agronomy: List<EntourageAgronomyAsset> = emptyList(),
+    val processing: List<EntourageProcessingAsset> = emptyList()
 )
 
 /**
@@ -159,6 +210,17 @@ data class EntourageContent(
      * with no documented lever has no entry and no default.
      */
     val agronomy: List<EntourageAgronomy> = emptyList(),
+    /**
+     * F4: the processing block, keyed by terpene.
+     *
+     * Same keying decision as [agronomy] and for the same reason: `LIMONENE`
+     * appears in two shipped synergies, and a pair-keyed note would write the
+     * same paragraph twice with two chances to drift. The asymmetry with
+     * [agronomy] is deliberate and is stated on `EntourageProcessing`: F3's
+     * question was what the *plant* responds to, F4's is what happens to the
+     * *compound* under a named method, and that covers all ten.
+     */
+    val processing: List<EntourageProcessing> = emptyList(),
     /** Keys the enums do not know, as `"collection.id -> key"`. */
     val unresolvedReferences: List<String> = emptyList()
 ) {
@@ -171,6 +233,14 @@ data class EntourageContent(
      * sources of truth, the same way `TerpeneVolatilityIndex.from` works for F2.
      */
     fun agronomyIndex(): EntourageAgronomyIndex = EntourageAgronomyIndex(agronomy)
+
+    /**
+     * F4: the processing index, built once per content load.
+     *
+     * Derived rather than stored for the reason `agronomyIndex` is: the index and
+     * the list must not be two sources of truth.
+     */
+    fun processingIndex(): EntourageProcessingIndex = EntourageProcessingIndex(processing)
 
     /** The shipped profile for [key], or null when the asset omits it. */
     fun profile(key: PharmacologicalProfile): EntourageProfile? =
@@ -225,6 +295,12 @@ class EntourageContentRepository(private val context: Context) {
 
     /** F3: the agronomy index, for the synergy card and the terpene detail page. */
     suspend fun getAgronomyIndex(): EntourageAgronomyIndex = getContent().agronomyIndex()
+
+    /** F4: the processing block, keyed by terpene. */
+    suspend fun getProcessing(): List<EntourageProcessing> = getContent().processing
+
+    /** F4: the processing index, for the synergy card and the terpene detail page. */
+    suspend fun getProcessingIndex(): EntourageProcessingIndex = getContent().processingIndex()
 }
 
 /* ── Mapping ───────────────────────────────────────────────────────────── */
@@ -430,6 +506,118 @@ internal fun EntourageBible.toContent(): EntourageContent {
         }
     }
 
+    // F4. Seven ways this can drop a row, and all seven are recorded rather than
+    // defaulted:
+    //
+    // - an unknown terpene key, the same as every other collection;
+    // - an unknown method key, so a typo cannot render a method label with
+    //   nothing behind it — and, more importantly, cannot turn a solvent-based
+    //   method into one that silently reads as solvent-free;
+    // - an unknown preservation factor key;
+    // - an unknown evidence level, at the entry or at the note;
+    // - a **blank entry-level `basis_es`**, which drops the whole row: the
+    //   compound's own summary claim has nowhere to state what it cannot
+    //   establish;
+    // - a blank note-level `basis_es` or `detail_es`, which drops the note;
+    // - a blank `response_es`.
+    //
+    // What is deliberately **not** droppable is the safety framing. It is not
+    // asset content: `ProcessingMethodGuide.safetyEs` is a required constructor
+    // argument in `model/`, so a missing key here costs a note and can never cost
+    // the residual-solvent sentence.
+    val processing = processing.mapNotNull { asset ->
+        val terpene = EntourageTerpene.fromKey(asset.terpene)
+        if (terpene == null) {
+            unresolved += "processing.${asset.terpene} -> unknown terpene"
+            null
+        } else {
+            fun evidenceOf(raw: String): ProcessingEvidence? =
+                AgronomyEvidence.entries.firstOrNull { it.key == raw.trim().uppercase() }
+
+            val methods = asset.methods.mapNotNull { noteAsset ->
+                val method = ProcessingMethod.entries
+                    .firstOrNull { it.key == noteAsset.method.trim().uppercase() }
+                val evidence = evidenceOf(noteAsset.evidence)
+                when {
+                    method == null -> {
+                        unresolved += "processing.${terpene.key}.methods -> ${noteAsset.method}"
+                        null
+                    }
+                    evidence == null -> {
+                        unresolved += "processing.${terpene.key}.${method.key} -> ${noteAsset.evidence}"
+                        null
+                    }
+                    noteAsset.basisEs.isBlank() -> {
+                        unresolved += "processing.${terpene.key}.${method.key} -> $PROCESSING_BASIS_REQUIRED_ES"
+                        null
+                    }
+                    noteAsset.detailEs.isBlank() -> {
+                        unresolved += "processing.${terpene.key}.${method.key} -> no detail declared"
+                        null
+                    }
+                    else -> ProcessingMethodNote(
+                        method = method,
+                        detailEs = noteAsset.detailEs,
+                        evidence = evidence,
+                        basisEs = noteAsset.basisEs
+                    )
+                }
+            }
+            val preservation = asset.preservation.mapNotNull { noteAsset ->
+                val factor = PreservationFactorKind.entries
+                    .firstOrNull { it.key == noteAsset.factor.trim().uppercase() }
+                val evidence = evidenceOf(noteAsset.evidence)
+                when {
+                    factor == null -> {
+                        unresolved += "processing.${terpene.key}.preservation -> ${noteAsset.factor}"
+                        null
+                    }
+                    evidence == null -> {
+                        unresolved += "processing.${terpene.key}.${factor.key} -> ${noteAsset.evidence}"
+                        null
+                    }
+                    noteAsset.basisEs.isBlank() -> {
+                        unresolved += "processing.${terpene.key}.${factor.key} -> $PROCESSING_BASIS_REQUIRED_ES"
+                        null
+                    }
+                    noteAsset.detailEs.isBlank() -> {
+                        unresolved += "processing.${terpene.key}.${factor.key} -> no detail declared"
+                        null
+                    }
+                    else -> PreservationFactorNote(
+                        factor = factor,
+                        detailEs = noteAsset.detailEs,
+                        evidence = evidence,
+                        basisEs = noteAsset.basisEs
+                    )
+                }
+            }
+            val evidence = evidenceOf(asset.evidence)
+            when {
+                asset.responseEs.isBlank() -> {
+                    unresolved += "processing.${terpene.key} -> no response declared"
+                    null
+                }
+                evidence == null -> {
+                    unresolved += "processing.${terpene.key} -> ${asset.evidence}"
+                    null
+                }
+                asset.basisEs.isBlank() -> {
+                    unresolved += "processing.${terpene.key} -> $PROCESSING_ENTRY_BASIS_REQUIRED_ES"
+                    null
+                }
+                else -> EntourageProcessing(
+                    terpene = terpene,
+                    responseEs = asset.responseEs,
+                    evidence = evidence,
+                    basisEs = asset.basisEs,
+                    methods = methods,
+                    preservation = preservation
+                )
+            }
+        }
+    }
+
     return EntourageContent(
         disclaimerEs = disclaimerEs,
         synergies = synergies,
@@ -438,6 +626,7 @@ internal fun EntourageBible.toContent(): EntourageContent {
         cases = cases,
         questions = questions,
         agronomy = agronomy,
+        processing = processing,
         unresolvedReferences = unresolved
     )
 }
@@ -453,6 +642,26 @@ private const val AGRONOMY_BASIS_REQUIRED_ES =
     "the lever ships no basis_es and was dropped rather than shown unqualified"
 
 /**
+ * Why a processing note was dropped, recorded in `unresolvedReferences`.
+ *
+ * Same rule F3 applied to a lever, for the same reason: a processing claim whose
+ * evidence level is missing would reach the screen as a bare description of what
+ * a method does to a harvest.
+ */
+private const val PROCESSING_BASIS_REQUIRED_ES =
+    "the note ships no basis_es and was dropped rather than shown unqualified"
+
+/**
+ * Why a whole processing row was dropped, recorded in `unresolvedReferences`.
+ *
+ * A row missing its entry-level basis is worse than a missing row: the
+ * compound's own summary sentence would still be on screen with nothing behind
+ * it, so the row goes rather than degrading to an unqualified claim.
+ */
+private const val PROCESSING_ENTRY_BASIS_REQUIRED_ES =
+    "the row ships no entry basis_es and was dropped rather than shown unqualified"
+
+/**
  * The `Achievement` row for an entourage achievement.
  *
  * The module has no XP table of its own: it writes into the existing
@@ -464,11 +673,29 @@ private const val AGRONOMY_BASIS_REQUIRED_ES =
  * states how many correct answers a run needs and that number is a fraction of
  * the rounds. Writing the row from the shipped-quiz default instead would put a
  * claim in the achievements table that the player's run may not match.
+ *
+ * This overload exists for [EntourageAchievement.ENTOURAGE_MASTER] alone, and it
+ * does not compile for [EntourageAchievement.RESIN_ENGINEER]: that badge's text
+ * is derived from the shipped processing block rather than from a round count, so
+ * a caller holding it has to be handed the catalog's compound count explicitly
+ * ([EntourageAchievement.RESIN_ENGINEER.descriptionFor]). Making the two
+ * incompatible is the point — a shared signature would let the resin row be
+ * written from the wrong data and nobody would notice until a player read a
+ * sentence that disagreed with the content they had read.
  */
-internal fun EntourageAchievement.toAchievementRow(rounds: Int): Achievement = Achievement(
-    name = labelEs,
-    description = descriptionFor(rounds),
-    icon = icon,
-    xpReward = xpReward,
-    isUnlocked = false
-)
+internal fun EntourageAchievement.toAchievementRow(rounds: Int): Achievement =
+    when (this) {
+        EntourageAchievement.ENTOURAGE_MASTER -> Achievement(
+            name = labelEs,
+            description = descriptionFor(rounds),
+            icon = icon,
+            xpReward = xpReward,
+            isUnlocked = false
+        )
+        EntourageAchievement.RESIN_ENGINEER -> error(
+            "the resin engineer's text is derived from the shipped processing " +
+                "block, not from a round count: write it through " +
+                "EntourageReward.toAchievementRow() with a description built " +
+                "from EntourageAchievement.descriptionForProcessing(documented)"
+        )
+    }

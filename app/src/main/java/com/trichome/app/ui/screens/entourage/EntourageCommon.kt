@@ -191,6 +191,31 @@ fun EntourageSynergyCardPanel(card: EntourageSynergyCard, themeState: TrichomeTh
                         }
                     }
 
+                    EntourageCardRole.PROCESSING -> {
+                        // F4. Same branch shape as the agronomy line, and for a
+                        // sharper reason: the body of this line **names the
+                        // extraction methods**, so the residual-solvent sentence
+                        // has to travel inside it or the card puts a solvent-based
+                        // method on screen with the safety framing somewhere else.
+                        // `TerpeneProcessingCopy.cardLineEs` folds both in and
+                        // `TerpeneProcessingTest` asserts it.
+                        Spacer(Modifier.height(6.dp))
+                        Column(Modifier.fillMaxWidth()) {
+                            Text(
+                                line.labelEs,
+                                style = MaterialTheme.typography.labelLarge,
+                                color = tertiary,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Spacer(Modifier.height(2.dp))
+                            Text(
+                                line.bodyEs,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = scheme.onSurface
+                            )
+                        }
+                    }
+
                     else -> {
                         Spacer(Modifier.height(8.dp))
                         Text(

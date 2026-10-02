@@ -482,5 +482,527 @@
         }
       ]
     }
+  ],
+  "processing": [
+    {
+      "terpene": "MYRCENE",
+      "response_es": "El mirceno es de los primeros compuestos que se van cuando el material se calienta, y por eso es el que más marcado aparece en el procesado. Lo que importa aquí no es cuánto sale en cada método, sino que los tres lo tratan de manera distinta y solo uno de ellos no tiene detrás una etapa de evaporación.",
+      "evidence": "BIEN_DOCUMENTADO",
+      "basis_es": "La pérdida de mirceno durante el secado y el almacenamiento está bien documentada en Cannabis, y su volatilidad lo sitúa entre los primeros en salir. Lo que no está fijado es cuánto mirceno sobrevive en cada método concreto: depende del material, del equipo y del proceso, y esta aplicación no puede medirlo. Por eso aquí no hay ninguna cantidad, ningún tiempo ni ninguna temperatura; serían una recomendación de trabajo y no un dato.",
+      "methods": [
+        {
+          "method": "LIVE_ROSIN",
+          "detail_es": "Es de los que menos pierde en el prensado en vivo, precisamente porque esa ruta no incluye ninguna evaporación posterior: el calor y la presión de la prensa son el proceso entero.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "Las dos etapas donde la pérdida del mirceno está documentada, el secado y el almacenamiento, no existen en el prensado en vivo, y eso es un hecho del método y no una medida. Lo que no hay es una comparación controlada, con el mismo material de partida y el mismo perfil medido, entre prensado en vivo y extracción con disolvente, así que la magnitud de esa ventaja no la puede fijar este catálogo."
+        },
+        {
+          "method": "SOLVENT_EXTRACTION",
+          "detail_es": "Sale entero en el extracto y se va en buena parte en la etapa en que el disolvente abandona el material, que es la parte de la ruta donde el mirceno más se pierde.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "La etapa de separación es la que se lleva la fracción volátil del perfil, y el mirceno está entre lo más volátil de la lista. No existe una comparación controlada entre métodos y entre disolventes concretos, de modo que cuánto mirceno sobrevive a una separación dada no está fijado, y el proceso que uses tiene sus propias variables."
+        },
+        {
+          "method": "DECARBOXYLATION",
+          "detail_es": "Es de los primeros en irse al calentar el material, por su volatilidad. En el perfil resultante su proporción cae mientras sube la de los sesquiterpenos, aunque no de golpe.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "Los terpenos más volátiles se van antes que los sesquiterpenos al calentar, y el mirceno es de los primeros de esa lista. El punto en que se completa esa transformación y la mezcla de productos que quedan dependen del material y del proceso; por eso no hay ningún valor de temperatura ni de tiempo aquí, y no es un olvido."
+        }
+      ],
+      "preservation": [
+        {
+          "factor": "LIGHT",
+          "detail_es": "Reacciona con el oxígeno en mayor medida bajo luz que en oscuridad, así que es de los compuestos cuyo aroma se apaga antes si el material se expone.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "La degradación fotoquímica de los monoterpenos volátiles está bien documentada, y por eso la luz es el factor que más se vigila en el almacenamiento. Lo que no está fijado es cuánto tiempo de exposición cambia un perfil concreto: esa relación depende del envase, de la temperatura y del propio compuesto, así que ningún plazo entra en esta aplicación."
+        },
+        {
+          "factor": "OXIDATION",
+          "detail_es": "Se oxida con facilidad: su doble enlace lo hace de los más reactivos del perfil, y el resultado es un aroma distinto en lugar de simplemente más tenue.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "La oxidación del mirceno está bien caracterizada en la literatura de terpenos volátiles, y su estructura lo hace más susceptible que los sesquiterpenos. Lo que no está fijado es qué proporción de cada producto de oxidación se forma en una muestra concreta de cannabis, porque depende de la variedad, del secado, del envase y del tiempo, y esta aplicación no puede medirlo."
+        },
+        {
+          "factor": "HEAT",
+          "detail_es": "Sale antes que los sesquiterpenos, así que en cualquier proceso térmico se va de los primeros. Y hay una confusión frecuente que conviene deshacer: la ventana de temperatura que aparece más arriba en esta ficha describe dónde el compuesto es útil en un vaporizador, que es un uso y no un almacenamiento. Una ventana de temperatura no dice cuánto sobrevive un compuesto dentro de un bote cerrado.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "Que calentar expulsa antes los terpenos más volátiles que los pesados está bien documentado, y la tarjeta de vaporización de esta ficha ya declara de dónde sale su banda y qué es lo que esa banda no es. Lo que no hay, y esta aplicación no intenta suplirlo, es una vida útil por compuesto: nadie ha publicado un plazo de conservación para el mirceno en cannabis que resista una comparación entre franjas de lote."
+        },
+        {
+          "factor": "TIME",
+          "detail_es": "El tiempo de almacenamiento se nota en este compuesto más que en un sesquiterpeno, precisamente porque su oxidación es más rápida. Un material guardado mucho no se distingue de uno guardado poco por un análisis posterior.",
+          "evidence": "MIXTO",
+          "basis_es": "Que la fracción oxidable se convierte con el tiempo está bien documentado, y que el mirceno cambie más que un sesquiterpeno en un almacenamiento concreto es coherente con su reactividad. Lo que no hay es un estudio controlado en cannabis que lo fije, y las cifras que circulan proceden de cultivos de aceites esenciales, con otra matriz, otro secado y otro envase. Esta ficha no publica ningún plazo de conservación para el mirceno."
+        }
+      ]
+    },
+    {
+      "terpene": "LIMONENE",
+      "response_es": "El limoneno es el compuesto volátil cuya pérdida está mejor caracterizada de la biblioteca, y eso convierte al procesado en el sitio donde más se nota su ausencia. Es también el que se oxida con nombre propio: el óxido de limoneno y el carveol.",
+      "evidence": "BIEN_DOCUMENTADO",
+      "basis_es": "El limoneno es el terpeno volátil cuya transformación por oxidación está mejor descrita, y su caída con la maduración, el secado y el almacenamiento está bien documentada. Lo que no está fijado es cuánto limoneno sobrevive a un método concreto, y ninguna de las tres rutas responde a esa pregunta de la misma manera.",
+      "methods": [
+        {
+          "method": "LIVE_ROSIN",
+          "detail_es": "Es la ruta donde menos se oxida y menos se va, porque no hay ninguna etapa detrás de la prensa que lo exponga al aire durante tiempo.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "La oxidación del limoneno ocurre con el tiempo y con el oxígeno, y el prensado en vivo no incluye las dos etapas largas donde esa combinación actúa. Lo que no está establecido es una comparación controlada entre prensado en vivo y extracción con disolvente con el mismo material de partida, así que la magnitud de esa diferencia no la puede fijar este catálogo."
+        },
+        {
+          "method": "SOLVENT_EXTRACTION",
+          "detail_es": "Sale entero en el extracto y se va en buena parte durante la separación del disolvente. La oxidación empieza en ese mismo intervalo, y las dos cosas van en la misma dirección.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "La etapa de separación se lleva la fracción volátil y es también cuando el extracto entra en contacto con el aire. No hay una comparación controlada entre métodos y entre disolventes concretos que permita fijar cuánto limoneno sobrevive a una separación dada, de modo que la magnitud queda abierta."
+        },
+        {
+          "method": "DECARBOXYLATION",
+          "detail_es": "Es el primero en irse de la lista al calentar el material, y lo que se queda ya no es el limoneno de la planta sino parte de su óxido.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "Los terpenos más volátiles se van antes que los sesquiterpenos, y el limoneno es el más volátil del módulo. El punto en que se completa esa transformación y la mezcla de productos de degradación que quedan dependen del material y del proceso: no hay aquí ninguna temperatura ni ningún tiempo, porque serían una recomendación y no un dato."
+        }
+      ],
+      "preservation": [
+        {
+          "factor": "LIGHT",
+          "detail_es": "Es de los compuestos que más reaccionan con el oxígeno bajo luz, y su aroma cítrico se nota antes cuando el material ha estado expuesto.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "La degradación fotoquímica del limoneno está bien documentada y su estructura lo hace especialmente susceptible. Lo que no está fijado es cuánto tiempo de exposición cambia un perfil concreto, porque depende del envase y de la temperatura, así que esta ficha no publica ningún plazo."
+        },
+        {
+          "factor": "OXIDATION",
+          "detail_es": "Es el caso mejor documentado de la biblioteca: se oxida a óxido de limoneno y a carveol, y ambos se miden en el material almacenado. Es la transformación que con más claridad separa el perfil de la planta del perfil del bote.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "El limoneno se oxida a óxido de limoneno y a carveol, y esa transformación está bien caracterizada, incluida su proporción en productos vegetales. Lo que no está fijado es qué proporción de cada óxido aparece en una muestra concreta de cannabis: depende de la variedad, del secado, del envase y del tiempo, y esta aplicación no puede medir ninguno de los cuatro."
+        },
+        {
+          "factor": "HEAT",
+          "detail_es": "Sale antes que cualquier otro compuesto de la biblioteca. Y conviene deshacer una confusión frecuente: la ventana de temperatura de más arriba describe dónde el limoneno es útil en un vaporizador, que es un uso y no un almacenamiento. Una ventana de temperatura no dice cuánto sobrevive un compuesto en un bote cerrado.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "Que calentar expulsa antes los terpenos más volátiles está bien documentado, y el limoneno ocupa el primer lugar de ese orden en esta biblioteca. La tarjeta de vaporización de esta ficha ya declara de dónde sale su banda y qué no es. Lo que no existe, y esta aplicación no intenta suplirlo, es una vida útil por compuesto para el limoneno en cannabis."
+        },
+        {
+          "factor": "TIME",
+          "detail_es": "El tiempo es aquí el factor decisivo: la transformación hacia óxido de limoneno y carveol avanza mientras el material esté cerrado y con aire, y no se detiene por sí sola.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "Que la fracción oxidable del limoneno se convierte con el tiempo está bien documentado. Lo que no existe es un plazo de conservación para el limoneno en cannabis, y las cifras que circulan vienen de cultivos de aceites esenciales con otra matriz y otro envase, así que esta ficha no las traslada: es la cifra que no se puede sostener."
+        }
+      ]
+    },
+    {
+      "terpene": "LINALOOL",
+      "response_es": "El linalool está casi al final del orden de volatilidad de la biblioteca, y eso lo convierte en el monoterpeno que más resiste las tres rutas. Se parece más en su comportamiento a un sesquiterpeno que al resto de los monoterpenos, aunque su esqueleto sea de diez carbonos.",
+      "evidence": "BIEN_DOCUMENTADO",
+      "basis_es": "Su punto de ebullición es el segundo más alto de los diez compuestos del módulo, lo que lo sitúa cerca del final del orden de salida térmica. Lo que no está fijado es cuánto linalool sobrevive a cada método concreto, y su posición en ese orden no dice por sí sola cuánto se oxida.",
+      "methods": [
+        {
+          "method": "LIVE_ROSIN",
+          "detail_es": "Es de los que más conserva de los tres métodos: por su baja volatilidad, la fracción que se escapa en la prensa es pequeña.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "Los compuestos menos volátiles sobreviven mejor a las etapas de calor y de evaporación, y el linalool está cerca del final del orden del módulo. La comparación entre métodos con el mismo material de partida y el mismo perfil medido no está establecida, así que la magnitud de esa ventaja no la puede fijar este catálogo."
+        },
+        {
+          "method": "SOLVENT_EXTRACTION",
+          "detail_es": "Sale entero en el extracto y es de los últimos en irse en la etapa de separación del disolvente.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "Los compuestos menos volátiles sobreviven mejor a la evaporación del disolvente, y la ficha de vaporización de este compuesto lo sitúa en el segundo puesto más alto del módulo. No hay una comparación controlada entre métodos y entre disolventes, así que cuánto linalool sobrevive a una separación concreta no está fijado."
+        },
+        {
+          "method": "DECARBOXYLATION",
+          "detail_es": "Aguanta más que los demás monoterpenos al calentar el material, porque es el último de ellos en salir. Con temperatura alta también termina degradándose, y lo que se encuentra entonces ya no es el linalool de la planta sino parte de sus productos de oxidación.",
+          "evidence": "MIXTO",
+          "basis_es": "El orden de salida térmica favorece al linalool dentro de los monoterpenos, y eso está bien documentado. Lo que no está fijado es a partir de qué punto la degradación de este compuesto avanza de forma apreciable, así que no hay ninguna temperatura aquí: sería una recomendación de proceso."
+        }
+      ],
+      "preservation": [
+        {
+          "factor": "LIGHT",
+          "detail_es": "Reacciona con el oxígeno bajo luz, aunque menos que los monoterpenos más reactivos de la lista.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "La degradación fotoquímica de los monoterpenos está bien documentada, y el linalool no es una excepción por su estructura. Lo que no está fijado es cuánto tiempo de exposición cambia un perfil concreto en cannabis: depende del envase y de la temperatura, y ningún plazo entra en esta aplicación."
+        },
+        {
+          "factor": "OXIDATION",
+          "detail_es": "Se oxida como cualquier otro monoterpeno, y con calor puede transformarse además hacia otros compuestos de la misma familia. La reacción es de oxidación y reordenación a la vez, así que el resultado no es un único producto.",
+          "evidence": "MIXTO",
+          "basis_es": "La oxidación del linalool está descrita en la literatura de terpenos, y su conversión hacia otros monoterpenos también. Lo que no está fijado es cuál de esos productos predomina en una muestra concreta de cannabis, porque depende de la variedad, del secado y del tiempo, y esta ficha no puede medirlo. Por eso nombra la reacción y no un producto."
+        },
+        {
+          "factor": "HEAT",
+          "detail_es": "Necesita más temperatura para salir que cualquier otro monoterpeno de la biblioteca, y sale antes que los sesquiterpenos. La ventana de temperatura de más arriba describe un uso en un vaporizador y no un almacenamiento, y una ventana de temperatura no dice cuánto sobrevive un compuesto en un bote cerrado.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "Que calentar expulsa en orden de volatilidad está bien documentado, y la banda de esta ficha ya declara su procedencia. Lo que no hay, y esta aplicación no intenta suplirlo, es una vida útil por compuesto para el linalool en cannabis."
+        },
+        {
+          "factor": "TIME",
+          "detail_es": "Es de los que mejor aguantan el almacenamiento de la lista, aunque su perfil sí se mueve con el tiempo hacia productos de oxidación.",
+          "evidence": "MIXTO",
+          "basis_es": "Que la fracción oxidable se convierte con el tiempo está documentado; que el linalool cambie menos que un mirceno en un almacenamiento concreto es coherente con su menor reactividad, pero no hay un estudio controlado en cannabis que lo fije, y las cifras de otros cultivos no son trasladables. Esta ficha no publica ningún plazo de conservación para el linalool."
+        }
+      ]
+    },
+    {
+      "terpene": "ALPHA_PINENE",
+      "response_es": "El alfa-pineno es el compuesto más volátil de la biblioteca y el primero en salir de cualquier orden de vapores, así que para él el procesado es sobre todo una cuenta de lo que se pierde. Su oxidación a óxido de pineno está además bien caracterizada, y eso hace que un perfil medido después de un almacenamiento largo ya no sea el perfil de la planta.",
+      "evidence": "BIEN_DOCUMENTADO",
+      "basis_es": "Su punto de ebullición es el más bajo de los diez compuestos del módulo y su oxidación a óxido de pineno está bien caracterizada. Ambas cosas apuntan en la misma dirección: es el compuesto cuyo perfil medido se aleja más del perfil de la planta. La magnitud de esa distancia en cada método no está fijada.",
+      "methods": [
+        {
+          "method": "LIVE_ROSIN",
+          "detail_es": "Es el primero en irse en la prensa, porque su volatilidad es la más alta de la lista. Aun así, es la ruta donde menos se pierde, porque no tiene evaporación posterior.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "Las etapas donde la pérdida del pineno está documentada, el secado y el almacenamiento, no existen en el prensado en vivo. Lo que no está establecido es una comparación controlada con el mismo material de partida y el mismo perfil medido, de modo que la diferencia entre las tres rutas no la puede fijar este catálogo."
+        },
+        {
+          "method": "SOLVENT_EXTRACTION",
+          "detail_es": "Sale entero en el extracto y se va en buena parte en la etapa de separación, precisamente por ser el primero en salir del orden de volatilidad.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "La etapa de evaporación se lleva la fracción volátil y el alfa-pineno está al principio de ese orden. No hay una comparación controlada entre métodos y entre disolventes concretos, así que cuánto pineno sobrevive a una separación dada no está fijado, y el proceso que uses tiene sus propias variables."
+        },
+        {
+          "method": "DECARBOXYLATION",
+          "detail_es": "Es el primer compuesto que se va de la lista al calentar el material. Lo que se queda ya incluye el óxido de pineno que se forma al mismo tiempo que el alfa-pineno desaparece.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "Los terpenos más volátiles se van antes que los sesquiterpenos, y el alfa-pineno es el primero de esa lista. La oxidación a óxido de pineno ocurre en el mismo intervalo y también está bien caracterizada. El punto en que se completa cada transformación y la mezcla final dependen del material y del proceso: no hay aquí ninguna temperatura ni ningún tiempo."
+        }
+      ],
+      "preservation": [
+        {
+          "factor": "LIGHT",
+          "detail_es": "Es de los compuestos que más reaccionan con el oxígeno bajo luz, y su aroma fresco es de los primeros que se apaga con la exposición.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "La degradación fotoquímica del pineno está bien documentada y su estructura lo hace susceptible. Lo que no está fijado es cuánto tiempo de exposición cambia un perfil concreto, porque depende del envase y de la temperatura, así que ningún plazo entra en esta ficha."
+        },
+        {
+          "factor": "OXIDATION",
+          "detail_es": "Se oxida a óxido de pineno, y esa es la transformación que explica por qué una caída medida después de un almacenamiento largo no es solo maduración: una parte de lo que falta está contabilizada como óxido.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "La oxidación del pineno a óxido de pineno está bien caracterizada. Lo que no está fijado es qué proporción de óxido aparece en una muestra concreta de cannabis, porque depende de la variedad, del secado, del envase y del tiempo, y esta aplicación no puede medir ninguno de los cuatro."
+        },
+        {
+          "factor": "HEAT",
+          "detail_es": "Sale antes que cualquier otro compuesto de la biblioteca. La ventana de temperatura que aparece más arriba describe dónde el pineno es útil en un vaporizador, que es un uso y no un almacenamiento, y una ventana de temperatura no dice cuánto sobrevive un compuesto en un bote cerrado.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "Que calentar expulsa primero a los terpenos más volátiles está bien documentado y el alfa-pineno es el primero del módulo. La tarjeta de vaporización de esta ficha ya declara de dónde sale su banda y qué no es. Lo que no hay es una vida útil por compuesto para el pineno en cannabis."
+        },
+        {
+          "factor": "TIME",
+          "detail_es": "El tiempo de almacenamiento se nota en la oxidación a óxido de pineno tanto como en la pérdida del propio pineno. Son dos cosas que un análisis posterior no separa.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "Que el pineno se oxida con el tiempo está bien documentado, y esa conversión avanza mientras el material esté con aire. Lo que no existe es un plazo de conservación para el pineno en cannabis; las cifras de otros cultivos tienen otra matriz y otro envase, así que esta ficha no las traslada."
+        }
+      ]
+    },
+    {
+      "terpene": "BETA_PINENE",
+      "response_es": "El beta-pineno comparte comportamiento con el alfa-pineno y se mide casi siempre junto a él, así que su procesado sigue el mismo patrón con un punto de ebullición algo mayor. Sale un poco más tarde y se oxida por la misma vía.",
+      "evidence": "BIEN_DOCUMENTADO",
+      "basis_es": "Su punto de ebullición es el segundo más bajo del módulo y su oxidación comparte vía con la del alfa-pineno. Lo que hay que decir con la misma claridad que en el caso del otro isómero es que el cribado rutinario no separa los dos, así que cualquier afirmación sobre uno se apoya en una medida que no lo distingue del otro.",
+      "methods": [
+        {
+          "method": "LIVE_ROSIN",
+          "detail_es": "Es de los primeros en irse en la prensa, aunque algo después que el alfa-pineno por su punto de ebullición algo mayor.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "Las etapas donde la pérdida del pineno está documentada no existen en el prensado en vivo. Lo que no está establecido es una comparación controlada con el mismo material de partida y el mismo perfil medido, y como el cribado no separa este isómero del otro, la medida que compararía los dos métodos no distingue entre ellos."
+        },
+        {
+          "method": "SOLVENT_EXTRACTION",
+          "detail_es": "Sale entero en el extracto y se va en buena parte en la etapa de separación del disolvente, por su posición en el orden de volatilidad.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "La etapa de evaporación se lleva la fracción volátil y el beta-pineno está en el grupo de cabeza de ese orden. No hay una comparación controlada entre métodos y entre disolventes concretos, así que cuánto pineno sobrevive a una separación dada no está fijado."
+        },
+        {
+          "method": "DECARBOXYLATION",
+          "detail_es": "Sale pronto al calentar el material, poco después que el alfa-pineno. Lo que se queda incluye su óxido, que se forma en el mismo intervalo en que el pineno desaparece.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "Los terpenos más volátiles se van antes que los sesquiterpenos y el beta-pineno está entre ellos. La oxidación a óxido de pineno ocurre en el mismo intervalo y está bien caracterizada. Ni el punto en que se completa cada transformación ni la mezcla final están fijados, así que no hay aquí ninguna temperatura ni ningún tiempo."
+        }
+      ],
+      "preservation": [
+        {
+          "factor": "LIGHT",
+          "detail_es": "Reacciona con el oxígeno bajo luz igual que el otro isómero, y su aroma se apaga antes cuando el material ha estado expuesto.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "La degradación fotoquímica del pineno está bien documentada. Lo que no está fijado es cuánto tiempo de exposición cambia un perfil concreto, porque depende del envase y de la temperatura, así que ningún plazo entra en esta ficha."
+        },
+        {
+          "factor": "OXIDATION",
+          "detail_es": "Se oxida por la misma vía que el alfa-pineno, y la medida que lo demuestra no siempre separa uno de otro.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "La oxidación del pineno a su óxido está bien caracterizada. Lo que hay que decir con claridad es que el cribado rutinario no separa este isómero del otro, así que la proporción de óxido que se observa puede incluir la del alfa-pineno. En una muestra concreta de cannabis, la proporción de cada uno depende además de la variedad, del secado y del tiempo, y esta aplicación no puede medirlo."
+        },
+        {
+          "factor": "HEAT",
+          "detail_es": "Sale pronto al calentar el material, un poco después que el alfa-pineno. La ventana de temperatura de más arriba describe un uso en un vaporizador y no un almacenamiento, y una ventana de temperatura no dice cuánto sobrevive un compuesto en un bote cerrado.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "Que calentar expulsa en orden de volatilidad está bien documentado y el beta-pineno está en el grupo de cabeza. La tarjeta de vaporización de esta ficha ya declara de dónde sale su banda y qué no es. Lo que no hay es una vida útil por compuesto para el pineno en cannabis."
+        },
+        {
+          "factor": "TIME",
+          "detail_es": "El tiempo de almacenamiento se nota en la oxidación tanto como en la pérdida del propio pineno, y como el cribado no separa los isómeros, un análisis posterior no dice cuánto de eso era de cada uno.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "Que el pineno se oxida con el tiempo está bien documentado, y la conversión avanza mientras el material esté con aire. Lo que no existe es un plazo de conservación para el pineno en cannabis, y las cifras de otros cultivos no son trasladables, así que esta ficha no las publica."
+        }
+      ]
+    },
+    {
+      "terpene": "OCIMENE",
+      "response_es": "El ocimeno es muy volátil y está presente en cantidades absolutas pequeñas, así que el procesado lo expone más que a casi cualquier otro compuesto de la lista. Cuando aparece en un perfil es casi siempre como una firma fresca, y esa firma se pierde antes que las de los compuestos pesados.",
+      "evidence": "MIXTO",
+      "basis_es": "Su alta volatilidad está bien documentada, y con ella su tendencia a perderse. Lo más fino es su contenido absoluto en cannabis: las mediciones de su presencia no son homogéneas entre Publications y no hay una cifra de referencia que permita comparar métodos. Por eso su respuesta al procesado se declara como tendencia y no como medida.",
+      "methods": [
+        {
+          "method": "LIVE_ROSIN",
+          "detail_es": "Es la ruta donde más conserva su firma, porque no hay evaporación posterior que se lo lleve.",
+          "evidence": "MIXTO",
+          "basis_es": "El prensado en vivo no tiene las etapas largas de secado y almacenamiento donde la pérdida de los volátiles está documentada, y el ocimeno es volátil. Lo que no hay es una comparación controlada con el mismo material de partida y el mismo perfil medido, ni una base sólida sobre su contenido absoluto en cannabis, así que la magnitud de esa ventaja no la puede fijar este catálogo."
+        },
+        {
+          "method": "SOLVENT_EXTRACTION",
+          "detail_es": "Sale entero en el extracto y se va en buena parte en la etapa de separación, por ser de los más volátiles del módulo.",
+          "evidence": "MIXTO",
+          "basis_es": "La etapa de evaporación se lleva la fracción volátil y el ocimeno está en ella. La dirección está bien documentada, pero la magnitud no: no hay una comparación controlada entre métodos y entre disolventes, y su contenido absoluto en cannabis no es homogéneo, de modo que cuánto ocimeno sobrevive a una separación dada no se puede afirmar."
+        },
+        {
+          "method": "DECARBOXYLATION",
+          "detail_es": "Es de los primeros en irse al calentar el material. Su proporción cae mientras sube la de los compuestos pesados, de manera rápida al principio.",
+          "evidence": "MIXTO",
+          "basis_es": "Los terpenos más volátiles se van antes que los sesquiterpenos al calentar, y el ocimeno es de los más volátiles del módulo. El punto en que se completa esa transformación y la mezcla de productos que quedan dependen del material y del proceso, así que no hay aquí ninguna temperatura ni ningún tiempo."
+        }
+      ],
+      "preservation": [
+        {
+          "factor": "LIGHT",
+          "detail_es": "Reacciona con el oxígeno bajo luz, y por su contenido pequeño el aroma se nota menos aunque el compuesto se haya perdido más.",
+          "evidence": "MIXTO",
+          "basis_es": "La degradación fotoquímica de los monoterpenos volátiles está bien documentada. Lo que no está fijado es cuánto tiempo de exposición cambia un perfil concreto de cannabis, y como el contenido absoluto del ocimeno no es homogéneo, esa relación no se puede trasladar aquí. Ningún plazo entra en esta aplicación."
+        },
+        {
+          "factor": "OXIDATION",
+          "detail_es": "Se oxida como los demás monoterpenos reactivos, con productos de la misma familia. Su contenido pequeño hace que la transformación se note antes en la proporción que en la cantidad.",
+          "evidence": "MIXTO",
+          "basis_es": "La oxidación de los terpenos volátiles y sus productos está bien caracterizada. Lo que no está fijado es qué proporción de cada uno aparece en una muestra concreta de cannabis, porque su contenido absoluto no es homogéneo y depende de la variedad, del secado, del envase y del tiempo. Esta ficha nombra la reacción y no un producto, y no puede medir la proporción."
+        },
+        {
+          "factor": "HEAT",
+          "detail_es": "Sale pronto al calentar el material. La ventana de temperatura que aparece más arriba en esta ficha describe un uso en un vaporizador y no un almacenamiento, y una ventana de temperatura no dice cuánto sobrevive un compuesto en un bote cerrado.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "Que calentar expulsa antes a los terpenos más volátiles está bien documentado, y el ocimeno está en ese grupo. La tarjeta de vaporización de esta ficha ya declara de dónde sale su banda y qué no es. Lo que no hay es una vida útil por compuesto para el ocimeno en cannabis, y su contenido absoluto pequeño hace todavía más difícil establecerla."
+        },
+        {
+          "factor": "TIME",
+          "detail_es": "El tiempo de almacenamiento lo trata como a los demás monoterpenos reactivos, pero aquí la variación entre plantas es tan grande que el perfil de un material concreto puede no parecerse al de otro.",
+          "evidence": "MIXTO",
+          "basis_es": "Que la fracción oxidable se convierte con el tiempo está bien documentado. Lo que no existe es un plazo de conservación para el ocimeno en cannabis, y como su contenido absoluto varía mucho entre muestras, las cifras de otros cultivos no son trasladables: esta ficha no las publica."
+        }
+      ]
+    },
+    {
+      "terpene": "TERPINOLENE",
+      "response_es": "El terpinoleno es uno de los compuestos más reactivos del catálogo, y esa es la diferencia con su ficha de agronomía, donde el catálogo no documenta ninguna palanca propia para él. Aquí sí hay algo que decir, y no depende de la planta: depende de la molécula. Su volatilidad lo hace de los primeros en irse al calentar el material, y su facilidad de oxidarse lo convierte en el compuesto cuya firma fresca más rápido se apaga.",
+      "evidence": "MIXTO",
+      "basis_es": "Su alta volatilidad y su reactividad están documentadas en la literatura de terpenos; lo que no está fijado es su comportamiento en cannabis: aparece en contenidos bajos y su medición no es rutinaria, así que la dirección de su respuesta al procesado está bien descrita y la magnitud no. La asimetría con la ficha de agronomía, donde el catálogo no dice nada sobre él, es deliberada y no es una contradicción: una palanca agronómica es una respuesta de la planta y una nota de procesado es una propiedad del compuesto.",
+      "methods": [
+        {
+          "method": "LIVE_ROSIN",
+          "detail_es": "Es la ruta donde más conserva su firma, porque no hay evaporación posterior que se lo lleve.",
+          "evidence": "MIXTO",
+          "basis_es": "El prensado en vivo no tiene las etapas largas de secado y almacenamiento donde la pérdida de los volátiles está documentada, y el terpinoleno es volátil. Lo que no hay es una comparación controlada con el mismo material de partida y el mismo perfil medido, ni una base sólida sobre su contenido en cannabis, así que la magnitud de esa ventaja no la puede fijar este catálogo."
+        },
+        {
+          "method": "SOLVENT_EXTRACTION",
+          "detail_es": "Sale entero en el extracto y se va en buena parte en la etapa de separación del disolvente, por su posición en el orden de volatilidad.",
+          "evidence": "MIXTO",
+          "basis_es": "La etapa de evaporación se lleva la fracción volátil y el terpinoleno está en ella. La dirección está bien documentada; la magnitud no, porque no hay comparación controlada entre métodos y entre disolventes y su contenido en cannabis no es una cifra de referencia. Por eso se declara la tendencia y no la medida."
+        },
+        {
+          "method": "DECARBOXYLATION",
+          "detail_es": "Es de los primeros en irse al calentar el material, y lo que se queda ya no es el terpinoleno de la planta sino parte de sus productos de oxidación.",
+          "evidence": "MIXTO",
+          "basis_es": "Los terpenos más volátiles se van antes que los sesquiterpenos al calentar, y el terpinoleno está entre ellos. La oxidación de los terpenos volátiles está bien caracterizada como reacción, pero su proporción en una muestra concreta de cannabis no se puede fijar. El punto en que se completa cada transformación depende del material y del proceso, así que no hay aquí ninguna temperatura ni ningún tiempo."
+        }
+      ],
+      "preservation": [
+        {
+          "factor": "LIGHT",
+          "detail_es": "Reacciona con el oxígeno bajo luz más que los compuestos de su mismo peso, y su aroma desaparece antes de que se note en los sesquiterpenos.",
+          "evidence": "MIXTO",
+          "basis_es": "La degradación fotoquímica de los monoterpenos volátiles está bien documentada, y el terpinoleno es de los más reactivos. Lo que no está fijado es cuánto tiempo de exposición cambia un perfil concreto de cannabis, y como su contenido es bajo y poco rutinario, esa relación no se puede trasladar aquí. Ningún plazo entra en esta ficha."
+        },
+        {
+          "factor": "OXIDATION",
+          "detail_es": "Es de los más reactivos del catálogo y se oxida con facilidad en el material almacenado. Su contenido absoluto es bajo, así que la transformación se nota primero en la proporción del perfil que en la cantidad.",
+          "evidence": "MIXTO",
+          "basis_es": "La oxidación de los terpenos volátiles y sus productos está bien caracterizada como reacción. Lo que no está fijado es cuál de esos productos predomina en una muestra concreta de cannabis, porque el contenido del terpinoleno es bajo y varía entre materiales. Esta ficha nombra la reacción y no un producto, y no puede medir la proporción."
+        },
+        {
+          "factor": "HEAT",
+          "detail_es": "Sale pronto al calentar el material. La ventana de temperatura que aparece más arriba en esta ficha describe un uso en un vaporizador y no un almacenamiento, y una ventana de temperatura no dice cuánto sobrevive un compuesto en un bote cerrado.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "Que calentar expulsa antes a los terpenos más volátiles está bien documentado, y el terpinoleno es de los más volátiles del módulo. La tarjeta de vaporización de esta ficha ya declara de dónde sale su banda y qué no es. Lo que no hay es una vida útil por compuesto para el terpinoleno en cannabis."
+        },
+        {
+          "factor": "TIME",
+          "detail_es": "El tiempo de almacenamiento lo convierte de la lista: su reactividad hace que sea de los primeros en perder su forma original.",
+          "evidence": "MIXTO",
+          "basis_es": "Que la fracción oxidable se convierte con el tiempo está bien documentado. Lo que no existe es un plazo de conservación para el terpinoleno en cannabis, y las cifras de otros cultivos tienen otra matriz y otro envase, así que esta ficha no las traslada: es la cifra que no se puede sostener."
+        }
+      ]
+    },
+    {
+      "terpene": "CAMPHENE",
+      "response_es": "El camfeno es el segundo compuesto más volátil de la biblioteca y el que antes se va, y esa es la diferencia con su ficha de agronomía: allí el catálogo no dice nada porque no hay ninguna palanca de la planta documentada para él, y aquí sí hay algo que decir porque lo que decide es la molécula y no la planta. Su volatilidad lo coloca en el grupo de cabeza del orden de salida, y su oxidación es la de los monoterpenos reactivos.",
+      "evidence": "MIXTO",
+      "basis_es": "Su punto de ebullición es el segundo más bajo del módulo y su oxidación comparte familia química con la de los otros monoterpenos. La dirección está bien documentada. Lo que no está fijado es su comportamiento en cannabis: aparece en contenidos bajos y su medición no es rutinaria, así que la magnitud de su respuesta al procesado no la puede fijar este catálogo. La asimetría con su ficha de agronomía, donde no hay entrada, es deliberada: una palanca agronómica es una respuesta de la planta y una nota de procesado es una propiedad del compuesto.",
+      "methods": [
+        {
+          "method": "LIVE_ROSIN",
+          "detail_es": "Es de los primeros en irse en la prensa, por ser de los más volátiles del módulo. Aun así, es la ruta donde menos se pierde, porque no tiene evaporación posterior.",
+          "evidence": "MIXTO",
+          "basis_es": "Las etapas donde la pérdida de los terpenos volátiles está documentada, el secado y el almacenamiento, no existen en el prensado en vivo, y el camfeno es volátil. Lo que no está establecido es una comparación controlada con el mismo material de partida y el mismo perfil medido, ni una base sólida sobre su contenido en cannabis, así que la magnitud de esa ventaja no la puede fijar este catálogo."
+        },
+        {
+          "method": "SOLVENT_EXTRACTION",
+          "detail_es": "Sale entero en el extracto y se va en buena parte en la etapa de separación del disolvente, por su posición en el orden de volatilidad.",
+          "evidence": "MIXTO",
+          "basis_es": "La etapa de evaporación se lleva la fracción volátil y el camfeno está en el grupo de cabeza de ese orden. La dirección está bien documentada; la magnitud no, porque no hay comparación controlada entre métodos y entre disolventes y su contenido en cannabis no es una cifra de referencia."
+        },
+        {
+          "method": "DECARBOXYLATION",
+          "detail_es": "Es de los primeros compuestos en irse al calentar el material. Lo que se queda ya no es el camfeno de la planta sino parte de sus productos de oxidación.",
+          "evidence": "MIXTO",
+          "basis_es": "Los terpenos más volátiles se van antes que los sesquiterpenos al calentar, y el camfeno es de los más volátiles del módulo. La oxidación de los monoterpenos reactivos está bien caracterizada como reacción, pero su proporción en una muestra concreta de cannabis no se puede fijar. El punto en que se completa cada transformación depende del material y del proceso, así que no hay aquí ninguna temperatura ni ningún tiempo."
+        }
+      ],
+      "preservation": [
+        {
+          "factor": "LIGHT",
+          "detail_es": "Reacciona con el oxígeno bajo luz como los demás monoterpenos reactivos, y su contenido absoluto bajo hace que la pérdida se note en la proporción antes que en la cantidad.",
+          "evidence": "MIXTO",
+          "basis_es": "La degradación fotoquímica de los monoterpenos volátiles está bien documentada. Lo que no está fijado es cuánto tiempo de exposición cambia un perfil concreto de cannabis, y como el contenido del camfeno es bajo y poco rutinario, esa relación no se puede trasladar aquí. Ningún plazo entra en esta aplicación."
+        },
+        {
+          "factor": "OXIDATION",
+          "detail_es": "Se oxida por la misma vía que los otros monoterpenos reactivos. Su contenido pequeño hace que la transformación se note primero en la proporción del perfil.",
+          "evidence": "MIXTO",
+          "basis_es": "La oxidación de los terpenos volátiles y sus productos está bien caracterizada como reacción. Lo que no está fijado es cuál de esos productos predomina en una muestra concreta de cannabis, porque depende de la variedad, del secado, del envase y del tiempo y el contenido del camfeno es bajo. Esta ficha nombra la reacción y no un producto, y no puede medir la proporción."
+        },
+        {
+          "factor": "HEAT",
+          "detail_es": "Sale antes que cualquier sesquiterpeno y muy pronto al calentar el material. La ventana de temperatura que aparece más arriba en esta ficha describe un uso en un vaporizador y no un almacenamiento, y una ventana de temperatura no dice cuánto sobrevive un compuesto en un bote cerrado.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "Que calentar expulsa antes a los terpenos más volátiles está bien documentado, y el camfeno es el segundo más volátil del módulo. La tarjeta de vaporización de esta ficha ya declara de dónde sale su banda y qué no es. Lo que no hay es una vida útil por compuesto para el camfeno en cannabis."
+        },
+        {
+          "factor": "TIME",
+          "detail_es": "El tiempo de almacenamiento lo trata como a los demás monoterpenos reactivos, con la diferencia de que su contenido es bajo y varía mucho entre materiales.",
+          "evidence": "MIXTO",
+          "basis_es": "Que la fracción oxidable se convierte con el tiempo está bien documentado. Lo que no existe es un plazo de conservación para el camfeno en cannabis, y como su contenido absoluto varía mucho, las cifras de otros cultivos no son trasladables: esta ficha no las publica."
+        }
+      ]
+    },
+    {
+      "terpene": "BETA_CARYOPHYLLENE",
+      "response_es": "El cariofileno beta es el menos volátil de la biblioteca y el que más resiste las tres rutas. Su punto de ebullición es el más alto de los diez compuestos del módulo, de modo que en cualquier proceso térmico es el último en irse, y su oxidación a óxido de cariofileno es la transformación que explica buena parte de lo que se mide después de un almacenamiento largo.",
+      "evidence": "BIEN_DOCUMENTADO",
+      "basis_es": "Su punto de ebullición es el más alto de los diez compuestos del módulo y su oxidación a óxido de cariofileno está bien caracterizada. Ambas cosas apuntan en la misma dirección: es el compuesto cuyo perfil se parece más al de la planta después de cualquier procesado. La magnitud de esa ventaja en cada método concreto no está fijada.",
+      "methods": [
+        {
+          "method": "LIVE_ROSIN",
+          "detail_es": "Es el compuesto que más conserva de los tres métodos, por ser el último del orden de salida.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "Los compuestos menos volátiles sobreviven mejor a las etapas de calor y de evaporación, y el cariofileno beta es el menos volátil del módulo. El prensado en vivo no tiene además las etapas largas de secado y almacenamiento. Lo que no está establecido es una comparación controlada con el mismo material de partida y el mismo perfil medido, así que la magnitud de esa ventaja no la puede fijar este catálogo."
+        },
+        {
+          "method": "SOLVENT_EXTRACTION",
+          "detail_es": "Sale entero en el extracto y es de los últimos en irse en la etapa de separación del disolvente.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "Los compuestos menos volátiles sobreviven mejor a la evaporación del disolvente, y el cariofileno beta ocupa el último lugar del orden del módulo. No hay una comparación controlada entre métodos y entre disolventes, así que cuánto cariofileno sobrevive a una separación concreta no está fijado, aunque su posición en el orden sí lo está."
+        },
+        {
+          "method": "DECARBOXYLATION",
+          "detail_es": "Aguanta más que los monoterpenos al calentar el material porque es el último en salir. Con temperatura alta también termina degradándose, y entonces lo que se encuentra es su óxido y otros productos de la misma familia.",
+          "evidence": "MIXTO",
+          "basis_es": "El orden de salida térmica favorece al cariofileno beta dentro del módulo, y eso está bien documentado. Lo que no está fijado es a partir de qué punto la degradación de este compuesto avanza de forma apreciable, ni cuánto tiempo tardaría, así que no hay ninguna temperatura aquí: sería una recomendación de proceso y no un dato."
+        }
+      ],
+      "preservation": [
+        {
+          "factor": "LIGHT",
+          "detail_es": "Reacciona con el oxígeno bajo luz, pero más despacio que los monoterpenos de la lista. Su aroma resiste más.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "Los sesquiterpenos son menos reactivos a la oxidación que los monoterpenos, y eso está bien documentado. Lo que no está fijado es cuánto tiempo de exposición cambia un perfil concreto en cannabis, porque depende del envase y de la temperatura, así que ningún plazo entra en esta ficha."
+        },
+        {
+          "factor": "OXIDATION",
+          "detail_es": "Se oxida a óxido de cariofileno, que es la transformación documentada de este compuesto. Es el sesquiterpeno de la biblioteca y el que mejor conserva su forma original.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "La oxidación del cariofileno beta a su óxido está bien caracterizada en la literatura de terpenos. Lo que no está fijado es qué proporción de óxido aparece en una muestra concreta de cannabis, porque depende de la variedad, del secado, del envase y del tiempo, y esta aplicación no puede medir ninguno de los cuatro."
+        },
+        {
+          "factor": "HEAT",
+          "detail_es": "Necesita más temperatura para salir que cualquier otro compuesto de la biblioteca. La ventana de temperatura que aparece más arriba describe un uso en un vaporizador y no un almacenamiento, y una ventana de temperatura no dice cuánto sobrevive un compuesto en un bote cerrado.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "Su punto de ebullición es el más alto de los diez compuestos del módulo y su banda de vaporización lo refleja. Lo que no hay, y esta aplicación no intenta suplirlo, es una vida útil por compuesto para el cariofileno en cannabis."
+        },
+        {
+          "factor": "TIME",
+          "detail_es": "Es de los que mejor aguantan el almacenamiento, y aun así su perfil se mueve con el tiempo hacia su óxido. La diferencia con un monoterpeno es de grado, no de dirección.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "Que se oxida con el tiempo está bien documentado, y su menor reactividad lo hace más resistente que un monoterpeno de la lista. Lo que no existe es un plazo de conservación para el cariofileno en cannabis; las cifras de otros cultivos tienen otra matriz y otro envase, así que esta ficha no las traslada."
+        }
+      ]
+    },
+    {
+      "terpene": "HUMULENE",
+      "response_es": "El humuleno comparte ruta, precursor y casi siempre medición con el cariofileno beta, así que su procesado sigue el mismo patrón. La diferencia que sí está establecida es su punto de ebullición: es bajo para su tamaño molecular, y eso lo pone en un lugar intermedio del orden de salida en lugar de al final.",
+      "evidence": "BIEN_DOCUMENTADO",
+      "basis_es": "Su punto de ebullición es de los más bajos de la biblioteca para un sesquiterpeno, y comparte con el cariofileno beta la oxidación a su óxido, que está bien caracterizada. La posición intermedia en el orden de salida está, por tanto, bien documentada. Lo que no está fijado es cuánto humuleno sobrevive a un método concreto, y como comparte fuente de carbono con el cariofileno beta, ninguna medición rutinaria los separa.",
+      "methods": [
+        {
+          "method": "LIVE_ROSIN",
+          "detail_es": "Conserva más que los monoterpenos de la lista porque es menos volátil que ellos, pero sale antes que el cariofileno beta, con el que comparte medición.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "Los compuestos menos volátiles sobreviven mejor a las etapas de calor y de evaporación, y el humuleno está por debajo de los monoterpenos más pesados de la lista. Lo que no está establecido es una comparación controlada con el mismo material de partida y el mismo perfil medido, y como comparte precursor con el cariofileno beta, la medida que compararía los dos métodos no los separa entre ellos."
+        },
+        {
+          "method": "SOLVENT_EXTRACTION",
+          "detail_es": "Sale entero en el extracto y aguanta más que los monoterpenos en la etapa de separación del disolvente, aunque menos que el cariofileno beta.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "Los compuestos menos volátiles sobreviven mejor a la evaporación, y el humuleno es menos volátil que la mayoría de los monoterpenos del módulo. No hay una comparación controlada entre métodos y entre disolventes, así que cuánto humuleno sobrevive a una separación concreta no está fijado, aunque su posición en el orden sí lo está."
+        },
+        {
+          "method": "DECARBOXYLATION",
+          "detail_es": "Aguanta el calor más que los monoterpenos, aunque sale antes que el cariofileno beta. Lo que se queda, como en el otro sesquiterpeno, incluye su óxido.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "El orden de salida térmica está bien documentado y coloca al humuleno por debajo de los monoterpenos más volátiles. La oxidación a óxido de humuleno comparte vía con la del cariofileno beta y está bien caracterizada. Ni el punto en que se completa cada transformación ni la mezcla final están fijados, así que no hay aquí ninguna temperatura ni ningún tiempo."
+        }
+      ],
+      "preservation": [
+        {
+          "factor": "LIGHT",
+          "detail_es": "Reacciona con el oxígeno bajo luz, más despacio que los monoterpenos de la lista y en la misma medida que el cariofileno beta.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "Los sesquiterpenos son menos reactivos a la oxidación que los monoterpenos, y eso está bien documentado. Como el humuleno y el cariofileno beta comparten fuente de carbono, ninguna medición rutinaria los separa, así que el comportamiento que se observa para uno es también el del otro. El tiempo de exposición que cambia un perfil concreto depende del envase y no está fijado, así que ningún plazo entra en esta ficha."
+        },
+        {
+          "factor": "OXIDATION",
+          "detail_es": "Se oxida a óxido de humuleno, por la misma vía que el cariofileno beta. Es un sesquiterpeno de la biblioteca y su aroma resiste más que el de los monoterpenos.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "La oxidación del humuleno a su óxido está bien caracterizada y comparte vía con la del cariofileno beta. Lo que no está fijado es qué proporción de óxido aparece en una muestra concreta de cannabis, porque depende de la variedad, del secado, del envase y del tiempo, y como comparte precursor con el otro sesquiterpeno, la medida que lo cuantifica no los distingue entre ellos."
+        },
+        {
+          "factor": "HEAT",
+          "detail_es": "Su punto de ebullición es bajo para su tamaño molecular, así que sale antes que el cariofileno beta y antes que la mayoría de los sesquiterpenos. La ventana de temperatura que aparece más arriba describe un uso en un vaporizador y no un almacenamiento, y una ventana de temperatura no dice cuánto sobrevive un compuesto en un bote cerrado.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "Que calentar expulsa en orden de volatilidad está bien documentado, y el humuleno está en el grupo de cabeza de ese orden pese a ser un sesquiterpeno. La tarjeta de vaporización de esta ficha ya declara de dónde sale su banda y qué no es. Lo que no hay es una vida útil por compuesto para el humuleno en cannabis."
+        },
+        {
+          "factor": "TIME",
+          "detail_es": "Aguanta el almacenamiento algo mejor que los monoterpenos, y su perfil se mueve con el tiempo hacia su óxido. Comparte comportamiento con el cariofileno beta, así que un análisis posterior no los separa.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "Que la fracción oxidable se convierte con el tiempo está bien documentado, y su menor reactividad lo hace más resistente que un monoterpeno. Lo que no existe es un plazo de conservación para el humuleno en cannabis, y como comparte precursor con el cariofileno beta, ninguna medición rutinaria distingue cuánto de un movimiento es de uno y cuánto del otro."
+        }
+      ]
+    }
   ]
 }

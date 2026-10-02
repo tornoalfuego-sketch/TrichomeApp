@@ -57,13 +57,19 @@ enum class EntourageTab(val key: String, val labelEs: String) {
 /**
  * The parts of a synergy card, so a test can address one without counting lines.
  *
- * [AGRONOMY] is F3's addition and follows the same rule as [EVIDENCE]: the role
- * is unconditional, its body carries each lever's basis inline, and it is
- * rendered by the card panel's ordinary label+body branch — no disclosure, no
- * second `if` that could be skipped.
+ * [AGRONOMY] is F3's addition and [PROCESSING] is F4's, and both follow the
+ * same rule as [EVIDENCE]: the role is unconditional, its body carries the
+ * evidence level inline, and it is rendered by the card panel's ordinary
+ * label+body branch — no disclosure, no second `if` that could be skipped.
+ *
+ * [PROCESSING] sits **after** [AGRONOMY] because it is the next step in the same
+ * story: agronomy is what the plant was asked for, processing is what happens to
+ * the material afterwards. Its body also carries the residual-solvent sentence,
+ * because the same body names the extraction methods — see
+ * [TerpeneProcessingCopy.cardLineEs].
  */
 enum class EntourageCardRole {
-    OUTCOME, DESCRIPTION, MECHANISM, EVIDENCE, AGRONOMY, STRAINS, INTERACTION
+    OUTCOME, DESCRIPTION, MECHANISM, EVIDENCE, AGRONOMY, PROCESSING, STRAINS, INTERACTION
 }
 
 /** One labelled paragraph of a synergy card. */
@@ -94,13 +100,25 @@ data class EntourageSynergyCard(
      * because it is the same kind of statement: a lever with its basis folded
      * into the body, visible without an interaction.
      */
-    val agronomyLines: List<EntourageCardLine> = emptyList()
+    val agronomyLines: List<EntourageCardLine> = emptyList(),
+    /**
+     * F4: one line per compound of the combination the catalog documents
+     * processing for. Empty when it documents none of them.
+     *
+     * After [agronomyLines] and not before, and for the reason the enum KDoc
+     * gives: the two are the same kind of statement about the material, in the
+     * order the material meets them.
+     */
+    val processingLines: List<EntourageCardLine> = emptyList()
 ) {
     /** True when the shipped content actually declared an evidence level. */
     val evidenceWasDeclared: Boolean get() = evidenceEs != NO_EVIDENCE_DECLARED
 
     /** True when at least one compound of this combination has agronomy. */
     val hasAgronomy: Boolean get() = agronomyLines.isNotEmpty()
+
+    /** True when at least one compound of this combination has processing. */
+    val hasProcessing: Boolean get() = processingLines.isNotEmpty()
 
     /** The card in reading order, always including the evidence line. */
     val linesEs: List<EntourageCardLine> = buildList {
@@ -115,6 +133,7 @@ data class EntourageSynergyCard(
         add(EntourageCardLine(EntourageCardRole.MECHANISM, "Mecanismo", mechanismEs))
         add(EntourageCardLine(EntourageCardRole.EVIDENCE, "Evidencia", evidenceEs))
         addAll(agronomyLines)
+        addAll(processingLines)
         if (strainsEs.isNotBlank()) {
             add(EntourageCardLine(EntourageCardRole.STRAINS, "Cepas típicas", strainsEs))
         }
@@ -164,10 +183,15 @@ object EntourageCards {
      * an empty index rather than being required, so a caller that has not loaded
      * the agronomy block yet gets exactly the card it got before F3 — a missing
      * asset row costs the agronomy lines, never the synergy.
+     *
+     * [processing] is F4's, and defaults for the same reason and to the same
+     * guarantee: a caller that has not loaded it gets the F3 card unchanged, and a
+     * missing row costs the processing lines and nothing else.
      */
     fun cardFor(
         synergy: EntourageSynergy,
-        agronomy: EntourageAgronomyIndex = EntourageAgronomyIndex()
+        agronomy: EntourageAgronomyIndex = EntourageAgronomyIndex(),
+        processing: EntourageProcessingIndex = EntourageProcessingIndex()
     ): EntourageSynergyCard = EntourageSynergyCard(
         synergyId = synergy.id,
         compoundsEs = compoundsEs(synergy),
@@ -178,7 +202,8 @@ object EntourageCards {
             ?: EntourageSynergyCard.NO_EVIDENCE_DECLARED,
         strainsEs = synergy.strainsEs.filter { it.isNotBlank() }.joinToString(" · "),
         interactionEs = synergy.interactionEs,
-        agronomyLines = TerpeneAgronomyCopy.cardLinesFor(synergy.terpenes, agronomy)
+        agronomyLines = TerpeneAgronomyCopy.cardLinesFor(synergy.terpenes, agronomy),
+        processingLines = TerpeneProcessingCopy.cardLinesFor(synergy.terpenes, processing)
     )
 
     /** The combination heading, cannabinoid side first. */
@@ -666,9 +691,13 @@ object EntourageRewards {
     /**
      * The rewards a finished quiz run pays.
      *
-     * Only the module's single achievement, and only when the run reached its
-     * last round at the threshold — [EntourageAchievement.isEarned] owns that
-     * rule, so the UI cannot grant the badge on an abandoned run.
+     * Only the quiz badge, and only when the run reached its last round at the
+     * threshold — [EntourageAchievement.isEarned] owns that rule, so the UI cannot
+     * grant the badge on an abandoned run.
+     *
+     * [descriptionFor] is passed the run the player actually played rather than
+     * read off the enum's shipped-quiz default, for the reason F1 recorded: the
+     * sentence in the `achievements` table has to match the run that earned it.
      */
     fun forQuiz(score: Int, rounds: Int, finished: Boolean): List<EntourageReward> {
         val achievement = EntourageAchievement.ENTOURAGE_MASTER
@@ -676,7 +705,7 @@ object EntourageRewards {
             listOf(
                 EntourageReward(
                     nameEs = achievement.labelEs,
-                    descriptionEs = achievement.description,
+                    descriptionEs = achievement.descriptionFor(rounds),
                     icon = achievement.icon,
                     xpReward = achievement.xpReward
                 )
@@ -684,6 +713,43 @@ object EntourageRewards {
         } else {
             emptyList()
         }
+    }
+
+    /**
+     * F4: the reward for having read the processing block for every compound the
+     * asset documents, or nothing.
+     *
+     * A set, not a count, and the reason is the same idempotency argument the rest
+     * of this object is built on: the reward is derived from **state**, so it can
+     * be recomputed on every recomposition and the caller must not have to
+     * remember whether it already paid. [readCompounds] therefore names which
+     * compounds the player has opened; the badge is granted the moment that set
+     * covers the catalog's, and the caller pays it through [pending] exactly as it
+     * pays a Lab verdict.
+     *
+     * The description is built from [EntourageProcessingIndex.size] rather than
+     * from a constant, so the sentence and the condition cannot disagree about how
+     * many compounds there are. That is the F1 rule: the badge text is a function
+     * of the data it describes.
+     *
+     * @param readCompounds compounds the player has opened the processing block of.
+     * @param index the shipped processing block.
+     */
+    fun forProcessingRead(
+        readCompounds: Set<EntourageTerpene>,
+        index: EntourageProcessingIndex
+    ): List<EntourageReward> {
+        val documented = index.documentedTerpenes
+        if (documented.isEmpty() || !documented.all { it in readCompounds }) return emptyList()
+        val achievement = EntourageAchievement.RESIN_ENGINEER
+        return listOf(
+            EntourageReward(
+                nameEs = achievement.labelEs,
+                descriptionEs = EntourageAchievement.RESIN_ENGINEER.descriptionForProcessing(documented.size),
+                icon = achievement.icon,
+                xpReward = achievement.xpReward
+            )
+        )
     }
 
     /**

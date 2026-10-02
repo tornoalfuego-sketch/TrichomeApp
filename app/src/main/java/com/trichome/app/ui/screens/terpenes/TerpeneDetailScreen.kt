@@ -31,6 +31,8 @@ import com.trichome.app.model.EntourageTab
 import com.trichome.app.model.GrowOutGuides
 import com.trichome.app.model.TerpeneAgronomyContent
 import com.trichome.app.model.TerpeneAgronomyCopy
+import com.trichome.app.model.TerpeneProcessingContent
+import com.trichome.app.model.TerpeneProcessingCopy
 import com.trichome.app.model.TerpeneVolatility
 import com.trichome.app.model.TerpeneVolatilityCopy
 import com.trichome.app.model.VolatilityBar
@@ -84,6 +86,14 @@ fun TerpeneDetailScreen(
     // compound without an entry — so this file decides only where it goes.
     var agronomy by remember(terpeneId) { mutableStateOf<TerpeneAgronomyContent?>(null) }
 
+    // F4: the processing block, on its own card beside the other two and not
+    // folded into either. Two separate reasons: the volatility card is about heat
+    // *in a device* and this one is about heat *in the jar*, and merging them
+    // would let a storage trade-off read as a setpoint. The copy arrives fully
+    // built — including every method's safety line — so this file still decides
+    // only where it goes.
+    var processing by remember(terpeneId) { mutableStateOf<TerpeneProcessingContent?>(null) }
+
     LaunchedEffect(terpeneId) {
         val found = vm.detail(terpeneId)
         if (found == null) {
@@ -98,6 +108,7 @@ fun TerpeneDetailScreen(
             volatility = vm.volatilityOf(found)
             curve = vm.curveFor(found)
             agronomy = vm.agronomyFor(found)
+            processing = vm.processingFor(found)
         }
     }
 
@@ -192,6 +203,17 @@ fun TerpeneDetailScreen(
             if (agronomyBlock != null) {
                 item {
                     AgronomyCard(agronomyBlock, scheme)
+                }
+            }
+
+            // F4. A third card, on the same gate as the other two and mounted
+            // immediately after the agronomy block, so the reading order is:
+            // how it vaporises, what the plant was asked for, what happens to the
+            // material afterwards.
+            val processingBlock = processing
+            if (processingBlock != null) {
+                item {
+                    ProcessingCard(processingBlock, scheme)
                 }
             }
 
@@ -682,6 +704,146 @@ private fun AgronomyCard(
 
         Text(
             TerpeneAgronomyCopy.NOT_A_DIRECTIVE_ES,
+            style = MaterialTheme.typography.labelSmall,
+            color = tertiary
+        )
+    }
+}
+
+/**
+ * F4: the processing card, on its own card beside the volatility and agronomy
+ * ones.
+ *
+ * ## Why it is separate from [VolatilityCard]
+ *
+ * They look like the same subject and they are not. The volatility card is about
+ * heat in a **device**: a band, its provenance, and an explicit statement that a
+ * band is not a setpoint. This card is about heat in a **jar**, about a solvent
+ * and about what the profile does over time. Folding the two together would put
+ * a number from the first next to a claim from the second and let a reader take
+ * the number as an answer to the second, which is precisely the confusion the
+ * [PreservationFactorKind.HEAT] guide is written to undo.
+ *
+ * ## What the card renders unconditionally
+ *
+ * - the comparison, which **names the extraction methods**, so
+ * - the residual-solvent sentence has to sit in the same block, and
+ * - each method's own safety line travels with its mechanism,
+ *
+ * none of it behind a disclosure. A card that names "extracción con disolvente"
+ * and puts the residue in a footnote is the failure this phase exists to prevent,
+ * and the honest half of the fix is that the sentence is in the same `Column`
+ * rather than in a `Surface` further down.
+ *
+ * A plain `Column` like [AgronomyCard]: the page's `LazyColumn` owns the scroll,
+ * so this section declares none of its own. Colours come from `scheme` and
+ * `tertiary`, nothing else. No literal, and no `Color.Unspecified` published into
+ * a `Surface`.
+ */
+@Composable
+private fun ProcessingCard(
+    content: TerpeneProcessingContent,
+    scheme: androidx.compose.material3.ColorScheme
+) {
+    val tertiary = LocalTertiaryText.current
+
+    DetailCard(content.titleEs) {
+        // Either the compound's own claim or the sentence saying the catalog is
+        // silent. One of the two is always printed.
+        if (content.isDocumented) {
+            DetailParagraph(TerpeneProcessingCopy.RESPONSE_LABEL_ES, content.responseEs)
+            DetailParagraph(
+                TerpeneProcessingCopy.basisLabelEs(content.responseEvidenceLabelEs),
+                content.responseBasisEs
+            )
+        } else {
+            DetailParagraph("", content.notDocumentedEs)
+        }
+
+        // The comparison, and with it the residual-solvent sentence. Rendered
+        // before the per-compound notes because the comparison is what gives the
+        // notes their meaning, and because it is the block that names the methods.
+        Spacer(Modifier.height(12.dp))
+        Text(
+            TerpeneProcessingCopy.COMPARISON_HEADING_ES,
+            style = MaterialTheme.typography.titleSmall,
+            color = scheme.primary
+        )
+        DetailParagraph("", content.comparisonEs)
+        DetailParagraph(
+            TerpeneProcessingCopy.SAFETY_LABEL_ES,
+            content.solventSafetyEs
+        )
+        DetailParagraph("", TerpeneProcessingCopy.COMPARISON_SCOPE_ES)
+
+        // Per-compound method notes, each with its level, its basis, the shared
+        // mechanism and that method's safety line — all in the same block, so a
+        // method is never named in isolation from what it does to be handled.
+        content.methods.forEach { method ->
+            DetailParagraph(method.titleEs, method.detailEs)
+            DetailParagraph(
+                TerpeneProcessingCopy.basisLabelEs(method.evidenceLabelEs),
+                method.basisEs
+            )
+            DetailParagraph("", method.guide.whatEs)
+            DetailParagraph(TerpeneProcessingCopy.SAFETY_LABEL_ES, method.guide.safetyEs)
+            DetailParagraph(
+                TerpeneProcessingCopy.basisLabelEs(method.guide.evidence.labelEs),
+                method.guide.basisEs
+            )
+        }
+
+        // The shared mechanism list, including the methods this compound ships no
+        // note for. Dropping them would hide the fact that the mechanism is shared,
+        // and this block is where a solvent-free route's safety line is guaranteed
+        // to be read even for a compound the catalog says little about.
+        Spacer(Modifier.height(12.dp))
+        Text(
+            TerpeneProcessingCopy.GUIDES_HEADING_ES,
+            style = MaterialTheme.typography.titleSmall,
+            color = tertiary
+        )
+        content.guides.forEach { guide ->
+            DetailParagraph(guide.titleEs, guide.whatEs)
+            DetailParagraph(
+                TerpeneProcessingCopy.SAFETY_LABEL_ES,
+                guide.safetyEs
+            )
+            DetailParagraph(
+                TerpeneProcessingCopy.basisLabelEs(guide.evidence.labelEs),
+                guide.basisEs
+            )
+        }
+
+        Spacer(Modifier.height(12.dp))
+        Text(
+            TerpeneProcessingCopy.PRESERVATION_HEADING_ES,
+            style = MaterialTheme.typography.titleSmall,
+            color = tertiary
+        )
+        DetailParagraph("", TerpeneProcessingCopy.PRESERVATION_SCOPE_ES)
+        content.preservation.forEach { factor ->
+            DetailParagraph(factor.titleEs, factor.detailEs)
+            DetailParagraph(
+                TerpeneProcessingCopy.basisLabelEs(factor.evidenceLabelEs),
+                factor.basisEs
+            )
+            DetailParagraph("", factor.guide.whatEs)
+            DetailParagraph(
+                TerpeneProcessingCopy.basisLabelEs(factor.guide.evidence.labelEs),
+                factor.guide.basisEs
+            )
+        }
+        content.factorGuides.forEach { guide ->
+            DetailParagraph(guide.titleEs, guide.whatEs)
+            DetailParagraph(
+                TerpeneProcessingCopy.basisLabelEs(guide.evidence.labelEs),
+                guide.basisEs
+            )
+        }
+
+        Text(
+            TerpeneProcessingCopy.NOT_A_DIRECTIVE_ES,
             style = MaterialTheme.typography.labelSmall,
             color = tertiary
         )

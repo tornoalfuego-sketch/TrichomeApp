@@ -49,21 +49,61 @@ enum class EntourageAchievement(
         labelEs = "Maestro del Efecto Séquito",
         icon = "🧬",
         xpReward = 300
+    ),
+
+    /**
+     * F4's badge: the processing dimension, unlocked by the resin engineer work.
+     *
+     * It cannot exist before F4's content does — the condition counts the
+     * compounds `entourage_data.json` documents in its `processing` block, so a
+     * build without that block would award a badge claiming content that is not
+     * there.
+     *
+     * It writes into the **existing** `achievements` table through
+     * `EntourageReward.toAchievementRow` and is deduplicated by name through
+     * `EntourageRewards.pending`, exactly like the quiz badge. No second
+     * progression system, no new column, no migration.
+     */
+    RESIN_ENGINEER(
+        labelEs = "Ingeniero de Resina",
+        icon = "⚗️",
+        xpReward = 300
     );
 
     /**
-     * The badge's description for a run of [rounds] rounds.
+     * The quiz badge's description for a run of [rounds] rounds.
      *
      * [rounds] is the length the player actually played, which is the parsed
-     * asset's question count — not a constant written next to the asset. A run
-     * of fewer than one round still gets a sentence, because `thresholdFor`
-     * already coerces to at least one and the two must not disagree.
+     * asset's question count — not a constant written next to the asset. A run of
+     * fewer than one round still gets a sentence, because `thresholdFor` already
+     * coerces to at least one and the two must not disagree.
      */
     fun descriptionFor(rounds: Int): String =
         "Acierta ${thresholdFor(rounds)} de $rounds preguntas sobre modulación terpénica"
 
     /** Description for a full run of the shipped quiz. */
     val description: String get() = descriptionFor(QUIZ_ROUNDS)
+
+    /**
+     * F4: the resin engineer's description, derived from the shipped block.
+     *
+     * The same discipline as [descriptionFor], and for the same reason. This
+     * badge's condition is a **count of the compounds the asset documents**, so a
+     * literal sentence beside it would drift the first time a compound is added to
+     * or removed from `entourage_data.json` — and it would drift in the one place
+     * the player cannot check it, because the achievement row is written once and
+     * then lives in the `achievements` table forever.
+     *
+     * It is named differently from [descriptionFor] on purpose. Two functions of the
+     * same name and one parameter type would be a silent hazard: a caller holding
+     * the wrong badge would still compile and would put a quiz sentence into the
+     * resin row. Distinct names make the data source legible at every call site.
+     *
+     * @param documentedCompounds how many entries the shipped `processing` block
+     *   resolves to. Zero still gets a sentence; no caller renders an empty one.
+     */
+    fun descriptionForProcessing(documentedCompounds: Int): String =
+        "Lee el procesado de los $documentedCompounds compuestos que el catálogo documenta"
 
     companion object {
         /**

@@ -68,6 +68,10 @@ fun EntourageNetworkSection(
     // show a lever the asset does not carry and a compound with no entry is
     // absent from the card instead of appearing as a blank block.
     val agronomyIndex = remember(library) { library.agronomyIndex() }
+    // F4, same rule and same reason as the agronomy index above: both call sites
+    // of `EntourageCards.cardFor` have to carry the block, or the card shows it in
+    // the selection and not in the library listing.
+    val processingIndex = remember(library) { library.processingIndex() }
 
     // (route key, visible label), with "all of them" as the first entry so the
     // filter always has a way out.
@@ -162,8 +166,8 @@ fun EntourageNetworkSection(
                 }
             }
         } else {
-            val card = remember(matched, agronomyIndex) {
-                EntourageCards.cardFor(matched, agronomyIndex)
+            val card = remember(matched, agronomyIndex, processingIndex) {
+                EntourageCards.cardFor(matched, agronomyIndex, processingIndex)
             }
             EntourageSynergyCardPanel(card, themeState)
 
@@ -219,8 +223,8 @@ fun EntourageNetworkSection(
         } else {
             shown.forEach { synergy ->
                 EntourageSynergyCardPanel(
-                    card = remember(synergy, agronomyIndex) {
-                        EntourageCards.cardFor(synergy, agronomyIndex)
+                    card = remember(synergy, agronomyIndex, processingIndex) {
+                        EntourageCards.cardFor(synergy, agronomyIndex, processingIndex)
                     },
                     themeState = themeState
                 )

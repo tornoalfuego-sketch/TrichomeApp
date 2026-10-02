@@ -11,6 +11,7 @@ import com.trichome.app.data.repository.*
 import com.trichome.app.di.AppContainer
 import com.trichome.app.domain.vision.PhotoAnalyzer
 import com.trichome.app.model.*
+import com.trichome.app.data.repository.toAchievementRow
 import com.trichome.app.model.CalendarWindow
 import com.trichome.app.worker.ReminderAlarmScheduler
 import com.trichome.app.worker.ReminderCancellation
@@ -19,6 +20,8 @@ import androidx.work.WorkManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -999,6 +1002,18 @@ class TerpenesViewModel(container: AppContainer) : ViewModel() {
     private val progress = container.terpeneProgress
 
     /**
+     * F4: where the resin badge is written.
+     *
+     * The **existing** `achievements` repository, resolved from the same container
+     * as everything else. A field rather than a `get()` because a property getter
+     * would have `container` resolve to the imported `@Composable container()`
+     * helper instead of the constructor parameter, and it would not compile. Naming
+     * it once here also makes it obvious that the badge goes where every other
+     * reward goes rather than somewhere of its own.
+     */
+    private val badgeAchievements = container.achievementRepository
+
+    /**
      * F2: the module's temperature table, for the ten bands it measures.
      *
      * Held as a field because the constructor parameter is not a property, and
@@ -1031,6 +1046,26 @@ class TerpenesViewModel(container: AppContainer) : ViewModel() {
      * be a lie about the content rather than about the timing.
      */
     var agronomyIndex by mutableStateOf(EntourageAgronomyIndex())
+
+    // F4: the processing block, beside the agronomy index and for the same
+    // reason. Derived once per content load rather than per card, so the badge and
+    // the detail page read the same object and cannot disagree about how many
+    // compounds the catalog documents.
+    var processingIndex by mutableStateOf(EntourageProcessingIndex())
+        private set
+
+    /**
+     * Names already in the `achievements` table, so the F4 badge cannot be paid
+     * twice.
+     *
+     * The same idempotency rule `EntourageViewModel.awardedNames` uses, and for
+     * the same reason: the table's primary key is an auto-generated id, so a second
+     * insert of the same reward is a **new row** rather than an update. The badge
+     * condition is derived from live state, so this grant has to be safe to
+     * recompute on every progress emission — and progress emits on every
+     * discovery, every quiz answer and every streak change.
+     */
+    private var awardedBadgeNames by mutableStateOf<Set<String>>(emptySet())
         private set
 
     var terpenes by mutableStateOf<List<Terpene>>(emptyList())
@@ -1108,6 +1143,15 @@ class TerpenesViewModel(container: AppContainer) : ViewModel() {
                 measured = entourageContent.getVaporisation()
             )
             agronomyIndex = entourageContent.getAgronomyIndex()
+            processingIndex = entourageContent.getProcessingIndex()
+            // F4: read what has already been paid **before** the progress collector
+            // can call `grantProcessingBadge`. Loaded here rather than lazily inside
+            // the grant so a player who earned the badge in an earlier session is not
+            // paid again the first time their discovered set happens to change.
+            runCatching { badgeAchievements.getAllAchievements().first() }
+                .onSuccess { rows ->
+                    awardedBadgeNames = rows.map { it.name }.toSet()
+                }
             refresh()
         }
         viewModelScope.launch {
@@ -1133,6 +1177,12 @@ class TerpenesViewModel(container: AppContainer) : ViewModel() {
                     earnedBadges = held
                     progress.keepBadges(held)
                 }
+                // F4: the resin engineer badge. Evaluated here rather than on the
+                // detail page, because its condition is the **whole** discovered set
+                // and a page only knows about itself. The decision is pure
+                // (`EntourageRewards.forProcessingRead`); this block only pays it,
+                // and `pending` is what makes it safe to run on every emission.
+                grantProcessingBadge()
             }
         }
     }
@@ -1267,6 +1317,130 @@ class TerpenesViewModel(container: AppContainer) : ViewModel() {
             entourageContent.getAgronomyIndex().also { agronomyIndex = it }
         }
         return TerpeneAgronomyCopy.contentOf(moduleTerpene, index.forTerpene(moduleTerpene))
+    }
+
+    /**
+     * F4: [terpene]'s processing block, or null when it is not a module compound.
+     *
+     * The same shape and the same reasons as [agronomyFor]: the copy arrives fully
+     * built from the model — every method with its level, its basis **and its
+     * safety line**, every preservation factor with its basis, plus the shared
+     * comparison and the residual-solvent sentence — so this file decides only
+     * where the block goes.
+     *
+     * The gate is identical: "is this a compound the Séquito module models", not
+     * "does it have an entry". Gating on the entry would make the honest
+     * no-entry sentence unreachable, which is the same reasoning F3 recorded.
+     */
+    suspend fun processingFor(terpene: Terpene): TerpeneProcessingContent? {
+        val moduleTerpene = EntourageFilters.terpeneForCatalogId(terpene.id) ?: return null
+        val index = if (processingIndex.size > 0) {
+            processingIndex
+        } else {
+            entourageContent.getProcessingIndex().also { processingIndex = it }
+        }
+        return TerpeneProcessingCopy.contentOf(moduleTerpene, index.forTerpene(moduleTerpene))
+    }
+
+    /**
+     * F4: the processing block the player has actually opened.
+     *
+     * Resolved from the same `discovered` set that pays the discovery XP, rather
+     * than from a second "has this page been read" ledger. There is none, and
+     * there is deliberately still none: a second record of the same fact is a
+     * second source of truth for it, and this module has exactly one progression
+     * system.
+     */
+    fun processingReadIndex(): EntourageProcessingIndex =
+        EntourageProcessingIndex(
+            discovered.mapNotNull { EntourageFilters.terpeneForCatalogId(it) }
+                .mapNotNull { processingIndex.forTerpene(it) }
+        )
+
+    /**
+     * F4: the resin engineer reward, if the player has now read every compound
+     * the shipped block documents.
+     *
+     * Pure delegation to [EntourageRewards.forProcessingRead]; the ViewModel
+     * decides nothing. It returns a **list** rather than a reward so that "not
+     * earned" and "earned and already paid" are the same empty answer to the
+     * caller, and [EntourageRewards.pending] does the deduplication against the
+     * names already in the `achievements` table.
+     */
+    fun processingBadgeReward(): List<EntourageReward> =
+        EntourageRewards.forProcessingRead(
+            readCompounds = processingReadIndex().documentedTerpenes,
+            index = processingIndex
+        )
+
+    /**
+     * F4: pays the resin engineer badge if it has just been earned.
+     *
+     * Called from the progress collector rather than from the detail page, and the
+     * reason is the condition: it is satisfied by the **union** of every page the
+     * player has opened, so the only place that can see the moment it becomes true
+     * is the place that already watches the whole set.
+     *
+     * Three guards, in order:
+     * 1. the processing block has to have loaded — otherwise `documentedTerpenes`
+     *    is empty and the condition is trivially satisfied, which would award a
+     *    badge for content that has not arrived yet;
+     * 2. [EntourageRewards.forProcessingRead] is the pure decision;
+     * 3. [EntourageRewards.pending] against [awardedBadgeNames] is the
+     *    idempotency, because the table would otherwise take a second row for the
+     *    same reward on the very next emission.
+     */
+    private fun grantProcessingBadge() {
+        if (processingIndex.size == 0) return
+        // Cheap pure gate first, so the common case — the badge is not earned — costs
+        // no database read at all.
+        val rewards = EntourageRewards.forProcessingRead(
+            readCompounds = processingReadIndex().documentedTerpenes,
+            index = processingIndex
+        )
+        if (rewards.isEmpty()) return
+
+        viewModelScope.launch {
+            // The table is the source of truth, re-read here rather than trusted from
+            // [awardedBadgeNames].
+            //
+            // Two attempts at this shipped duplicate rows on the device. The first was
+            // a snapshot: the ViewModel read the names once at load, so any evaluation
+            // before the insert landed paid again, and the progress collector emits on
+            // every discovery. The second was believing the snapshot was enough once
+            // the claim was moved before the insert — it is not, because
+            // `appViewModel` scopes to the navigation entry, so **two** live
+            // `TerpenesViewModel`s can each hold a snapshot taken before the other
+            // wrote. Reading the table inside the same coroutine that writes it, under
+            // [badgeGrantLock], makes the check and the insert one serialised step.
+            badgeGrantLock.withLock {
+                val persisted = runCatching {
+                    badgeAchievements.getAllAchievements().first()
+                }.getOrDefault(emptyList())
+                val names = awardedBadgeNames + persisted.map { it.name }
+                val fresh = EntourageRewards.pending(rewards, names)
+                if (fresh.isEmpty()) return@withLock
+                // Claim before inserting, inside the lock, so a crash costs a missing
+                // badge rather than a duplicated one.
+                awardedBadgeNames = names + fresh.map { it.nameEs }
+                // The **existing** projector: `EntourageReward.toAchievementRow` is
+                // the only path the Séquito module has into the `achievements` table,
+                // and reusing it is what keeps one decision about `isUnlocked` and
+                // `xpReward` instead of two.
+                fresh.forEach { badgeAchievements.insertAchievement(it.toAchievementRow()) }
+            }
+        }
+    }
+
+    /**
+     * Serialises the read-then-write above across every live `TerpenesViewModel`.
+     *
+     * Deliberately a companion of the class rather than a repository-level lock:
+     * the only caller of the table from this side is this grant, so a wider lock
+     * would be a claim about code that does not exist.
+     */
+    private companion object {
+        val badgeGrantLock = Mutex()
     }
 }
 
