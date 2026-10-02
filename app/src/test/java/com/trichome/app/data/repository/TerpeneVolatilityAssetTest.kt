@@ -504,4 +504,44 @@ class TerpeneVolatilityAssetTest {
 
         assertEquals("no shipped boilingPoint is a range: $ranges", emptyList<Terpene>(), ranges)
     }
+
+    /* ── Why the band is coarse, measured rather than claimed ────────────── */
+
+    @Test
+    fun theWithinFamilySpreadIsWhatForbidsAFinerBand() {
+        // The whole derivation rests on one claim: a family label cannot tell you
+        // which molecule you are holding. Measured here from the asset so the
+        // KDoc table in `VolatilityDerivation` cannot drift or be wrong — it
+        // understated the monoterpene spread by 31 °C, having missed
+        // `umbellulone` at 100 °C.
+        val index = index()
+
+        data class Spread(val min: Int, val max: Int, val count: Int)
+
+        fun spread(family: TerpeneFamily): Spread {
+            val points = index.forFamily(family).map { it.boilingPointC }
+            return Spread(points.min(), points.max(), points.size)
+        }
+
+        val mono = spread(TerpeneFamily.MONOTERPENE)
+        val sesqui = spread(TerpeneFamily.SESQUITERPENE)
+        val di = spread(TerpeneFamily.DITERPENE)
+
+        assertEquals(Spread(100, 285, 85), mono)
+        assertEquals(Spread(166, 307, 63), sesqui)
+        assertEquals(Spread(300, 350, 10), di)
+
+        assertEquals(
+            "umbellulone is filed as a monoterpene at 100 °C, which is the reason a " +
+                "monoterpene label supports nothing finer than a coarse band",
+            100,
+            index.forId("umbellulone")!!.boilingPointC
+        )
+        assertTrue(
+            "the derivation is 30–40 °C wide; if a family's spread were narrower " +
+                "than the narrowest derived band, the model would be quoting more " +
+                "precision than the family supports",
+            listOf(mono, sesqui, di).all { it.max - it.min >= VolatilityDerivation.NARROWEST_DERIVED_WIDTH_C }
+        )
+    }
 }

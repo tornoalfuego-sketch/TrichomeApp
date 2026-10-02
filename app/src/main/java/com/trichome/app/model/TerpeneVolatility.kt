@@ -51,7 +51,7 @@ import java.util.Locale
  *  - **Whether the compound is present in your flower**, or in what proportion.
  *    That is a laboratory question this offline app cannot answer.
  *  - **A sub-family structure.** The catalog's `family` field is a coarse label,
- *    and the catalog proves it: it files `hexanal` (131 °C) and `vanillin`
+ *    and the catalog proves it: it files `umbellulone` (100 °C) and `vanillin`
  *    (285 °C) under `Monoterpeno`. Family is a coarse prior here, not a
  *    classification the model is entitled to be precise about.
  *
@@ -266,11 +266,11 @@ data class VolatilityWindow(
  *
  * | family | compounds | boiling-point range | spread |
  * | --- | --- | --- | --- |
- * | Monoterpeno | 85 | 131–285 °C | 154 °C |
+ * | Monoterpeno | 85 | 100–285 °C | 185 °C |
  * | Sesquiterpeno | 63 | 166–307 °C | 141 °C |
  * | Diterpeno | 10 | 300–350 °C | 50 °C |
  *
- * A monoterpene family label cannot tell you whether a compound boils at 156 °C
+ * A monoterpene family label cannot tell you whether a compound boils at 100 °C
  * or 285 °C. Any window quoted to the degree from that label is a fabrication,
  * which is why:
  *

@@ -20,9 +20,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.trichome.app.data.repository.Terpene
+import com.trichome.app.model.DataRowLayout
 import com.trichome.app.model.EntourageFilters
 import com.trichome.app.model.EntourageTab
 import com.trichome.app.model.TerpeneVolatility
@@ -363,6 +365,33 @@ private fun DetailCard(
     }
 }
 
+/**
+ * A label and its value on one row, for every row on the page.
+ *
+ * ## Why the value is weighted and the label is not
+ *
+ * This row shipped as `Arrangement.SpaceBetween` with two unweighted `Text`s,
+ * which lays out each child with the *row's* width and then pushes them apart.
+ * Nothing bounded the pair, so a value wider than the leftover space did not
+ * wrap — it overflowed the row and landed on top of the label. `Origen de la
+ * ventana` / `Medida en la tabla de Séquito` did exactly that: the two touched,
+ * and the monospace value broke under itself.
+ *
+ * `Row` measures unweighted children **before** weighted ones, so leaving the
+ * label unweighted keeps it on one line at its natural width and handing the
+ * value `DataRowLayout.VALUE_WEIGHT` — all that is left — is what confines a
+ * long value to its own column. The value stays right-aligned inside that
+ * column, so every row whose value is short renders flush to the right edge
+ * exactly as it did before.
+ *
+ * The fix is here rather than at the provenance call site on purpose: five other
+ * rows on this page have the same shape and were only surviving on short values.
+ * A long value must not be able to break the layout for any of them.
+ *
+ * The numbers are in [DataRowLayout], not here, because a value no JVM test can
+ * reach is a value nobody can catch before it ships — the same lesson as the
+ * zero-weight crash.
+ */
 @Composable
 private fun DataRow(label: String, value: String) {
     if (value.isBlank()) return
@@ -371,20 +400,25 @@ private fun DataRow(label: String, value: String) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 5.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
+        // Top, not centred: the value wraps to as many lines as it needs and the
+        // label belongs beside its first line.
+        verticalAlignment = Alignment.Top
     ) {
         Text(
             label,
             style = MaterialTheme.typography.bodyMedium,
             color = scheme.onSurfaceVariant
         )
+        Spacer(Modifier.width(DataRowLayout.GAP_DP.dp))
         Text(
             value,
+            modifier = Modifier.weight(DataRowLayout.VALUE_WEIGHT),
             style = MaterialTheme.typography.bodyMedium.copy(
                 fontWeight = FontWeight.Medium,
                 fontFamily = FontFamily.Monospace
             ),
-            color = scheme.onSurface
+            color = scheme.onSurface,
+            textAlign = TextAlign.End
         )
     }
 }
