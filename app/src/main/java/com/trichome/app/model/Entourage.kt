@@ -58,11 +58,37 @@ enum class Cannabinoid(
  * Both pinene isomers are distinct members on purpose: they are different
  * compounds with different boiling points, and collapsing them would make the
  * vaporisation table wrong.
+ *
+ * ## `catalogId` is the join, and it is the reason the two assets cannot drift
+ *
+ * [catalogId] is the only thing that says which encyclopedia entry a module
+ * terpene *is*, and the enumeration above is what makes it exact rather than a
+ * guess. `terpenes.json` carries three distinct entries around "pineno":
+ *
+ * - `alpha_pinene` — 156 °C
+ * - `beta_pinene` — 166 °C
+ * - `pinene` — 155 °C, a generic entry that is *not* either isomer's twin
+ *
+ * `ALPHA_PINENE` therefore pairs with `alpha_pinene` and never with `pinene`.
+ * Pairing it with the generic entry would report a 1 °C delta between
+ * `entourage_data.json` (156) and the encyclopedia (155) that is an artefact of
+ * the pairing, not a disagreement about a compound. The decision is deliberate
+ * and it is enforced: `EntourageAssetTest.everyBoilingPointAgreesWithBothCatalogs`
+ * compares the two sources through this field and fails naming both ids, and
+ * `EntourageAssetTest.aModuleTerpeneNeverPairsWithAGenericEncyclopediaEntry`
+ * pins the isomer-to-isomer pairing so the delta cannot be reintroduced by
+ * repointing a `catalogId`.
  */
 enum class EntourageTerpene(
     val key: String,
     val labelEs: String,
-    /** Id of the matching entry in `assets/data/terpenes.json`. */
+    /**
+     * Id of the matching entry in `assets/data/terpenes.json`.
+     *
+     * `terpenes.json` is **canonical** for a compound's boiling point; see the
+     * type's KDoc for why. `entourage_data.json` restates it and is required to
+     * match.
+     */
     val catalogId: String,
     val familyEs: String
 ) {
@@ -176,6 +202,51 @@ data class EntourageProfile(
  * derived from it. Getting this backwards destroys the very compounds the
  * module exists to preserve: heat a monoterpene to a sesquiterpene's window
  * and the monoterpene is long gone before the sesquiterpene shows up.
+ *
+ * ## Which source owns [boilingPointC]
+ *
+ * `terpenes.json` is canonical; `entourage_data.json` restates the number. The
+ * argument is about ownership, not about which file looks more careful:
+ *
+ * - `terpenes.json` covers all 158 catalog compounds and is the field the
+ *   terpene detail page already renders. A canonical source for ten rows cannot
+ *   be the source for the catalog.
+ * - [EntourageTerpene.catalogId] already makes the encyclopedia the *identity*
+ *   source for a module terpene. The dependency arrow already points that way;
+ *   making the module's asset canonical instead would mean the enum owns the
+ *   number and the encyclopedia id is the derived thing, which is the opposite
+ *   of how the module is wired today.
+ * - The module's `Int` is better *guarded*, not better *authoritative*: the
+ *   `init` below checks the window against the boiling point, and
+ *   `AssetContent.boilingPointCelsius` returns null when the degree sign is
+ *   missing and silently concatenates a range ("155-156 °C" reads as 155156).
+ *   A guard on a duplicate does not outrank the original; it is what you add
+ *   *because* the duplicate is required to equal the original.
+ *
+ * So the two agree by construction, and `EntourageAssetTest` holds them to it
+ * rather than either being quietly preferred at read time.
+ *
+ * ## `minTempC == boilingPointC` is the invariant holding, not a copy-paste bug
+ *
+ * In 9 of the 10 shipped rows `minTempC` equals `boilingPointC` **exactly**.
+ * That is `require(minTempC <= boilingPointC)` satisfied at the boundary, not a
+ * duplicated column. Read it as the design statement it is: these compounds are
+ * only worth stripping once the element reaches their boiling point, so the
+ * useful window opens there. Do not "fix" the equality by nudging one value off
+ * the other — a floor pushed above the boiling point fails the guard outright,
+ * and a floor pushed below it would promise extraction the module cannot
+ * substantiate.
+ *
+ * The 10th row, `BETA_CARYOPHYLLENE` (`boilingPointC` 262, `minTempC` 250), sits
+ * 12 °C *below* the boundary instead of on it. That is still inside the
+ * invariant, and it is not the same kind of number: 250 °C is an equipment
+ * floor, not a physicochemical one. I could not establish a physical reading
+ * for the 12 °C margin from anything in this repository — no asset, comment or
+ * test claims one. What the invariant *can* say is that the row is admissible,
+ * and that a window starting below the boiling point is the honest shape for a
+ * compound that no consumer device reaches at its own boiling point. Whether
+ * 250 °C is a measured extraction floor or a rounded consumer-device setpoint is
+ * a content question, recorded as such rather than invented here.
  */
 data class TerpeneVaporisation(
     val terpene: EntourageTerpene,

@@ -296,4 +296,90 @@ class EntourageQuizTest {
             badge.description
         )
     }
+
+    /**
+     * The badge text is derived from the round count, not written down.
+     *
+     * The old literal "Acierta 8 de 10" was correct only while the asset shipped
+     * exactly ten questions and the threshold happened to land on eight. Both
+     * halves are now computed from the same [thresholdFor] the unlock rule uses,
+     * so the sentence cannot describe a different badge from the one that is
+     * actually granted.
+     */
+    @Test
+    fun theBadgeTextFollowsTheRoundCount() {
+        val badge = EntourageAchievement.ENTOURAGE_MASTER
+
+        // The shipped shape, spelled out rather than built from the same call the
+        // implementation uses: a test that reuses the formula proves nothing.
+        assertEquals(
+            "a ten-question quiz still has to read as it always did",
+            "Acierta 8 de 10 preguntas sobre modulación terpénica",
+            badge.descriptionFor(rounds = 10)
+        )
+        assertEquals(
+            "an eleven-question quiz needs nine, not the eight the old literal promised",
+            "Acierta 8 de 11 preguntas sobre modulación terpénica",
+            badge.descriptionFor(rounds = 11)
+        )
+        // floor(11 * 0.8) = 8, so 11 is not the clearest case; 15 needs 12 and
+        // 7 needs 5, and both disagree with any hardcoded pair.
+        assertEquals(
+            "a fifteen-question quiz needs twelve",
+            "Acierta 12 de 15 preguntas sobre modulación terpénica",
+            badge.descriptionFor(rounds = 15)
+        )
+        assertEquals(
+            "a seven-question quiz needs five",
+            "Acierta 5 de 7 preguntas sobre modulación terpénica",
+            badge.descriptionFor(rounds = 7)
+        )
+    }
+
+    /**
+     * Whatever the number, the sentence and the rule agree.
+     *
+     * This is the invariant the hardcoded version could not hold: the count in
+     * the text is the count [isEarned] enforces, for every round count, so there
+     * is no length of quiz for which the badge advertises a threshold it does not
+     * apply.
+     */
+    @Test
+    fun theBadgeTextAlwaysNamesTheThresholdTheRuleEnforces() {
+        (1..40).forEach { rounds ->
+            val text = EntourageAchievement.ENTOURAGE_MASTER.descriptionFor(rounds)
+            val threshold = EntourageAchievement.thresholdFor(rounds)
+
+            assertTrue(
+                "for $rounds rounds the badge says \"$text\", which does not name " +
+                    "the enforced threshold of $threshold",
+                text.contains("Acierta $threshold de $rounds ")
+            )
+            assertTrue(
+                "for $rounds rounds the badge says \"$text\", which a run of that " +
+                    "length cannot satisfy: the threshold is not reachable",
+                EntourageAchievement.isEarned(score = threshold, rounds = rounds, finished = true)
+            )
+            assertFalse(
+                "for $rounds rounds one answer short of $threshold must not pass, " +
+                    "so the advertised text is not promising more than the rule does",
+                EntourageAchievement.isEarned(
+                    score = threshold - 1,
+                    rounds = rounds,
+                    finished = true
+                )
+            )
+        }
+    }
+
+    /** A zero-round run has no threshold to advertise, and must not invent one. */
+    @Test
+    fun theBadgeTextIsStillWellFormedWithNoRounds() {
+        val text = EntourageAchievement.ENTOURAGE_MASTER.descriptionFor(rounds = 0)
+
+        assertTrue(
+            "\"$text\" has to stay a sentence rather than reading \"de 0\"",
+            text.startsWith("Acierta ") && text.contains("preguntas")
+        )
+    }
 }

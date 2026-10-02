@@ -336,10 +336,15 @@ internal fun EntourageBible.toContent(): EntourageContent {
  * `achievements` table, whose `xpReward` the app already sums into the
  * player's total. A second progression system here would be a second source of
  * truth for the same number.
+ *
+ * [rounds] is the run the row is written for, because the badge's own text
+ * states how many correct answers a run needs and that number is a fraction of
+ * the rounds. Writing the row from the shipped-quiz default instead would put a
+ * claim in the achievements table that the player's run may not match.
  */
-internal fun EntourageAchievement.toAchievementRow(): Achievement = Achievement(
+internal fun EntourageAchievement.toAchievementRow(rounds: Int): Achievement = Achievement(
     name = labelEs,
-    description = description,
+    description = descriptionFor(rounds),
     icon = icon,
     xpReward = xpReward,
     isUnlocked = false

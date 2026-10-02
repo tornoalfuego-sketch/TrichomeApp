@@ -13,10 +13,21 @@ import kotlin.math.floor
  * would drift. So the only reward the Séquito content can grant is an
  * [EntourageAchievement], and the table does the summing.
  *
- * The unlock condition is the module's own: a finished quiz run with at least
- * [QUIZ_THRESHOLD] of the rounds correct. The threshold is a fraction of the
- * rounds rather than a fixed count, so a shorter shipped quiz does not
- * silently make the badge impossible.
+ * ## Why the badge text is a function and not a string
+ *
+ * The unlock condition is a fraction of the rounds played, so both the threshold
+ * and the sentence that advertises it have to move with the quiz length. The
+ * text used to be a literal — "Acierta 8 de 10 preguntas" — sitting next to a
+ * `thresholdFor` that derived the same 8 from `floor(rounds * 0.8)`. Those
+ * agreed only while the asset shipped exactly ten questions. Add an eleventh and
+ * the badge demands nine while its own description still promises eight; remove
+ * two and it demands six of eight while promising eight of ten. Either way the
+ * player is told the wrong thing about the only reward in the module.
+ *
+ * So [descriptionFor] is the single place the sentence is built, from the round
+ * count the caller actually played, and no `QUIZ_ROUNDS` constant survives to be
+ * a second, drifting copy of the asset's question count. `description` remains as
+ * the shipped-quiz reading of the same function.
  *
  * [labelEs] is named for what it is rather than `name`, which `Enum` already
  * owns: the value here is Spanish display text, while `Enum.name` is the
@@ -24,7 +35,6 @@ import kotlin.math.floor
  */
 enum class EntourageAchievement(
     val labelEs: String,
-    val description: String,
     val icon: String,
     val xpReward: Int
 ) {
@@ -32,18 +42,40 @@ enum class EntourageAchievement(
      * The single badge the module ships.
      *
      * A perfect run is not required: the quiz asks about mechanisms that are
-     * genuinely pre-clinical, and demanding 10/10 would reward guessing the
-     * ones nobody can reason out.
+     * genuinely pre-clinical, and demanding every answer would reward guessing
+     * the ones nobody can reason out.
      */
     ENTOURAGE_MASTER(
         labelEs = "Maestro del Efecto Séquito",
-        description = "Acierta 8 de 10 preguntas sobre modulación terpénica",
         icon = "🧬",
         xpReward = 300
     );
 
+    /**
+     * The badge's description for a run of [rounds] rounds.
+     *
+     * [rounds] is the length the player actually played, which is the parsed
+     * asset's question count — not a constant written next to the asset. A run
+     * of fewer than one round still gets a sentence, because `thresholdFor`
+     * already coerces to at least one and the two must not disagree.
+     */
+    fun descriptionFor(rounds: Int): String =
+        "Acierta ${thresholdFor(rounds)} de $rounds preguntas sobre modulación terpénica"
+
+    /** Description for a full run of the shipped quiz. */
+    val description: String get() = descriptionFor(QUIZ_ROUNDS)
+
     companion object {
-        /** Rounds a full run of the shipped quiz has. */
+        /**
+         * Rounds a full run of the shipped quiz has.
+         *
+         * Kept only as the argument for [description]'s reading and asserted
+         * against the asset by
+         * `EntourageAssetTest.theBadgeTextFollowsTheShippedQuizLength` — which
+         * is the whole point: the constant cannot drift from the file without a
+         * test failing, and the sentence the player reads is built from
+         * [descriptionFor] either way.
+         */
         const val QUIZ_ROUNDS = 10
 
         /** Correct answers needed, as a fraction of the rounds played. */

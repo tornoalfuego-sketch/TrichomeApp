@@ -27,7 +27,14 @@ import java.io.File
  *    point here is cross-checked against the `boilingPoint` the terpene
  *    encyclopedia already ships. Two catalogs claiming different boiling points
  *    for the same compound is exactly the failure that would teach a user the
- *    wrong temperature.
+ *    wrong temperature. [everyBoilingPointAgreesWithBothCatalogs] runs that
+ *    check over the *raw* asset rows, because a row dropped at parse time would
+ *    otherwise take its boiling point out of scope along with its bad window.
+ * 4. **Every synergy says what kind of evidence it is.** An `evidence_es` line
+ *    is the module's promise that a claim is bounded, so each of the seven has
+ *    to name its level — in vitro, animal, human — in text the card renders.
+ *    A disclaimer that does not say which of the three it is is not a
+ *    disclaimer; it is an apology.
  */
 class EntourageAssetTest {
 
@@ -290,6 +297,121 @@ class EntourageAssetTest {
                 shipped != null && shipped == row.boilingPointC
             )
         }
+    }
+
+    /**
+     * The cross-source check, run over the **raw** asset rows.
+     *
+     * `everyBoilingPointAgreesWithTheTerpeneEncyclopedia` walks
+     * `content().vaporisation`, which is what survived parsing — and
+     * `EntourageBible.toContent` drops a row whose window fails
+     * `TerpeneVaporisation`'s guard, recording it in `unresolvedReferences`
+     * instead. A row dropped for a bad *window* would therefore silently skip
+     * the *boiling point* comparison too, and the one test whose job is to catch
+     * the two catalogs disagreeing would be the first thing to stop looking.
+     *
+     * So the comparison is made here against the asset as written. Every row is
+     * checked, and the failure names both sources: the module key, the module's
+     * number, the encyclopedia id, and the encyclopedia's number. "Expected 155,
+     * was 156" is a test that leaves the reader guessing which file said what.
+     */
+    @Test
+    fun everyBoilingPointAgreesWithBothCatalogs() {
+        val catalog = terpenes().associateBy { it.id }
+
+        val rows = entourage().vaporisation
+        assertTrue(
+            "the raw asset has to carry a row per module terpene, so this " +
+                "cross-source check has something to walk; found ${rows.size}",
+            rows.size >= EntourageTerpene.entries.size
+        )
+
+        rows.forEach { row ->
+            val terpene = EntourageTerpene.fromKey(row.terpene)
+            assertTrue(
+                "vaporisation row '${row.terpene}' is not a module terpene, so it " +
+                    "can never be cross-checked against terpenes.json",
+                terpene != null
+            )
+            val catalogId = terpene!!.catalogId
+            val entry = catalog[catalogId]
+            assertTrue(
+                "${terpene.key} claims to be '$catalogId' in terpenes.json, which " +
+                    "that file does not contain",
+                entry != null
+            )
+            val shipped = entry!!.boilingPointCelsius
+            assertEquals(
+                "boiling point disagreement for ${terpene.key}: entourage_data.json " +
+                    "says ${row.boilingPointC} °C, terpenes.json entry '$catalogId' " +
+                    "(\"${entry.name}\") says " +
+                    "${shipped?.toString() ?: "no parseable value in \"${entry.boilingPoint}\""} °C. " +
+                    "terpenes.json is canonical for this fact, so the module asset's " +
+                    "number is the one that is wrong.",
+                shipped,
+                row.boilingPointC
+            )
+        }
+    }
+
+    /**
+     * The pairing that makes the cross-source check meaningful.
+     *
+     * `terpenes.json` holds three entries around "pineno": `alpha_pinene`
+     * (156 °C), `beta_pinene` (166 °C) and a generic `pinene` (155 °C) that is
+     * neither isomer's twin. Pairing `ALPHA_PINENE` with the generic entry
+     * reports a 1 °C disagreement between two catalogs that in fact agree — the
+     * delta is an artefact of the join, not a fact about a compound. Pairing
+     * each module terpene with the encyclopedia entry that is actually the same
+     * molecule is what makes [everyBoilingPointAgreesWithBothCatalogs] a test
+     * about the data rather than about the join.
+     *
+     * The assertion is on the pairing, and it is what stops a later edit from
+     * repointing a `catalogId` at a sibling and manufacturing a phantom delta:
+     * the generic id must never be a module terpene's catalog entry.
+     */
+    @Test
+    fun aModuleTerpeneNeverPairsWithAGenericEncyclopediaEntry() {
+        val catalog = terpenes().associateBy { it.id }
+        // Ids in terpenes.json that name a whole family rather than one isomer.
+        val generic = setOf("pinene", "caryophyllene")
+
+        EntourageTerpene.entries.forEach { terpene ->
+            assertTrue(
+                "${terpene.key} is paired with the generic catalog id " +
+                    "'${terpene.catalogId}'; a family-level entry is a different " +
+                    "claim from the isomer the module names, and pairing them " +
+                    "invents a boiling-point delta that no compound has",
+                terpene.catalogId !in generic
+            )
+            assertTrue(
+                "${terpene.key} must not be a *prefix* of its own catalog id's " +
+                    "sibling; '${terpene.catalogId}' in terpenes.json is " +
+                    "\"${catalog[terpene.catalogId]?.name}\"",
+                catalog.containsKey(terpene.catalogId)
+            )
+        }
+    }
+
+    /**
+     * Every module terpene is dual-sourced, so the cross-source check covers the
+     * whole module and not a convenient subset of it.
+     *
+     * A pairing that silently fell through to nothing would leave the catalog
+     * with a terpene the temperature table cannot corroborate, which is the one
+     * state where the two sources are allowed to disagree unnoticed.
+     */
+    @Test
+    fun everyModuleTerpeneIsCrossCheckedAgainstTheEncyclopedia() {
+        val checked = entourage().vaporisation.mapNotNull { EntourageTerpene.fromKey(it.terpene) }.toSet()
+
+        assertEquals(
+            "the raw asset has to cover every module terpene, otherwise some " +
+                "compound's boiling point is asserted with no second source to " +
+                "confirm it",
+            EntourageTerpene.entries.toSet(),
+            checked
+        )
     }
 
     @Test
