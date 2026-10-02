@@ -22,6 +22,8 @@ import com.trichome.app.ui.components.AppTopBar
 import com.trichome.app.ui.components.SolidPanel
 import com.trichome.app.ui.components.SolidProgressRing
 import com.trichome.app.ui.theme.TrichomeThemeState
+import com.trichome.app.ui.theme.metricHeadline
+import com.trichome.app.ui.theme.metricValue
 import com.trichome.app.viewmodel.SuperCycleViewModel
 import com.trichome.app.viewmodel.appViewModel
 import kotlinx.coroutines.launch
@@ -115,7 +117,12 @@ fun SuperCycleScreen(
                             FilterChip(
                                 selected = selectedPreset == preset,
                                 onClick = { form = form.withPreset(preset) },
-                                label = { Text(preset.uppercase()) }
+                                // Three photoperiods read against each other, in a
+                                // row, where the digits have to land in the same
+                                // places: that is the value register, and the fixed
+                                // advance is what makes `18/6` and `24/0` line up
+                                // rather than merely be close.
+                                label = { Text(preset.uppercase(), style = metricValue()) }
                             )
                         }
                     }
@@ -145,7 +152,13 @@ fun SuperCycleScreen(
                         Text("Ciclo Total", style = MaterialTheme.typography.bodyMedium)
                         Text(
                             "${lightHours + darkHours} h",
-                            style = MaterialTheme.typography.titleLarge,
+                            // The headline register: this is the answer the two
+                            // sliders above were read to produce, and it is judged
+                            // against the two operands it is the sum of. It was
+                            // `titleLarge` (22sp); the headline metric is 28sp, which
+                            // puts it where a screen's lead number belongs instead
+                            // of level with the two labels beside it.
+                            style = metricHeadline(),
                             color = accent
                         )
                     }
@@ -316,7 +329,12 @@ private fun SuperCycleResultCard(
 @Composable
 private fun StatLabel(label: String, value: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(value, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+        // Four results side by side in a `SpaceBetween` row, each compared against
+        // the other three, each under its own caption. The value register, at
+        // 14sp rather than the `titleMedium` 16sp it replaces — four monospace
+        // values share one row and the fixed advance is what makes their digits
+        // line up.
+        Text(value, style = metricValue(), color = MaterialTheme.colorScheme.primary)
         Text(label, style = MaterialTheme.typography.labelSmall)
     }
 }

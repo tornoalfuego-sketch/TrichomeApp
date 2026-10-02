@@ -7,13 +7,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.trichome.app.data.repository.EntourageContent
 import com.trichome.app.model.*
 import com.trichome.app.ui.components.SolidPanel
 import com.trichome.app.ui.theme.LocalTertiaryText
 import com.trichome.app.ui.theme.TrichomeThemeState
+import com.trichome.app.ui.theme.metricHeadline
 
 /**
  * T8.2 — the booster.
@@ -156,8 +156,17 @@ fun EntourageBoosterSection(
                     if (frame.reportable) {
                         Text(
                             "${frame.percent}%",
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
+                            // The headline register: this is the one number the
+                            // panel exists to deliver, and the reader judges it
+                            // against the band sentence underneath. It was
+                            // `headlineMedium` (28sp) with an explicit Bold, so the
+                            // size does not move -- but the hardcoded Bold goes,
+                            // because a role is set like any other text: the
+                            // reader's chosen weight reaches it, lifted one step,
+                            // the same as `titleMedium`. Somebody on *Ligera* was
+                            // getting Bold here and nothing they could change, and
+                            // somebody on *Negrita* gets SemiBold instead of Bold.
+                            style = metricHeadline(),
                             color = scheme.onSurface
                         )
                         Text(

@@ -383,6 +383,12 @@ private fun DayCell(
         if (day != null) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
+                    // Deliberately prose, like every other date and time on this
+                    // screen: a day of the month is a date, not a measurement, and
+                    // it is centred in an equally weighted cell, so the columns
+                    // already line up without a fixed advance. The estimated
+                    // climate card below is the instrumented part of this screen,
+                    // and it is instrumented in its own component.
                     "${day.dayOfMonth}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = if (isSelected) accent else MaterialTheme.colorScheme.onBackground

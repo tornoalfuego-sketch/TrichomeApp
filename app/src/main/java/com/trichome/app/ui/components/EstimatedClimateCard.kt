@@ -15,6 +15,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.trichome.app.model.ClimateCardContent
 import com.trichome.app.ui.theme.LocalTertiaryText
+import com.trichome.app.ui.theme.metricValue
 
 /**
  * The estimated outdoor climate card: temperature, humidity, VPD and its band.
@@ -94,7 +95,13 @@ private fun ClimateStat(label: String, value: String, modifier: Modifier = Modif
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = value,
-            style = MaterialTheme.typography.titleMedium,
+            // Three estimates side by side, and the whole point of the card is that
+            // they are compared against each other and against the grower's own
+            // readings — which is the value register's job. 14sp rather than the
+            // `titleMedium` 16sp it replaces: monospace has a wider advance than
+            // the prose face, and three of them share a row with `Arrangement.spacedBy(16.dp)`
+            // between them, so the digits have to leave room for each other.
+            style = metricValue(),
             textAlign = TextAlign.Center
         )
         Text(

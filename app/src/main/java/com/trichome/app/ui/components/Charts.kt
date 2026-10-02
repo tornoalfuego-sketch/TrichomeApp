@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
+import com.trichome.app.ui.theme.metricValue
 
 /**
  * Native Canvas line chart for grow metrics (pH, EC, temp, humidity, height).
@@ -101,13 +102,24 @@ fun NativeLineChart(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween
     ) {
-        Text("min ${minY}", style = MaterialTheme.typography.labelSmall, color = color)
-        Text("max ${maxY}", style = MaterialTheme.typography.labelSmall, color = color)
+        // The axis bounds, which are the two numbers a reader uses to read every
+        // other number on the chart off it. They were `labelSmall` prose: 11sp in
+        // whatever face the app was set to, which on a device whose sans-serif
+        // resolves to a handwriting face makes the scale of the chart the least
+        // legible thing on it. 14sp monospace, same reasoning as every other value
+        // in the app.
+        Text("min ${minY}", style = metricValue(), color = color)
+        Text("max ${maxY}", style = metricValue(), color = color)
     }
 }
 
 /**
  * Small progress bar used to visualize level progress towards the next level.
+ *
+ * Deliberately numberless: [currentXp] and [level] are inputs to the fraction and
+ * neither is printed, so there is nothing here for the metric register to style.
+ * The XP totals a reader actually compares are on `ChartsScreen`, next to this bar,
+ * and they are set with [metricValue] there.
  */
 @Composable
 fun LevelProgressBar(

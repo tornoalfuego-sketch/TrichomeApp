@@ -16,6 +16,7 @@ import com.trichome.app.ui.components.SolidPanel
 import com.trichome.app.ui.components.accentButtonColors
 import com.trichome.app.ui.theme.LocalTertiaryText
 import com.trichome.app.ui.theme.TrichomeThemeState
+import com.trichome.app.ui.theme.metricValue
 import java.util.Locale
 
 /**
@@ -245,7 +246,12 @@ fun EntourageLabSection(
                                 percent = (value * 100).toInt(),
                                 maxPercent = ceiling?.let { (it * 100).toInt() }
                             ),
-                            style = MaterialTheme.typography.labelLarge,
+                            // A number against the limit it may not cross, on a
+                            // dial the reader is dragging. That is the value
+                            // register: the ceiling only means something if the
+                            // current reading can be lined up against it digit for
+                            // digit.
+                            style = metricValue(),
                             color = if (forbidden) scheme.error else scheme.primary
                         )
                     }
@@ -387,7 +393,11 @@ fun EntourageLabSection(
                             )
                             Text(
                                 EntourageLabCopy.axisReadingEs(axis.loadPercent, axis.ceilingPercent),
-                                style = MaterialTheme.typography.labelMedium,
+                                // Two percentages in one cell, load against ceiling,
+                                // one row per axis and every row read against the
+                                // others. A fixed advance is what makes "35% / 60%"
+                                // line up with "70% / 60%" down the list.
+                                style = metricValue(),
                                 color = if (axis.crossed) scheme.error else scheme.onSurfaceVariant
                             )
                             Spacer(Modifier.width(8.dp))

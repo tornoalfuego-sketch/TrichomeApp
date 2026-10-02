@@ -18,7 +18,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -43,6 +42,7 @@ import com.trichome.app.ui.components.accentTextButtonColors
 import com.trichome.app.ui.screens.entourage.entourageRoute
 import com.trichome.app.ui.theme.LocalTertiaryText
 import com.trichome.app.ui.theme.TrichomeThemeState
+import com.trichome.app.ui.theme.metricValue
 import com.trichome.app.viewmodel.TerpenesViewModel
 import com.trichome.app.viewmodel.appViewModel
 import kotlinx.coroutines.launch
@@ -456,10 +456,14 @@ private fun DataRow(label: String, value: String) {
         Text(
             value,
             modifier = Modifier.weight(DataRowLayout.VALUE_WEIGHT),
-            style = MaterialTheme.typography.bodyMedium.copy(
-                fontWeight = FontWeight.Medium,
-                fontFamily = FontFamily.Monospace
-            ),
+            // The value register, not an inline override. This used to be written
+            // here as `bodyMedium.copy(FontWeight.Medium, FontFamily.Monospace)` —
+            // the only monospace number in the app — so every other measured value
+            // was left in whatever prose face the reader had picked. The role is
+            // 14sp / Medium / monospace, which is exactly what that override
+            // produced, so this row's typography does not move; only the number of
+            // places that are set this way changes.
+            style = metricValue(),
             color = scheme.onSurface,
             textAlign = TextAlign.End
         )

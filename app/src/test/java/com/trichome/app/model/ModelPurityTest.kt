@@ -28,7 +28,8 @@ class ModelPurityTest {
         "TerpeneVolatility.kt",
         "TerpeneAgronomy.kt",
         "TerpeneProcessing.kt",
-        "EntourageHandling.kt"
+        "EntourageHandling.kt",
+        "MetricType.kt"
     )
 
     private fun codeOf(name: String): String {

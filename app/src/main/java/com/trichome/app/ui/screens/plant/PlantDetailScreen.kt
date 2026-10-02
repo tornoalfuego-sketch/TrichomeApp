@@ -319,6 +319,14 @@ private fun PlantDetailContent(
                 Text(
                     // "1 días" reads as a bug to a Spanish speaker; the plural is
                     // only correct from two.
+                    //
+                    // Deliberately still prose. The metric register cannot reach
+                    // this one without a layout change: the count and its unit
+                    // word are a single interpolated string, so a monospace face
+                    // would have to cover "días" too, and splitting it into two
+                    // Texts rewrites the header of a screen whose bottom bar is
+                    // three fixed buttons. Same reason for the photoperiod and
+                    // superday sentences further down.
                     "${success.daysInGrow} ${if (success.daysInGrow == 1) "día" else "días"}",
                     style = MaterialTheme.typography.displaySmall,
                     color = accent

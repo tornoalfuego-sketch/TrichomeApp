@@ -92,6 +92,14 @@ fun LunarPhaseBar(
                     style = MaterialTheme.typography.labelLarge
                 )
                 Text(
+                    // Deliberately prose, and the reasoning is worth keeping: the
+                    // illumination percentage is a measured value, but here it is
+                    // the first clause of a two-clause sentence whose second clause
+                    // is the trend word. Instrumenting the number means splitting
+                    // one `Text` into two and re-laying-out the row that also holds
+                    // the phase glyph and the disclosure button. The phase is also
+                    // astronomy, not a grow reading — nothing on this screen is
+                    // compared against it.
                     text = "${content.illuminationEs} ilumina · ${content.trendLabelEs}",
                     style = MaterialTheme.typography.labelSmall,
                     color = LocalTertiaryText.current

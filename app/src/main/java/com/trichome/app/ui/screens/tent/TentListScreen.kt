@@ -317,6 +317,13 @@ private fun TentCard(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(tent.name, style = MaterialTheme.typography.titleLarge)
                     Text(
+                        // Location, lamp type, wattage and occupancy in one
+                        // sentence. Left in the prose face on purpose: the numbers
+                        // are welded to their unit words (`W`, `plantas`) and to the
+                        // location before them, so instrumenting them means
+                        // splitting one `Text` into three and re-laying-out a row
+                        // that already carries two icon buttons. That is a layout
+                        // change wearing a typography costume.
                         "${tent.location.ifBlank { "Sin ubicación" }} · ${tent.lightType} ${tent.lightPowerWatts}W · ${plants.size}/${tent.capacity} plantas",
                         style = MaterialTheme.typography.bodySmall
                     )

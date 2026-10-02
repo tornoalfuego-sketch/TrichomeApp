@@ -21,6 +21,7 @@ import com.trichome.app.ui.components.NativeLineChart
 import com.trichome.app.ui.components.SelectableChip
 import com.trichome.app.ui.components.SolidPanel
 import com.trichome.app.ui.theme.TrichomeThemeState
+import com.trichome.app.ui.theme.metricValue
 import com.trichome.app.viewmodel.ChartsViewModel
 import com.trichome.app.viewmodel.appViewModel
 
@@ -193,7 +194,12 @@ private fun MetricRow(event: GrowEvent, metric: String, accent: Color) {
             }
             Text(
                 "${value?.toString() ?: "—"}$unit",
-                style = MaterialTheme.typography.titleMedium,
+                // The reading this screen exists to show: pH, EC, temperature,
+                // humidity or height, listed newest first and read against the ten
+                // rows above it. The value register, at 14sp rather than the
+                // `titleMedium` 16sp it replaces — the unit rides along in the same
+                // string, so the digits have to leave room for ` mS/cm` on one line.
+                style = metricValue(),
                 color = accent
             )
         }

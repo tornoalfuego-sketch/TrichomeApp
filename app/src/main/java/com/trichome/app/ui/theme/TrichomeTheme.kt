@@ -15,10 +15,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.sp
+import com.trichome.app.model.MetricType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -685,23 +687,80 @@ object AccentPalette {
 
 /* ─────────────────────────── Typography ───────────────────────────────── */
 
+/**
+ * The app's two type registers, built from the same preferences.
+ *
+ * Material 3's [Typography] is a closed class: fifteen slots and nowhere to put a
+ * role the design system did not ship. The metric register is not one of the
+ * fifteen, so it travels beside them rather than inside them, and
+ * [TrichomeTheme] publishes all three into the tree.
+ *
+ * The fifteen names and sizes are exactly what shipped before this type. They are
+ * not extensible by design: `ColorRolesDialogPreviewTest` previews four of them by
+ * name and the colour-role dialog reads those names off the live typography, so a
+ * rename would silently repaint four previews rather than fail a build.
+ *
+ * @property material the Material slots, at the user's scale, typeface and weight.
+ * @property metricValue a measured value in a row, or under a caption.
+ * @property metricHeadline the one number a screen leads with.
+ */
+data class TrichomeTypography(
+    val material: Typography,
+    val metricValue: TextStyle,
+    val metricHeadline: TextStyle
+)
+
 private val LineHeightStyleCompat = LineHeightStyle(
     alignment = LineHeightStyle.Alignment.Center,
     trim = LineHeightStyle.Trim.None
 )
 
 /**
- * Builds the full Material typography from the user preferences.
- * [scale] is the 0.85–1.30 size multiplier, [family] the typeface and [weight]
- * the base weight applied to every style.
+ * The typeface every instrumented value is set in, whatever the user picked for
+ * prose.
+ *
+ * The parameter is the point of the function's shape. A reader on
+ * [AppFontFamily.SERIF] or [AppFontFamily.SCRIPT] still reads pH, VPD, cycle days
+ * and molar mass in a face built for numbers, because the two registers are
+ * decided by what the text *is* and not by the app-wide typeface setting. If this
+ * returned `prose.family` the registers would collapse back into one and the role
+ * would be decoration.
+ *
+ * This is also the hardware case. On the device this was verified on, the system
+ * sans-serif resolves to a handwriting face, so prose is already hard to read there
+ * while `FontFamily.Monospace` resolves correctly. A metric set in the prose face
+ * inherits the handwriting -- which is why this is a legibility fix and not a
+ * typeface preference.
+ *
+ * [AppFontFamily.MONO] names the same family, and that is the opposite decision:
+ * that entry is the user asking for monospace *prose*. This one is the app
+ * refusing to let a prose preference decide what a measurement looks like. Two
+ * declarations of `FontFamily.Monospace` in the codebase are therefore correct --
+ * this one and the enum -- and `MetricTypographyTest` holds that count.
+ *
+ * @param prose the family the reader chose for everything else. Deliberately
+ *   unused; the signature exists so the guarantee can be stated, and tested, per
+ *   family instead of once.
+ */
+fun metricFontFamily(prose: AppFontFamily): FontFamily = FontFamily.Monospace
+
+/**
+ * Builds both registers from the user preferences.
+ * [scale] is the 0.85-1.30 size multiplier, [family] the typeface for prose and
+ * [weight] the base weight.
+ *
+ * The scale multiplies `fontSize` and `lineHeight` and nothing else -- tracking is
+ * left alone, in the prose slots and in the metric roles alike. That is the
+ * pre-existing rule and this function does not get to change it silently;
+ * `MetricTypographyTest` pins the invariance rather than restating it.
  */
 fun buildTypography(
     scale: Float,
     family: AppFontFamily = AppFontFamily.SANS,
     weight: AppFontWeight = AppFontWeight.NORMAL
-): Typography {
+): TrichomeTypography {
     fun style(size: Int, lineHeight: Int, w: FontWeight? = null, letterSpacing: Double = 0.0) =
-        androidx.compose.ui.text.TextStyle(
+        TextStyle(
             fontFamily = family.family,
             fontWeight = w ?: weight.weight,
             fontSize = size.sp * scale,
@@ -710,22 +769,46 @@ fun buildTypography(
             lineHeightStyle = LineHeightStyleCompat
         )
 
-    return Typography(
-        displayLarge = style(57, 64, weight.weight, (-0.25)),
-        displayMedium = style(45, 52),
-        displaySmall = style(36, 44),
-        headlineLarge = style(32, 40),
-        headlineMedium = style(28, 36),
-        headlineSmall = style(24, 32),
-        titleLarge = style(22, 28, weight.weight.lift()),
-        titleMedium = style(16, 24, weight.weight.lift(), 0.15),
-        titleSmall = style(14, 20, weight.weight.lift(), 0.1),
-        bodyLarge = style(16, 24, letterSpacing = 0.5),
-        bodyMedium = style(14, 20, letterSpacing = 0.25),
-        bodySmall = style(12, 16, letterSpacing = 0.4),
-        labelLarge = style(14, 20, weight.weight.lift(), 0.1),
-        labelMedium = style(12, 16, weight.weight.lift(), 0.5),
-        labelSmall = style(11, 16, weight.weight.lift(), 0.5)
+    /**
+     * A value, at whichever of the two metric sizes it is.
+     *
+     * Monospace by construction, the reader's weight lifted one step the same way
+     * the `title*` and `label*` slots are -- so someone who chose *Ligera* because
+     * the default was too heavy gets that here too -- and tracking deliberately
+     * unscaled. The numbers come from [MetricType] so a JVM test can read them.
+     */
+    fun metric(sizeSp: Int, lineHeightSp: Int) = TextStyle(
+        fontFamily = metricFontFamily(family),
+        fontWeight = weight.weight.lift(),
+        fontSize = MetricType.fontSizeSp(sizeSp, scale).sp,
+        lineHeight = MetricType.lineHeightSp(lineHeightSp, scale).sp,
+        letterSpacing = MetricType.LETTER_SPACING_SP.sp,
+        lineHeightStyle = LineHeightStyleCompat
+    )
+
+    return TrichomeTypography(
+        material = Typography(
+            displayLarge = style(57, 64, weight.weight, (-0.25)),
+            displayMedium = style(45, 52),
+            displaySmall = style(36, 44),
+            headlineLarge = style(32, 40),
+            headlineMedium = style(28, 36),
+            headlineSmall = style(24, 32),
+            titleLarge = style(22, 28, weight.weight.lift()),
+            titleMedium = style(16, 24, weight.weight.lift(), 0.15),
+            titleSmall = style(14, 20, weight.weight.lift(), 0.1),
+            bodyLarge = style(16, 24, letterSpacing = 0.5),
+            bodyMedium = style(14, 20, letterSpacing = 0.25),
+            bodySmall = style(12, 16, letterSpacing = 0.4),
+            labelLarge = style(14, 20, weight.weight.lift(), 0.1),
+            labelMedium = style(12, 16, weight.weight.lift(), 0.5),
+            labelSmall = style(11, 16, weight.weight.lift(), 0.5)
+        ),
+        metricValue = metric(MetricType.VALUE_FONT_SIZE_SP, MetricType.VALUE_LINE_HEIGHT_SP),
+        metricHeadline = metric(
+            MetricType.HEADLINE_FONT_SIZE_SP,
+            MetricType.HEADLINE_LINE_HEIGHT_SP
+        )
     )
 }
 
@@ -903,7 +986,8 @@ class TrichomeThemeState(
         scope.launch { appContainer?.appearanceSettings?.setFontWeightIndex(safe) }
     }
 
-    fun typography(): Typography = buildTypography(fontScale, fontFamily, fontWeight)
+    /** Both type registers, built from the current preferences. */
+    fun typography(): TrichomeTypography = buildTypography(fontScale, fontFamily, fontWeight)
 }
 
 /* ─────────────────────────── Tertiary text ──────────────────────────────── */
@@ -940,6 +1024,42 @@ val LocalTertiaryText: ProvidableCompositionLocal<Color> = compositionLocalOf {
 /** The third text level, for a composable that has the theme state at hand. */
 @Composable
 fun tertiaryText(themeState: TrichomeThemeState): Color = themeState.textColors.tertiary
+
+/* ─────────────────────────── Metric type ──────────────────────────────── */
+
+/**
+ * A measured value in a row or under a caption -- pH, EC, VPD, temperature,
+ * hours, a cycle day, a chart's min and max.
+ *
+ * Published beside the typography rather than inside it, because Material 3 has no
+ * slot for it: [TrichomeTypography] carries it next to the fifteen and
+ * [TrichomeTheme] provides it here.
+ *
+ * [compositionLocalOf] for the same reason [LocalTertiaryText] is: a size or
+ * typeface change has to reach an already-composed screen on the tap, and a static
+ * local would leave it painting the previous metric style until something else
+ * invalidated it.
+ */
+val LocalMetricValue: ProvidableCompositionLocal<TextStyle> = compositionLocalOf {
+    buildTypography(1.0f).metricValue
+}
+
+/**
+ * The one number a screen leads with. Larger than [LocalMetricValue] and set in the
+ * same family, because it is read as a headline and judged at a glance rather than
+ * compared against a neighbouring row.
+ */
+val LocalMetricHeadline: ProvidableCompositionLocal<TextStyle> = compositionLocalOf {
+    buildTypography(1.0f).metricHeadline
+}
+
+/** The value style: anything a reader compares against something else. */
+@Composable
+fun metricValue(): TextStyle = LocalMetricValue.current
+
+/** The headline style: the single number a screen leads with. */
+@Composable
+fun metricHeadline(): TextStyle = LocalMetricHeadline.current
 
 /* ─────────────────────────── ARGB helpers ─────────────────────────────── */
 
@@ -987,15 +1107,18 @@ fun TrichomeTheme(
     }
 
     // The third text level travels beside the scheme, because Material 3 has no
-    // role for it. Provided here — the one place that knows the theme state — so
-    // every screen inside the theme reads the user's pick without being handed
-    // anything.
+    // role for it, and the two metric styles travel beside the typography, because
+    // Material 3 has no slot for them. All three are provided here -- the one place
+    // that knows the theme state -- so every screen inside the theme reads the
+    // reader's choices without being handed anything.
     CompositionLocalProvider(
-        LocalTertiaryText provides themeState.textColors.tertiary
+        LocalTertiaryText provides themeState.textColors.tertiary,
+        LocalMetricValue provides typography.metricValue,
+        LocalMetricHeadline provides typography.metricHeadline
     ) {
         MaterialTheme(
             colorScheme = scheme,
-            typography = typography,
+            typography = typography.material,
             content = content
         )
     }
