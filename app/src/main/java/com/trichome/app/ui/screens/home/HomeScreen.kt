@@ -16,12 +16,19 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import com.trichome.app.model.LunarCardCopy
+import com.trichome.app.model.LunarEngine
 import com.trichome.app.ui.components.MainBottomBar
 import com.trichome.app.ui.components.SolidPanel
+import com.trichome.app.ui.screens.entourage.entourageRoute
 import com.trichome.app.ui.theme.TrichomeThemeState
 import com.trichome.app.viewmodel.HomeViewModel
 import com.trichome.app.viewmodel.appViewModel
 import com.trichome.app.ui.theme.LocalTertiaryText
+import com.trichome.app.model.LunarCardContent
+import kotlinx.coroutines.delay
+import java.time.LocalDate
+import java.time.ZoneId
 
 @Composable
 fun HomeScreen(
@@ -43,6 +50,23 @@ fun HomeScreen(
     }
     val activePlants = plants.count { it.isActive }
     val activeTents = tents.count { it.isActive }
+
+    // Re-read on the day, not the frame. The phase moves on the order of hours and
+    // a per-frame read would recompose the whole home screen sixty times a second
+    // for a constant; the calendar's minute tick is the wrong cadence here because
+    // this value cannot have moved within a session that is still open.
+    var today by remember { mutableStateOf(LocalDate.now()) }
+    val lunarGlance = remember(today) {
+        val now = System.currentTimeMillis()
+        LunarCardCopy.contentOf(LunarEngine.snapshot(now), expanded = false)
+    }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(60_000L)
+            val current = LocalDate.now(ZoneId.systemDefault())
+            if (current != today) today = current
+        }
+    }
 
     Scaffold(
         bottomBar = {
@@ -107,6 +131,22 @@ fun HomeScreen(
                 }
             }
 
+            // ── Lunar phase, at a glance ───────────────────────────
+            // The engine shipped, was correct, and was still invisible: the phase
+            // lived only in the calendar's top bar, so "no se ve implementado el
+            // motor del ciclo de la luna" was a fair reading of the app. One line
+            // here proves the feature exists and leads to the full panel.
+            //
+            // Deliberately not the card. `EstimatedClimateCard` and the expanded
+            // `LunarPhaseBar` stay exactly where they are; duplicating either on
+            // Home would be two sources of truth for one value, and the climate
+            // estimate in particular must never read as a second reading of
+            // something. This row is one glanceable presence plus a destination.
+            LunarGlanceRow(
+                content = lunarGlance,
+                onClick = { navController.navigate("calendar") }
+            )
+
             SolidPanel {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("⚡ Acciones rápidas", style = MaterialTheme.typography.titleMedium)
@@ -114,6 +154,18 @@ fun HomeScreen(
                     ActionRow(navController, "charts", Icons.Filled.StackedLineChart, "Gráficas e indicadores")
                     ActionRow(navController, "terpenes", Icons.Filled.Spa, "Biblia de terpenos")
                     ActionRow(navController, "breeding", Icons.Filled.Biotech, "Breeding & proyectos")
+                    // The Séquito module was reachable only from the encyclopedia's
+                    // own card, two screens deep, which is why a whole feature read as
+                    // absent. The route comes from [entourageRoute] rather than a
+                    // literal, so it cannot drift from the destination the module
+                    // declares; with no arguments it is the bare route, which is the
+                    // one the `NavHost` registers.
+                    ActionRow(
+                        navController = navController,
+                        route = entourageRoute(),
+                        icon = Icons.Filled.Hub,
+                        label = "Efecto Séquito · sinergias"
+                    )
                 }
             }
 
@@ -166,6 +218,56 @@ private fun StatTile(
             Text(tile.icon, fontSize = 24.sp)
             Text(value, style = MaterialTheme.typography.headlineSmall)
             Text(tile.labelEs, style = MaterialTheme.typography.bodySmall)
+        }
+    }
+}
+
+/**
+ * The lunar phase in one row, linking to the calendar where the full panel lives.
+ *
+ * Same colour discipline as [ActionRow] and for the same reason: the glyph and
+ * the chevron are furniture and take the third text level, so this row does not
+ * repaint when the accent changes. The phase name is content and takes the
+ * default text role.
+ *
+ * Not scrollable. `ScrollOwnershipTest` exists because a nested scroll measured
+ * with an infinite maximum height killed the process on a tap, and this composable
+ * is mounted inside Home's own `verticalScroll`.
+ */
+@Composable
+private fun LunarGlanceRow(
+    content: LunarCardContent,
+    onClick: () -> Unit
+) {
+    val furniture = LocalTertiaryText.current
+    SolidPanel {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(content.glyph, fontSize = 24.sp)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Fase lunar", style = MaterialTheme.typography.labelSmall, color = furniture)
+                Text(
+                    content.phaseLabelEs,
+                    style = MaterialTheme.typography.titleSmall
+                )
+                Text(
+                    "${content.illuminationEs} ilumina · ${content.trendLabelEs} · " +
+                        "consejo en el calendario",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = furniture
+                )
+            }
+            Icon(
+                Icons.Filled.ChevronRight,
+                contentDescription = null,
+                tint = furniture
+            )
         }
     }
 }

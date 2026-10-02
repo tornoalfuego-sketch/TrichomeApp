@@ -685,6 +685,22 @@ class JournalViewModel(container: AppContainer) : ViewModel() {
         viewModelScope.launch { eventRepo.deleteEvent(event) }
     }
 
+    /**
+     * Writes the edited row and reports the real outcome.
+     *
+     * `EventDao.updateEvent` existed with no caller, so a journal entry could be
+     * created and deleted but never corrected. [onSaved] receives what actually
+     * happened, and the dialog only closes on `true` -- closing on a refused write
+     * would discard every edit the grower had just made.
+     */
+    fun updateEvent(event: GrowEvent, onSaved: (Boolean) -> Unit = {}) {
+        viewModelScope.launch {
+            val written = runCatching { eventRepo.updateEvent(event) }.isSuccess
+            saveError = if (written) null else "No se pudo guardar el evento."
+            onSaved(written)
+        }
+    }
+
     fun clearSaveError() {
         saveError = null
     }

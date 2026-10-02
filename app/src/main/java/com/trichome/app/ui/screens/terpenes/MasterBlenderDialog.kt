@@ -30,6 +30,16 @@ import com.trichome.app.ui.theme.TrichomeThemeState
  * composition (see [TerpeneBlender] for the data), so this screen compares the
  * mix against the encyclopedia's own abundance ratings and says so. It never
  * names a cultivar, and it never claims a number the data does not support.
+ *
+ * ## Reachability
+ *
+ * The body is the only scroll on this screen, and its height cap comes from
+ * [BlenderLayout.bodyMaxHeightDp] -- the height the dialog's own chrome leaves,
+ * not a share of the screen. The cap is applied to the scroll *container* and
+ * the scroll is applied after it, which is the only order in which the content
+ * is measured unbounded and can actually travel. The previous order clamped the
+ * content and shipped a dialog that could not be scrolled at all; that was
+ * verified on the device, not inferred.
  */
 @Composable
 fun MasterBlenderDialog(
@@ -39,6 +49,12 @@ fun MasterBlenderDialog(
 ) {
     val scheme = themeState.colorScheme()
     val featured = remember(catalog) { TerpeneBlender.featuredCompounds(catalog) }
+    // Keyed on the height so a rotation or a fold re-derives it; the arithmetic
+    // itself is in `BlenderLayout` and is covered by tests that need no device.
+    val screenHeightDp = LocalConfiguration.current.screenHeightDp
+    val bodyMaxHeight = remember(screenHeightDp) {
+        BlenderLayout.bodyMaxHeightDp(screenHeightDp).dp
+    }
 
     var readings by remember(catalog) { mutableStateOf(emptyMap<String, Float>()) }
     val result = remember(readings, catalog) { TerpeneBlender.match(readings, catalog) }
@@ -50,27 +66,44 @@ fun MasterBlenderDialog(
             if (featured.isEmpty()) {
                 Text("La enciclopedia todavía no tiene compuestos con los que mezclar.")
             } else {
+                // The scroll owns the axis; the cap is a property of the *viewport*,
+                // applied to the scroll container and never to the content.
+                //
+                // The order here is the whole fix. `heightIn` before `verticalScroll`
+                // constrains what the scroll is allowed to occupy, so the content is
+                // still measured unbounded and can travel. The reverse order -- which
+                // is what this file shipped -- clamped the content itself, so the
+                // scroll had a viewport exactly as tall as its content and no range
+                // to move over. Verified on the device: a 500px swipe produced a
+                // byte-identical screenshot. See [BlenderLayout].
                 Column(
                     modifier = Modifier
+                        .heightIn(max = bodyMaxHeight)
                         .verticalScroll(rememberScrollState())
-                        // A share of the screen rather than a fixed 420dp.
-                        //
-                        // Five sliders plus a paragraph do not fit in 420dp, so the
-                        // last one was cut through the middle of its own row and the
-                        // only sign there was more was a clipped word -- which reads as
-                        // a rendering fault, not as "scroll for more". Measured on a
-                        // 2340px device, six tenths of the screen shows the whole
-                        // set, and the scroll is still there for a longer catalogue.
-                        .heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.6f).dp)
                 ) {
+                    // What this is for, before what it does. The complaint was
+                    // "no se entiende para qué esa funcionalidad": five unlabelled
+                    // sliders under a title gave no answer. The purpose is one
+                    // sentence, and it is first.
                     Text(
-                        "Ajusta los porcentajes de tu análisis y compáralo con el " +
-                            "perfil de referencia de la enciclopedia, construido a " +
-                            "partir de la abundancia de cada compuesto en cannabis.",
+                        "Compara el perfil de terpenos de tu planta con el de referencia " +
+                            "de la enciclopedia.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = scheme.onSurface
+                    )
+                    Text(
+                        "Mueve cada control al porcentaje que registró tu análisis de " +
+                            "laboratorio. El resultado se recalcula solo mientras mueves.",
                         style = MaterialTheme.typography.bodySmall,
                         color = scheme.onSurfaceVariant
                     )
                     Spacer(Modifier.height(12.dp))
+
+                    // Named as the *input*. It is the sliders that are being set,
+                    // not a result, and a heading that said "resultado" above a row
+                    // of empty controls would be the same "no se entiende" the
+                    // complaint describes -- in a new place.
+                    SectionLabel("1 · Tu análisis", scheme)
 
                     featured.forEach { terpene ->
                         BlendSlider(
@@ -101,7 +134,8 @@ fun MasterBlenderDialog(
                         }
                     }
 
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(12.dp))
+                    SectionLabel("2 · Coincidencia con la referencia", scheme)
                     BlendReport(result, readings.size, themeState)
 
                     Spacer(Modifier.height(8.dp))
@@ -122,6 +156,19 @@ fun MasterBlenderDialog(
             ) { Text("Cerrar") }
         }
     )
+}
+
+/**
+ * A heading inside the dialog body.
+ *
+ * Split out so the two section labels are the same size and the same colour
+ * tier: a section that outranks the report it introduces would be worse than no
+ * section at all.
+ */
+@Composable
+private fun SectionLabel(text: String, scheme: ColorScheme) {
+    Text(text, style = MaterialTheme.typography.titleSmall, color = scheme.onSurface)
+    Spacer(Modifier.height(4.dp))
 }
 
 /** A plausible starting mix so the screen is not a wall of zeroes on first open. */

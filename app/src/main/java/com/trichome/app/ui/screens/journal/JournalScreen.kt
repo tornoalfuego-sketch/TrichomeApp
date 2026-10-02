@@ -61,6 +61,12 @@ fun JournalScreen(
     val activeReminders by reminderVm.activeReminders.collectAsState()
     var editingReminder by remember { mutableStateOf<Reminder?>(null) }
 
+    // Events had the same dead end the reminders had: `EventDao.updateEvent` had
+    // no caller at all, so a journal row could be recorded and deleted but never
+    // corrected. Held the same way as `editingReminder` -- a null means closed,
+    // and the write reports its own outcome before the dialog lets go of the row.
+    var editingEvent by remember { mutableStateOf<GrowEvent?>(null) }
+
     val deleteReminderConfirmation = rememberDestructiveConfirmation<Reminder>(
         title = { "Eliminar recordatorio" },
         message = { reminder ->
@@ -256,7 +262,12 @@ fun JournalScreen(
                 }
             } else {
                 vm.events.forEach { e ->
-                    EventRow(e, onDeleteRequest = { deleteConfirmation.request(e) })
+                    EventRow(
+                        event = e,
+                        plantName = plantNames[e.plantId],
+                        onEdit = { editingEvent = e },
+                        onDelete = { deleteConfirmation.request(e) }
+                    )
                 }
             }
         }
@@ -271,6 +282,21 @@ fun JournalScreen(
             onDismiss = { editingReminder = null },
             onSave = { edited ->
                 scope.launch { reminderVm.updateReminder(edited) { editingReminder = null } }
+            }
+        )
+    }
+
+    // Same pattern for an event. The row is released only once the write reports
+    // success, so a refused update leaves the dialog open with the grower's edits
+    // still in it rather than dropping them on the floor.
+    editingEvent?.let { event ->
+        EditEventDialog(
+            event = event,
+            plants = plants,
+            accent = accent,
+            onDismiss = { editingEvent = null },
+            onSave = { edited ->
+                scope.launch { vm.updateEvent(edited) { editingEvent = null } }
             }
         )
     }
@@ -326,30 +352,3 @@ private fun resolveTargets(
     }
 }
 
-@Composable
-private fun EventRow(event: GrowEvent, onDeleteRequest: () -> Unit) {
-    SolidPanel(
-        cornerRadius = 14
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    EventTypeUi.labelResolved(event.eventType),
-                    style = MaterialTheme.typography.titleSmall
-                )
-                Text(
-                    buildString {
-                        append(com.trichome.app.ui.screens.plant.dateShort(event.timestamp))
-                        append(if (event.groupId != null) " · grupo" else "")
-                        event.notes?.let { append(" · $it") }
-                    },
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-            IconButton(onClick = onDeleteRequest) { Icon(Icons.Default.Delete, "Eliminar", tint = MaterialTheme.colorScheme.error) }
-        }
-    }
-}
