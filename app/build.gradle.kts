@@ -21,12 +21,12 @@ val hasReleaseSigning = keystoreProperties.getProperty("storeFile") != null
 
 android {
     namespace = "com.trichome.app"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.trichome.app"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 36
         versionCode = 7
         versionName = "1.5.0"
 

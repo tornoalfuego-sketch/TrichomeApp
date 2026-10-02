@@ -124,6 +124,10 @@ fun EntourageModuleScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                // Same contract as `TerpeneDetailScreen`: this module draws its
+                // own header rather than a `Scaffold`, so nothing hands it the
+                // status bar inset and the back arrow would render underneath it.
+                .statusBarsPadding()
                 .padding(horizontal = 8.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {

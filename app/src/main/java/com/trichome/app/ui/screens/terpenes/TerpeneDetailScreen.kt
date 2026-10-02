@@ -78,6 +78,13 @@ fun TerpeneDetailScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                // This screen draws its own header instead of a `Scaffold`, so it
+                // gets no `contentWindowInsets` for free. Without the status bar
+                // inset the back arrow and the title sit underneath the status
+                // bar. The activity is already edge-to-edge, so this is not a
+                // targetSdk 36 regression -- it is the pre-existing shape of a
+                // header that never declared its insets.
+                .statusBarsPadding()
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {

@@ -1,5 +1,5 @@
 [versions]
-agp = "8.7.0"
+agp = "8.9.1"
 kotlin = "2.0.0"
 composeBom = "2024.08.00"
 composeUi = "1.6.8"
@@ -65,7 +65,7 @@ androidx-test-compose-ui = { module = "androidx.compose.ui:ui-test-junit4", vers
 androidx-test-compose-ui-manifest = { module = "androidx.compose.ui:ui-test-manifest", version = "1.6.8" }
 
 [plugins]
-android-application = { id = "com.android.application", version = "8.7.0" }
+android-application = { id = "com.android.application", version = "8.9.1" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version = "2.0.0" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version = "2.0.0" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version = "2.0.0" }

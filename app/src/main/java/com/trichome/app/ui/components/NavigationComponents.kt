@@ -1,7 +1,6 @@
 package com.trichome.app.ui.components
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.*
@@ -78,14 +77,20 @@ fun MainBottomBar(
     Column(modifier = modifier.fillMaxWidth()) {
         HorizontalDivider(thickness = 1.dp, color = scheme.outline)
         NavigationBar(
-            modifier = Modifier
-                .fillMaxWidth()
-                // With the three-button system bar (navigation_mode = 0) the
-                // bottom items sat underneath it and the labels were unreadable.
-                // Verified on a device at 1080x2340: the bar's own bottom edge
-                // was clipped by the system bar, and on the plant detail screen
-                // the three navigation buttons were half hidden.
-                .navigationBarsPadding(),
+            modifier = Modifier.fillMaxWidth(),
+            // The navigation-bar inset is applied here, explicitly and exactly
+            // once. `NavigationBarDefaults.windowInsets` already defaults to
+            // `systemBars.only(Horizontal + Bottom)`, so the inset does not have
+            // to be re-declared to be honoured -- but the default is also what
+            // made an earlier `.navigationBarsPadding()` here a *second*
+            // application of the same bottom inset, which floats the bar that far
+            // above the screen edge. Naming the inset in the `windowInsets` slot
+            // keeps the padding, drops the duplication, and states the intent.
+            //
+            // Either way the bar's content stays clear of the system bar: with
+            // the three-button bar (navigation_mode = 0) the items used to sit
+            // underneath it, verified on a device at 1080x2340.
+            windowInsets = WindowInsets.navigationBars,
             containerColor = scheme.surface,
             tonalElevation = 0.dp
         ) {
