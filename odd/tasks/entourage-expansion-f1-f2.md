@@ -106,11 +106,28 @@ Out of scope, and why:
       nits reported, not fixed: the level lives in `evidence_es` rather than
       inside `mechanism_es` itself, and `thc_myrcene`'s "produce sedación y
       relajación muscular" reads slightly more assertively than its level allows.
-- [ ] T6 `TerpeneVolatility` with provenance, and the 158-entry source.
-- [ ] T7 `VolatilityWindow.derive` banded by family, marked `DERIVED`.
-- [ ] T8 `VolatilityCurve` as steps, reusing `windowFor` / `isViable`.
-- [ ] T9 Volatility section on the terpene detail page.
-- [ ] T10 F1 + F2 verification: compile, tests, lint, device screenshots.
+- [x] T6 `a32b316` — `TerpeneVolatility` (boiling point + band + provenance on
+      the instance, no constructor path without it) and the 158-row
+      `TerpeneVolatilityIndex`, fused from `terpenes.json` (point) and
+      `entourage_data.json` (band). 10 MEASURED, 148 DERIVED, 0 dropped.
+      **Already implemented and committed by the previous writer in `cfaa49a`;
+      this phase verified it rather than rebuilding it.**
+- [x] T7 `cfaa49a` — `VolatilityDerivation.derive` / `floorFor` / `ceilingFor`,
+      banded by family with `DERIVED` provenance and every band quantised to
+      10 °C. One constant for every family, because the ten shipped rows show no
+      per-family effect. Verified against the asset; see "The band model".
+- [x] T8 `cfaa49a` — `VolatilityCurve` as steps, with `stages`, `lostSteps` and
+      `barFor` geometry in the model. `VolatilityCurves.aggregate` is the single
+      aggregate rule, read by both `VolatilityCurve` and `EntouragePlanner.windowFor`.
+      The zero-weight crash in `barFor` was already fixed in `cfaa49a` and was not
+      redone.
+- [x] T9 `cfaa49a` + `a32b316` — volatility section on all 158 detail pages
+      (`VolatilityCard`), with the evidence and limits lines rendered
+      unconditionally. `a32b316` fixed the one layout defect left: the
+      provenance `DataRow` collided with its own value.
+- [x] T10 F1 + F2 verification: compile, tests, lint, device screenshots —
+      `a32b316`. 991/61 green, lint 0 errors / 353 issues, all three families
+      photographed. `assembleRelease` not run; see Progress.
 
 ## Verification
 
@@ -127,6 +144,19 @@ Per phase, in order:
 that build is the only thing that catches it.
 
 ## Progress
+
+**F2 closed at `a32b316`** (code) plus the doc commit after it, off `cfaa49a`
+which carried the previous writer's T6-T9 and the zero-weight crash fix.
+**991 tests, 61 suites, 0 failures, 0 skipped** (was 981/60: +10 tests, +1
+suite, no suite lost). `lintDebug` **0 errors / 353 issues**, count identical to
+baseline. `compileDebugKotlin`, `assembleDebug` and `installDebug` all
+`BUILD SUCCESSFUL`. Device pass over all three families on `FYJBONYTT8GENBTW`
+with no crash and no `FATAL` line in `logcat`. No schema change,
+`APP_DATABASE_VERSION` still 3, no new dependency, no Room migration.
+
+Still open: `assembleRelease` / `bundleRelease` with R8 — not run in this phase,
+and it is the only build that catches a minification problem. T10 is ticked for
+compile / tests / lint / screenshots only.
 
 F1 closed at `823ccaa`, off `18d5d29`. Branch
 `fix/navigation-theming-and-confirmations`. 886 tests green (was 875, +11 new,
@@ -225,6 +255,207 @@ already carries one. Recommended against; their call.
 
 ## Next step
 
-T6, F2. T1's guarantee stands, so `TerpeneVolatility` can read `terpenes.json` as
-the single boiling-point source and must not re-derive it from
-`entourage_data.json`.
+T10 closes with the numbers below. T1's guarantee holds and is still enforced by
+`everyBoilingPointAgreesWithBothCatalogs`: `TerpeneVolatility` reads the boiling
+point from `terpenes.json` only and never re-derives it from
+`entourage_data.json`. `APP_DATABASE_VERSION` is still 3, no migration, no new
+dependency. F3 (agronomy) is the next phase; F2 alone does not close the module,
+and `assembleRelease` has not been run — R8 fails only in release.
+
+## What T6-T9 needed, given what already existed
+
+Honest accounting: **T6, T7, T8 and most of T9 were already implemented and
+committed in `cfaa49a`** together with 81 tests. This phase did not rebuild
+them. What it added:
+
+1. The last T9 defect, verified on device: the `DataRow` reading
+   `Origen de la ventana` collided with `Medida en la tabla de Séquito`.
+2. Ten tests — nine for that row's geometry, one pinning the derivation's
+   premise against the asset.
+3. A KDoc correction found while verifying T7 (below).
+4. F1's cross-source guarantee re-verified, and the device pass across all three
+   families.
+
+### The band model
+
+`derive` uses the compound's own measured boiling point and one constant:
+
+```
+floor   = 10 * floor(bp / 10)          // round DOWN
+ceiling = 10 * ceil((bp + 30) / 10)     // round UP
+headroom = 30 °C for every family
+```
+
+**The width is 30 °C or 40 °C, and only 30 when `bp` is already a multiple of
+10.** Across the 158 shipped rows: 37 rows at 30 °C and 121 at 40 °C. So the
+band is wider than the KDoc's `NARROWEST_DERIVED_WIDTH_C = 30` on four rows in
+five — the honest statement is "30 or 40 °C", and the code says exactly that in
+the docs while the constant names the floor.
+
+**Why 30 °C survives the spread within a family** — measured from
+`terpenes.json`, not quoted:
+
+| family | compounds | boiling-point range | spread |
+| --- | --- | --- | --- |
+| Monoterpeno | 85 | 100–285 °C | 185 °C |
+| Sesquiterpeno | 63 | 166–307 °C | 141 °C |
+| Diterpeno | 10 | 300–350 °C | 50 °C |
+
+A monoterpene label cannot distinguish a 100 °C ketone from a 285 °C aromatic,
+so no per-degree window is defensible from it. The band is 30–40 °C against
+spreads of 50–185 °C, i.e. **1/5 to 3/5 of the family's own spread** — coarse,
+never finer than the data. For comparison, the ten shipped (measured) bands are
+18–30 °C wide, so a derived band is never the tighter promise. Both facts are
+asserted against the asset, not against a fixture.
+
+**Correction made in `a32b316`:** the KDoc table said the monoterpene range was
+131–285 °C (spread 154 °C). It is 100–285 °C (185 °C) — `umbellulone` at 100 °C
+was missing, and the type KDoc's "it files `hexanal` (131 °C) and `vanillin`
+(285 °C) under Monoterpeno" picked the wrong example. The error made the model
+look *finer* than its own justification, so the fix strengthens the case. The
+table is now pinned by `theWithinFamilySpreadIsWhatForbidsAFinerBand`, which
+reads the asset.
+
+### How a derived value reaches the user
+
+Four things travel together and none of them is optional:
+
+- the number carries the approximation mark: `≈ 350–380 °C`, not `350–380 °C`;
+- the row below says where it came from: `Origen de la ventana` →
+  **"Estimada por la app"** (or "Medida en la tabla de Séquito");
+- an evidence sentence is rendered unconditionally, not behind a disclosure:
+  *"Ventana estimada por la app: el punto de ebullición (350 °C) está medido y
+  viene de la enciclopedia, pero la banda ≈ 350–380 °C se ha calculado a partir
+  de él y de la familia Diterpeno. No es una ventana medida: sirve para comparar
+  y ordenar, no para fijar una temperatura."*;
+- a limits sentence: *"Una ventana de temperatura no dice cuánto rinde el
+  compuesto, cuánto dura el aroma ni si tu equipo alcanza esa temperatura."*
+
+`evidenceEs` and `limitsEs` are fields of `TerpeneVolatilityContent`, so a call
+site cannot render the number without them, and
+`theEvidenceAndLimitsLinesAreRenderedUnconditionally` reads the composable's
+source to prove the render has no `if` around them.
+
+**One thing the marker does NOT do:** in the curve, a derived rung and a measured
+rung are drawn in the *same* tertiary colour, so provenance is carried by the
+`≈` in the text and by the `derivedWarningEs` line ("1 de 5 ventanas de esta
+curva son estimaciones de la app"). Colour alone does not distinguish them. Left
+as is — it is legible and the text is authoritative — but it is the one place
+where a glance is not enough.
+
+### The layout fix: the shared row
+
+`DataRow` shipped as `Arrangement.SpaceBetween` with two unweighted `Text`s. Row
+measures each unweighted child with the *row's* width and then pushes them
+apart; nothing bounded the pair, so a value wider than the leftover space
+overflowed the row and landed on the label. Row width on this device is ~347 dp,
+the label ~135 dp and the monospace value ~235 dp.
+
+**Chosen: the shared row, not the provenance call site.** Six other rows on the
+page have the identical shape — `Fórmula`, `Masa molar`, `Familia química`,
+`Punto de ebullición`, `Riqueza en cannabis`, `Ventana de vaporización` — and
+every one of them is fine only because its value happens to be short. A fix at
+the call site would leave a row that breaks again the first time one of the
+others grows a value.
+
+Row measures unweighted children *before* weighted ones, so the label now keeps
+its natural width and the value takes `DataRowLayout.VALUE_WEIGHT` — everything
+that is left, minus a 12 dp gap — right-aligned inside it. Short values still
+land flush against the right edge, which is why the five rows that looked fine
+still look fine (verified on device). A long value wraps inside its own column
+and cannot touch the label.
+
+The two numbers are in `DataRowLayout` (`model/`) rather than in the composable,
+following the lesson the zero-weight crash taught: Compose has no unit-test
+runtime here, so a number only a composable can reach is a number nobody can
+catch before it ships.
+
+### Aggregate coherence (F1's guarantee, re-verified)
+
+One function, two callers:
+
+- `VolatilityCurves.aggregate` — `TerpeneVolatility.kt:757`
+- `VolatilityCurve` reads it at `TerpeneVolatility.kt:662`
+- `EntouragePlanner.windowFor` calls it at `Entourage.kt:628` and reads
+  `floorC`, `ceilingC` and `isViable` off the result (`Entourage.kt:630-635`)
+
+There is no second implementation of "the band that covers everything" to drift
+from the first. Held by
+`theCurveAgreesWithTheModulesAggregateWindowOnTheSameSelection` and by
+`EntouragePlannerTest`. No refactor in this phase touched either side.
+
+## Verification (F2, observed)
+
+| command | observed |
+| --- | --- |
+| `:app:compileDebugKotlin --no-daemon` | BUILD SUCCESSFUL in 2m 46s |
+| `:app:cleanTestDebugUnitTest :app:testDebugUnitTest --no-daemon` | BUILD SUCCESSFUL in 2m 13s |
+| `:app:assembleDebug :app:installDebug --no-daemon` | BUILD SUCCESSFUL in 2m 45s, `Installed on 1 device` |
+| `:app:lintDebug --no-daemon` | BUILD SUCCESSFUL in 6m 16s |
+
+**Test total: 991 tests, 61 suites, 0 failures, 0 skipped**, read from
+`app/build/test-results/testDebugUnitTest/TEST-*.xml`. Baseline was 981 / 60;
++10 tests, +1 suite, no suite lost. `TerpeneVolatilityTest` 57,
+`TerpeneVolatilityAssetTest` 25, `TerpeneDetailVolatilityTest` 10,
+`DataRowLayoutTest` 9, `EntouragePlannerTest` 33.
+
+**Lint: 353 issues, 0 errors** (333 warnings, 20 information) — identical to the
+baseline count.
+
+One test failed on the first run and was fixed before anything was reported
+green: `theValueIsTheWeightedChildAndTheLabelIsNot` scanned from `DataRow` to
+end-of-file and picked up `VolatilityBarTrack`'s own `weight(1f)`. The scan is
+now bounded by the next composable. The 981 figure was re-confirmed by a clean
+re-run, per the lesson already recorded in this file.
+
+### Device verification — `FYJBONYTT8GENBTW`, 03:51–04:03
+
+| compound | family | point | band on screen | provenance | marker visible |
+| --- | --- | --- | --- | --- | --- |
+| Mirceno | Monoterpeno | 167 °C | `167–195 °C` | **MEASURED** | none, correctly |
+| Pineno (Mirceno's curve) | Monoterpeno | 155 °C | `≈ 150–190 °C` | DERIVED | yes, `≈` |
+| Cariofileno | Sesquiterpeno | 262 °C | `≈ 260–300 °C` | DERIVED | yes |
+| Cariofileno beta | Sesquiterpeno | 262 °C | `250–280 °C` | **MEASURED** | none, correctly |
+| Fitol | Diterpeno | 350 °C | `≈ 350–380 °C` | DERIVED | yes |
+
+The 262 °C pair is the useful one: two compounds at the same boiling point, one
+measured and one derived, and the page says which is which in two places. The
+diterpene curve carries four rungs, all `≈ 310–350` to `≈ 350–380 °C`, and the
+monoterpene curve carries one derived rung out of five with
+"1 de 5 ventanas de esta curva son estimaciones de la app".
+
+No crash and no `FATAL`/`AndroidRuntime` line from the app in `logcat` across the
+whole session. The two rows that collided now render as
+`Origen de la ventana` + a right-aligned value wrapped onto two lines.
+
+**Not verified:** the two competing third-party apps never stole the foreground
+during this session, so the documented spaced-retry procedure was not needed.
+**Side effect to declare:** opening a terpene page is what registers its
+discovery, so browsing Fitol added it to the device's discovered set (+20 XP
+shown on the page). A tap intended for the family filter landed on the quiz
+button and opened "Trivia · ronda 1/5"; it was dismissed with BACK without
+answering, and XP stayed at 425.
+
+### What the new tests cover, and what they do not
+
+`DataRowLayoutTest` (9) — the numbers (`GAP_DP > 0`, `VALUE_WEIGHT > 0`, the
+remaining-width arithmetic never negative) and the shape of the composable
+(no `SpaceBetween`, the value is the weighted child, the gap comes from the
+model, the value stays `TextAlign.End`, all seven call sites go through the
+shared row and none has a bespoke composable).
+
+What it does **not** cover: measured pixel widths. There is no Compose test
+runtime here, so "the label and the value no longer collide" is proven by the
+structural assertions plus a device screenshot, not by a JVM test. A source scan
+also cannot catch a future composable that reaches for a different width
+mechanism entirely.
+
+`theWithinFamilySpreadIsWhatForbidsAFinerBand` — reads `terpenes.json`, pins
+100/285, 166/307, 300/350 and the 85/63/10 counts, names `umbellulone`, and
+asserts no family's spread is narrower than the narrowest derived band.
+
+What it does **not** cover: whether 30 °C is the *right* headroom. No published
+per-compound extraction window for the 148 exists in this repository, so the
+constant is justified only against the ten measured rows. The test can prove
+the band is coarser than the data allows to be precise about; it cannot prove it
+is accurate.
