@@ -1,6 +1,9 @@
 package com.trichome.app.data.repository
 
 import android.content.Context
+import com.trichome.app.model.BoilingPointParser
+import com.trichome.app.model.CatalogVolatilityRow
+import com.trichome.app.model.TerpeneFamily
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -40,12 +43,15 @@ data class Terpene(
     @SerialName("boilingPoint") val boilingPoint: String = "",
     @SerialName("isFavorite") val isFavorite: Boolean = false
 ) {
-    /** Boiling point in °C parsed from the display string, for the chart. */
-    val boilingPointCelsius: Int?
-        get() {
-            if (!boilingPoint.contains("°")) return null
-            return boilingPoint.filter { it.isDigit() }.toIntOrNull()
-        }
+    /** Boiling point in °C parsed from the display string, for the chart.
+     *
+     * Delegates to [BoilingPointParser] rather than filtering digits inline, so
+     * there is one reading of this column in the app. The inline version it
+     * replaced turned `"155-156 °C"` into `155156` without complaining, which is
+     * a plausible integer that is not a temperature; the parser takes the lowest
+     * number instead, and `null` means the string carries no temperature at all.
+     */
+    val boilingPointCelsius: Int? get() = BoilingPointParser.parseCelsius(boilingPoint)
 
     /** Coarse aroma family used by the multi-criteria filter. */
     val aromaFamily: String
@@ -151,6 +157,26 @@ class TerpenesRepository(private val context: Context) {
                 t.foundIn.any { it.lowercase().contains(needle) }
         }
     }
+
+    /**
+     * The catalog reduced to what [com.trichome.app.model.TerpeneVolatilityIndex]
+     * needs, so the volatility model never has to know about this class.
+     *
+     * [Terpene] lives in a file that imports `android.content.Context`, and the
+     * derivation has to stay assertable from the JVM with no Android on the
+     * classpath. One mapping here, rather than a `Terpene` parameter on a pure
+     * function.
+     */
+    suspend fun volatilityRows(): List<CatalogVolatilityRow> =
+        getTerpenes().map { entry ->
+            CatalogVolatilityRow(
+                catalogId = entry.id,
+                labelEs = entry.name,
+                family = TerpeneFamily.fromFamilyEs(entry.family),
+                molarMassEs = entry.molarMass,
+                boilingPointEs = entry.boilingPoint
+            )
+        }
 }
 
 /* ── Breeding theory library ──────────────────────────────────────────── */

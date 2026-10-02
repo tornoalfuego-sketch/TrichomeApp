@@ -110,6 +110,18 @@ enum class EntourageTerpene(
         private val byKey = entries.associateBy { it.key }
 
         fun fromKey(key: String): EntourageTerpene? = byKey[key.trim().uppercase()]
+
+        /**
+         * The module terpene for an encyclopedia id, or null.
+         *
+         * F2's [TerpeneVolatility] and the detail page both need this join, and
+         * it lives next to [fromKey] so a second way of asking the same question
+         * cannot appear elsewhere. It reads [catalogId] rather than a hardcoded
+         * string, which is what F1's
+         * `aModuleTerpeneNeverPairsWithAGenericEncyclopediaEntry` pins.
+         */
+        fun fromCatalogId(catalogId: String): EntourageTerpene? =
+            entries.firstOrNull { it.catalogId == catalogId }
     }
 }
 
@@ -586,24 +598,85 @@ object EntouragePlanner {
      * that cannot both hold: the highest minimum is above the lowest maximum.
      * Reporting that honestly is the point; showing the arithmetic mean would
      * be a lie.
+     *
+     * ## F2: the aggregate is read from the steps, not recomputed beside them
+     *
+     * The four fields used to be computed here from the raw rows, and F2's
+     * [VolatilityCurve] needs the same four numbers for the same selection. Two
+     * implementations of "the band that covers everything" is two truths about
+     * one number — the defect F1 just closed on the boiling point — so the
+     * arithmetic now lives once, in [VolatilityCurves.aggregate], and both
+     * callers read it.
+     *
+     * What this preserves, and it is everything a caller could observe:
+     *
+     *  - `null` for an empty selection, and `null` when the selection has no row
+     *    in [vaporisation] — an unloaded catalog still does not invent a
+     *    temperature;
+     *  - [TerpeneWindow.minTempC] is the highest floor and
+     *    [TerpeneWindow.maxTempC] the lowest ceiling, in the same order;
+     *  - [TerpeneWindow.isViable] is `floor <= ceiling`, not `<`;
+     *  - [TerpeneWindow.terpenes] keeps the rows' own order from
+     *    [vaporisation], which is the order the report has always rendered.
      */
     fun windowFor(
         terpenes: Set<EntourageTerpene>,
         vaporisation: List<TerpeneVaporisation>
     ): TerpeneWindow? {
-        if (terpenes.isEmpty()) return null
         val rows = vaporisation.filter { it.terpene in terpenes }
         if (rows.isEmpty()) return null
-        val highestMinimum = rows.maxOf { it.minTempC }
-        val lowestMaximum = rows.minOf { it.maxTempC }
+        val aggregate = VolatilityCurves.aggregate(rows.map { it.asVolatilityStep() })
+            ?: return null
         return TerpeneWindow(
-            minTempC = highestMinimum,
-            maxTempC = lowestMaximum,
+            minTempC = aggregate.floorC,
+            maxTempC = aggregate.ceilingC,
             terpenes = rows.map { it.terpene },
-            isViable = highestMinimum <= lowestMaximum
+            isViable = aggregate.isViable
         )
     }
+
+    /**
+     * The staged curve for a selection, or null when there is nothing to stage.
+     *
+     * F2. A curve for one compound is a point, so this is only interesting for
+     * two or more, and it answers the question a single band cannot: at what
+     * temperature does each selected compound start to come off, and what is
+     * already spent by the time the last one arrives.
+     *
+     * Shares [windowFor]'s row set and therefore its aggregate — the curve's
+     * [VolatilityCurve.isViable] and [TerpeneWindow.isViable] are the same
+     * number read from the same steps, and a test holds them equal.
+     */
+    fun curveFor(
+        terpenes: Set<EntourageTerpene>,
+        vaporisation: List<TerpeneVaporisation>
+    ): VolatilityCurve? {
+        val rows = vaporisation.filter { it.terpene in terpenes }
+        if (rows.isEmpty()) return null
+        return VolatilityCurve(rows.map { it.asVolatilityStep() })
+    }
 }
+
+/**
+ * The shipped row as a curve step.
+ *
+ * The one place a [TerpeneVaporisation] becomes a [VolatilityStep], so the
+ * module's ten measured bands and the catalog's 158 rows are the same shape and
+ * [VolatilityCurves.aggregate] reads them identically. [VolatilityProvenance]
+ * is `MEASURED` because a row only exists because `entourage_data.json` ships
+ * one.
+ */
+internal fun TerpeneVaporisation.asVolatilityStep(): VolatilityStep = VolatilityStep(
+    catalogId = terpene.catalogId,
+    labelEs = terpene.labelEs,
+    family = TerpeneFamily.fromFamilyEs(terpene.familyEs),
+    boilingPointC = boilingPointC,
+    window = VolatilityWindow(
+        minTempC = minTempC,
+        maxTempC = maxTempC,
+        provenance = VolatilityProvenance.MEASURED
+    )
+)
 
 /**
  * The temperature band that covers every selected terpene.

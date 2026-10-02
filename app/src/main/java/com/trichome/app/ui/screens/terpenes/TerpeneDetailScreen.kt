@@ -25,9 +25,15 @@ import androidx.navigation.NavHostController
 import com.trichome.app.data.repository.Terpene
 import com.trichome.app.model.EntourageFilters
 import com.trichome.app.model.EntourageTab
+import com.trichome.app.model.TerpeneVolatility
+import com.trichome.app.model.TerpeneVolatilityCopy
+import com.trichome.app.model.VolatilityBar
+import com.trichome.app.model.VolatilityCurve
+import com.trichome.app.model.VolatilityCurveCopy
 import com.trichome.app.ui.components.SolidPanel
 import com.trichome.app.ui.components.accentTextButtonColors
 import com.trichome.app.ui.screens.entourage.entourageRoute
+import com.trichome.app.ui.theme.LocalTertiaryText
 import com.trichome.app.ui.theme.TrichomeThemeState
 import com.trichome.app.viewmodel.TerpenesViewModel
 import com.trichome.app.viewmodel.appViewModel
@@ -60,6 +66,12 @@ fun TerpeneDetailScreen(
     var unlocked by remember(terpeneId) { mutableStateOf(false) }
     var isNewDiscovery by remember(terpeneId) { mutableStateOf(false) }
 
+    // F2: one row per compound carrying the boiling point, the band and where
+    // the band came from. Resolved through the ViewModel's single index so the
+    // screen never assembles a temperature of its own.
+    var volatility by remember(terpeneId) { mutableStateOf<TerpeneVolatility?>(null) }
+    var curve by remember(terpeneId) { mutableStateOf(VolatilityCurve(emptyList())) }
+
     LaunchedEffect(terpeneId) {
         val found = vm.detail(terpeneId)
         if (found == null) {
@@ -71,6 +83,8 @@ fun TerpeneDetailScreen(
             if (!unlocked) {
                 isNewDiscovery = vm.markDiscovered(found)
             }
+            volatility = vm.volatilityOf(found)
+            curve = vm.curveFor(found)
         }
     }
 
@@ -143,6 +157,18 @@ fun TerpeneDetailScreen(
                     DataRow("Familia química", entry.family)
                     DataRow("Punto de ebullición", entry.boilingPoint)
                     DataRow("Riqueza en cannabis", entry.richness)
+                }
+            }
+
+            // F2: the temperature behaviour, on all 158 pages and not only on
+            // the ten the module measures. `Punto de ebullición` above is the
+            // measured fact; everything below it says how far the compound is
+            // useful once the element gets there, and marks whether that band
+            // was measured or worked out here.
+            val volatilityRow = volatility
+            if (volatilityRow != null) {
+                item {
+                    VolatilityCard(volatilityRow, curve, entry.id, scheme)
                 }
             }
 
@@ -380,6 +406,163 @@ private fun DetailParagraph(label: String, value: String) {
             style = MaterialTheme.typography.bodyMedium,
             color = scheme.onSurface
         )
+    }
+}
+
+/**
+ * F2: the vapourisation section, on every catalog page.
+ *
+ * ## Why the derived band is visible and not behind a disclosure
+ *
+ * A user browsing 148 terpenes with no temperature and ten with one reads as a
+ * broken database. Filling the gap with a band that looks measured would be a
+ * worse defect than the gap. So the section is built the way [EstimatedClimateCard]
+ * is built: the estimated number arrives carrying `≈`, and the sentence saying
+ * where it came from arrives **with** it, as a field of the model, so no call
+ * site can render the number without the evidence.
+ *
+ * ## The evidence line is not optional
+ *
+ * `evidenceEs` and `limitsEs` are rendered unconditionally, straight after the
+ * numbers, with no `if`, no `AnimatedVisibility` and no "ver más". That is the
+ * same rule the Séquito module holds its own card to, and it is asserted from
+ * `TerpeneDetailVolatilityTest` by reading this file's source.
+ *
+ * ## One scroll owner
+ *
+ * A plain `Column`. The page's `LazyColumn` owns the scroll, so this section
+ * must not declare one of its own.
+ */
+@Composable
+private fun VolatilityCard(
+    volatility: TerpeneVolatility,
+    curve: VolatilityCurve,
+    subjectCatalogId: String,
+    scheme: androidx.compose.material3.ColorScheme
+) {
+    val tertiary = LocalTertiaryText.current
+    val content = TerpeneVolatilityCopy.contentOf(volatility)
+    val partnerCount = (curve.steps.size - 1).coerceAtLeast(0)
+    val curveContent = VolatilityCurveCopy.contentOf(
+        curve = curve,
+        subjectLabelEs = volatility.labelEs,
+        partnerCount = partnerCount
+    )
+
+    DetailCard("🌡️ Vaporización") {
+        DataRow("Ventana de vaporización", content.windowEs)
+        DataRow("Origen de la ventana", content.provenanceLabelEs)
+
+        if (content.noteEs.isNotBlank()) {
+            DetailParagraph("", content.noteEs)
+        }
+
+        // The evidence line. Always rendered, never behind an interaction.
+        DetailParagraph("", content.evidenceEs)
+        DetailParagraph("", content.limitsEs)
+
+        if (curve.isNotEmpty && curveContent.isDrawable) {
+            Spacer(Modifier.height(12.dp))
+            Text(
+                curveContent.titleEs,
+                style = MaterialTheme.typography.labelLarge,
+                color = scheme.primary
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                curveContent.scopeEs,
+                style = MaterialTheme.typography.bodySmall,
+                color = scheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(10.dp))
+
+            curve.stages.forEach { stage ->
+                val isSubject = stage.step.catalogId == subjectCatalogId
+                val bar = curve.barFor(stage.step)
+                Text(
+                    stage.step.window.formatEs() + " · " + stage.step.labelEs,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = if (isSubject) FontWeight.SemiBold else FontWeight.Normal
+                    ),
+                    color = if (isSubject) scheme.onSurface else scheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(3.dp))
+                VolatilityBarTrack(bar, isSubject, scheme, tertiary)
+                if (stage.pending.isNotEmpty()) {
+                    Spacer(Modifier.height(3.dp))
+                    Text(
+                        "Después siguen: " + stage.pending.joinToString(", ") { it.labelEs },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = tertiary
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+            }
+
+            if (curveContent.derivedWarningEs.isNotBlank()) {
+                Text(
+                    curveContent.derivedWarningEs,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = tertiary
+                )
+                Spacer(Modifier.height(6.dp))
+            }
+
+            if (curveContent.contradictionEs.isNotBlank()) {
+                Text(
+                    curveContent.contradictionEs,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = scheme.error
+                )
+            } else {
+                Text(
+                    curveContent.aggregateEs,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = scheme.onSurface
+                )
+            }
+        }
+    }
+}
+
+/**
+ * One rung of the curve as a bar on the selection's shared temperature scale.
+ *
+ * The geometry is [VolatilityCurve.barFor]'s job and lives in the model, because
+ * Compose has no unit-test runtime here — only device-only `androidTest`. What is
+ * left here is layout only: three weighted boxes on one row.
+ *
+ * A derived band is drawn in the tertiary text colour and a measured one in the
+ * accent, so the difference between "the app worked this out" and "the table
+ * says so" is visible in the picture and not only in the text. No literal
+ * colour anywhere: the scheme and the third text role only.
+ */
+@Composable
+private fun VolatilityBarTrack(
+    bar: VolatilityBar,
+    isSubject: Boolean,
+    scheme: androidx.compose.material3.ColorScheme,
+    tertiary: Color
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(8.dp)
+    ) {
+        // The weights come straight from `VolatilityBar`, which requires both to
+        // be strictly positive because `RowScope.weight` throws on zero. The
+        // defensive `coerceAtLeast` that used to sit here was the bug's hiding
+        // place: it papered over the model's zero instead of surfacing it, and
+        // the first bar of every curve is exactly the case that crashed.
+        Box(Modifier.weight(bar.startFraction))
+        Box(
+            Modifier
+                .weight(bar.widthFraction)
+                .fillMaxHeight()
+                .clip(RoundedCornerShape(4.dp))
+                .background(if (isSubject) scheme.primary else tertiary)
+        )
+        Box(Modifier.weight(1f))
     }
 }
 

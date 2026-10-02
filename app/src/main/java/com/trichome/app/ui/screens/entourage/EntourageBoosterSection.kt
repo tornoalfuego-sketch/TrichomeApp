@@ -351,6 +351,43 @@ fun EntourageBoosterSection(
                                 color = scheme.onSurface
                             )
                         }
+
+                        // F2: the same contradiction as rungs. The boolean above
+                        // says that the selection does not fit in one pass; this
+                        // says at what temperature each compound arrives and what
+                        // is already gone by then, which is the part the user can
+                        // act on.
+                        if (vapour.stageLinesEs.isNotEmpty()) {
+                            Spacer(Modifier.height(10.dp))
+                            Text(
+                                "Curva de calor",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = scheme.primary
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                "Orden de salida de los compuestos elegidos, del más " +
+                                    "volátil al menos volátil.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = scheme.onSurfaceVariant
+                            )
+                            Spacer(Modifier.height(6.dp))
+                            vapour.stageLinesEs.forEach { line ->
+                                Text(
+                                    line,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = scheme.onSurface
+                                )
+                            }
+                            if (vapour.derivedWarningEs.isNotBlank()) {
+                                Spacer(Modifier.height(6.dp))
+                                Text(
+                                    vapour.derivedWarningEs,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = tertiary
+                                )
+                            }
+                        }
                     }
                 }
             }

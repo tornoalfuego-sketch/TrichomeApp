@@ -998,6 +998,30 @@ class TerpenesViewModel(container: AppContainer) : ViewModel() {
     private val repo = container.terpenesRepository
     private val progress = container.terpeneProgress
 
+    /**
+     * F2: the module's temperature table, for the ten bands it measures.
+     *
+     * Held as a field because the constructor parameter is not a property, and
+     * because both the initial load and the detail page's lazy fallback need it.
+     */
+    private val entourageContent = container.entourageContentRepository
+
+    /**
+     * F2's one volatility index, built once from both assets.
+     *
+     * The container already exposes both content repositories, so this is the
+     * existing DI path and not a new one: the encyclopedia supplies the boiling
+     * point for all 158 compounds and the Séquito module supplies the ten bands
+     * it measures. [TerpeneVolatilityIndex.from] decides which is which and
+     * labels every row, so no screen has to know where a number came from.
+     *
+     * Empty until the assets have been read, which is why it is a `var` and not
+     * a `val`: the detail screen's `LaunchedEffect` awaits the same load it
+     * already does for the entry itself.
+     */
+    var volatilityIndex by mutableStateOf(TerpeneVolatilityIndex(emptyList()))
+        private set
+
     var terpenes by mutableStateOf<List<Terpene>>(emptyList())
         private set
     var query by mutableStateOf("")
@@ -1068,6 +1092,10 @@ class TerpenesViewModel(container: AppContainer) : ViewModel() {
             families = all.map { it.family }.filter { it.isNotBlank() }.distinct().sorted()
             effectGroups = all.map { it.effectGroup }.distinct().sorted()
             aromaFamilies = all.map { it.aromaFamily }.distinct().sorted()
+            volatilityIndex = TerpeneVolatilityIndex.from(
+                catalog = repo.volatilityRows(),
+                measured = entourageContent.getVaporisation()
+            )
             refresh()
         }
         viewModelScope.launch {
@@ -1169,6 +1197,41 @@ class TerpenesViewModel(container: AppContainer) : ViewModel() {
     suspend fun detail(id: String): Terpene? = repo.getTerpene(id)
 
     suspend fun partners(terpene: Terpene): List<Terpene> = repo.resolve(terpene.pairsWith)
+
+    /**
+     * [terpene]'s volatility row, or null when the index has not loaded yet.
+     *
+     * The detail screen calls this instead of reading the index itself, so the
+     * lookup rule lives in one place and a screen cannot invent a fallback
+     * window for a compound the index does not know.
+     */
+    suspend fun volatilityOf(terpene: Terpene): TerpeneVolatility? {
+        val index = volatilityIndex
+        return index.forId(terpene.id) ?: TerpeneVolatilityIndex
+            .from(repo.volatilityRows(), entourageContent.getVaporisation())
+            .also { volatilityIndex = it }
+            .forId(terpene.id)
+    }
+
+    /**
+     * The staged curve for [terpene] and the compounds the catalog associates
+     * with it.
+     *
+     * `pairsWith` rather than a chosen profile, because a detail page has no
+     * selection: it has the four to eight partners the encyclopedia already
+     * ships for this compound, and a curve over those is a real selection
+     * rather than an invented one. Every shipped compound has between three and
+     * eight, so nothing is truncated.
+     */
+    suspend fun curveFor(terpene: Terpene): VolatilityCurve {
+        val index = volatilityIndex.takeIf { it.size > 0 } ?: run {
+            TerpeneVolatilityIndex.from(
+                repo.volatilityRows(),
+                entourageContent.getVaporisation()
+            ).also { volatilityIndex = it }
+        }
+        return index.curveFor(listOf(terpene.id) + terpene.pairsWith)
+    }
 }
 
 /* ─────────────────────────── Entourage (Séquito) ────────────────────────── */

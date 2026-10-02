@@ -257,8 +257,38 @@ data class EntourageVapourReport(
     val window: TerpeneWindow?,
     val windowEs: String,
     val contradictionEs: String,
-    val missingEs: String
-)
+    val missingEs: String,
+    /**
+     * F2: the staged curve for the same selection, so the contradiction case is
+     * a list of rungs rather than a boolean. Null until F2 and empty by default,
+     * so nothing that constructs this report by hand breaks.
+     */
+    val curve: VolatilityCurve? = null
+) {
+    /**
+     * One line per rung, ascending by temperature.
+     *
+     * Derived from [curve] rather than stored, so the list on screen cannot
+     * disagree with the curve underneath it.
+     */
+    val stageLinesEs: List<String>
+        get() = curve?.stages.orEmpty().map { stage ->
+            val range = stage.step.window.formatEs()
+            val pending = stage.pending.map { it.labelEs }
+            val head = "$range · ${stage.step.labelEs}"
+            if (pending.isEmpty()) head else "$head — después: ${pending.joinToString(", ")}"
+        }
+
+    /** Non-empty when any band in the curve was derived rather than measured. */
+    val derivedWarningEs: String
+        get() {
+            val derived = curve?.derivedCount ?: return ""
+            val total = curve?.steps?.size ?: return ""
+            if (derived == 0) return ""
+            return "$derived de $total ventanas de esta selección son estimaciones de la app; " +
+                "el resto viene de la tabla de Séquito."
+        }
+}
 
 /** One terpene's temperature row, in Spanish. */
 data class EntourageVapourRow(
@@ -344,9 +374,11 @@ object EntourageBooster {
     /**
      * The temperature report for [selected].
      *
-     * Driven by [EntouragePlanner.windowFor], so the contradiction case — a
-     * selection that cannot be vaporised in one pass without losing a compound
-     * — is reported rather than averaged into a number that reads as advice.
+     * Driven by [EntouragePlanner.windowFor] and [EntouragePlanner.curveFor],
+     * which share one aggregate rule, so the contradiction case — a selection
+     * that cannot be vaporised in one pass without losing a compound — is
+     * reported rather than averaged into a number that reads as advice. F2 adds
+     * the curve so the same case is also visible as the rungs it consists of.
      */
     fun vapourReport(
         selected: Set<EntourageTerpene>,
@@ -369,6 +401,7 @@ object EntourageBooster {
         return EntourageVapourReport(
             rows = rows,
             window = window,
+            curve = EntouragePlanner.curveFor(selected, vaporisation),
             windowEs = when {
                 window == null -> ""
                 window.isViable -> "Una sola pasada entre ${window.minTempC} °C y " +
