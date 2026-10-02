@@ -1022,6 +1022,17 @@ class TerpenesViewModel(container: AppContainer) : ViewModel() {
     var volatilityIndex by mutableStateOf(TerpeneVolatilityIndex(emptyList()))
         private set
 
+    /**
+     * F3: the agronomy block, keyed by terpene.
+     *
+     * Same lazy-fallback shape as [volatilityIndex], and for the same reason: the
+     * detail page's `LaunchedEffect` can run before the initial load has
+     * finished, and a page that showed a "no data" line because of a race would
+     * be a lie about the content rather than about the timing.
+     */
+    var agronomyIndex by mutableStateOf(EntourageAgronomyIndex())
+        private set
+
     var terpenes by mutableStateOf<List<Terpene>>(emptyList())
         private set
     var query by mutableStateOf("")
@@ -1096,6 +1107,7 @@ class TerpenesViewModel(container: AppContainer) : ViewModel() {
                 catalog = repo.volatilityRows(),
                 measured = entourageContent.getVaporisation()
             )
+            agronomyIndex = entourageContent.getAgronomyIndex()
             refresh()
         }
         viewModelScope.launch {
@@ -1231,6 +1243,30 @@ class TerpenesViewModel(container: AppContainer) : ViewModel() {
             ).also { volatilityIndex = it }
         }
         return index.curveFor(listOf(terpene.id) + terpene.pairsWith)
+    }
+
+    /**
+     * F3: [terpene]'s agronomy block, or null when it is not a module compound.
+     *
+     * Returns the **copy** ([TerpeneAgronomyContent]) rather than the raw entry,
+     * because Compose has no JVM unit-test runtime in this project: every Spanish
+     * sentence and every show-or-hide decision a composable would otherwise make
+     * for itself lives in the model and is asserted there. The call site decides
+     * where the block goes, nothing else.
+     *
+     * `null` means "this encyclopedia page is not about a compound the Séquito
+     * module models" — the same gate the page's "🧬 Efecto Séquito" button uses,
+     * so a compound with no module role gets no agronomy block rather than one
+     * that is empty.
+     */
+    suspend fun agronomyFor(terpene: Terpene): TerpeneAgronomyContent? {
+        val moduleTerpene = EntourageFilters.terpeneForCatalogId(terpene.id) ?: return null
+        val index = if (agronomyIndex.size > 0) {
+            agronomyIndex
+        } else {
+            entourageContent.getAgronomyIndex().also { agronomyIndex = it }
+        }
+        return TerpeneAgronomyCopy.contentOf(moduleTerpene, index.forTerpene(moduleTerpene))
     }
 }
 

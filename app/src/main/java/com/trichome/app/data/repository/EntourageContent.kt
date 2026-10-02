@@ -2,8 +2,13 @@ package com.trichome.app.data.repository
 
 import android.content.Context
 import com.trichome.app.data.entity.Achievement
+import com.trichome.app.model.AgronomyEvidence
+import com.trichome.app.model.AgronomyLever
+import com.trichome.app.model.AgronomyLeverKind
 import com.trichome.app.model.Cannabinoid
 import com.trichome.app.model.EntourageAchievement
+import com.trichome.app.model.EntourageAgronomy
+import com.trichome.app.model.EntourageAgronomyIndex
 import com.trichome.app.model.EntourageCase
 import com.trichome.app.model.EntourageProfile
 import com.trichome.app.model.EntourageQuizQuestion
@@ -73,6 +78,29 @@ internal data class EntourageVaporisationAsset(
     @SerialName("note_es") val noteEs: String = ""
 )
 
+/**
+ * F3: one compound's agronomy, as shipped.
+ *
+ * `kind` and `evidence` are strings here and enums in the model, exactly like the
+ * cannabinoid / terpene / profile keys. [EntourageBible.toContent] resolves them
+ * through `fromKey` and drops the ones it cannot, so a typo in a lever key cannot
+ * become a card that says something with no lever behind it.
+ */
+@Serializable
+internal data class EntourageAgronomyLeverAsset(
+    val kind: String = "",
+    @SerialName("detail_es") val detailEs: String = "",
+    val evidence: String = "",
+    @SerialName("basis_es") val basisEs: String = ""
+)
+
+@Serializable
+internal data class EntourageAgronomyAsset(
+    val terpene: String = "",
+    @SerialName("response_es") val responseEs: String = "",
+    val levers: List<EntourageAgronomyLeverAsset> = emptyList()
+)
+
 @Serializable
 internal data class EntourageCaseAsset(
     val id: String = "",
@@ -102,7 +130,8 @@ internal data class EntourageBible(
     val profiles: List<EntourageProfileAsset> = emptyList(),
     val vaporisation: List<EntourageVaporisationAsset> = emptyList(),
     val cases: List<EntourageCaseAsset> = emptyList(),
-    val quiz: List<EntourageQuizQuestionAsset> = emptyList()
+    val quiz: List<EntourageQuizQuestionAsset> = emptyList(),
+    val agronomy: List<EntourageAgronomyAsset> = emptyList()
 )
 
 /**
@@ -121,10 +150,27 @@ data class EntourageContent(
     val vaporisation: List<TerpeneVaporisation> = emptyList(),
     val cases: List<EntourageCase> = emptyList(),
     val questions: List<EntourageQuizQuestion> = emptyList(),
+    /**
+     * F3: the agronomy block, keyed by terpene.
+     *
+     * Not one entry per module compound and that is the decision, not an
+     * omission: see [com.trichome.app.model.EntourageAgronomy] for why it is
+     * keyed by compound rather than by cannabinoid x terpene pair. A compound
+     * with no documented lever has no entry and no default.
+     */
+    val agronomy: List<EntourageAgronomy> = emptyList(),
     /** Keys the enums do not know, as `"collection.id -> key"`. */
     val unresolvedReferences: List<String> = emptyList()
 ) {
     val isEmpty: Boolean get() = synergies.isEmpty() && profiles.isEmpty()
+
+    /**
+     * F3: the agronomy index, built once per content load.
+     *
+     * Derived rather than stored so the index and the list cannot be two
+     * sources of truth, the same way `TerpeneVolatilityIndex.from` works for F2.
+     */
+    fun agronomyIndex(): EntourageAgronomyIndex = EntourageAgronomyIndex(agronomy)
 
     /** The shipped profile for [key], or null when the asset omits it. */
     fun profile(key: PharmacologicalProfile): EntourageProfile? =
@@ -173,6 +219,12 @@ class EntourageContentRepository(private val context: Context) {
 
     /** The quiz questions, in shipped order. */
     suspend fun getQuestions(): List<EntourageQuizQuestion> = getContent().questions
+
+    /** F3: the agronomy block, keyed by terpene. */
+    suspend fun getAgronomy(): List<EntourageAgronomy> = getContent().agronomy
+
+    /** F3: the agronomy index, for the synergy card and the terpene detail page. */
+    suspend fun getAgronomyIndex(): EntourageAgronomyIndex = getContent().agronomyIndex()
 }
 
 /* ── Mapping ───────────────────────────────────────────────────────────── */
@@ -318,6 +370,66 @@ internal fun EntourageBible.toContent(): EntourageContent {
     quiz.filter { it.optionsEs.isEmpty() || it.correctIndex !in it.optionsEs.indices }
         .forEach { unresolved += "quiz.${it.id} -> unanswerable" }
 
+    // F3. Three separate ways this can drop a row, and all three are recorded
+    // rather than defaulted:
+    //
+    // - an unknown terpene key, the same as every other collection;
+    // - an unknown lever kind or evidence level, so a typo cannot render a
+    //   label with nothing behind it;
+    // - **a lever whose `basis_es` is blank**. This is the one that matters for
+    //   the honesty standard: an agronomy claim without its evidence level is
+    //   exactly what this module exists to not ship, so it is dropped instead of
+    //   shown unqualified. The `AGRONOMY_BASIS_REQUIRED_ES` line is what makes
+    //   that decision legible in the integrity notice when it happens.
+    val agronomy = agronomy.mapNotNull { asset ->
+        val terpene = EntourageTerpene.fromKey(asset.terpene)
+        if (terpene == null) {
+            unresolved += "agronomy.${asset.terpene} -> unknown terpene"
+            null
+        } else {
+            val levers = asset.levers.mapNotNull { leverAsset ->
+                val kind = AgronomyLeverKind.entries
+                    .firstOrNull { it.key == leverAsset.kind.trim().uppercase() }
+                val evidence = AgronomyEvidence.entries
+                    .firstOrNull { it.key == leverAsset.evidence.trim().uppercase() }
+                when {
+                    kind == null -> {
+                        unresolved += "agronomy.${terpene.key}.levers -> ${leverAsset.kind}"
+                        null
+                    }
+                    evidence == null -> {
+                        unresolved += "agronomy.${terpene.key}.${kind.key} -> ${leverAsset.evidence}"
+                        null
+                    }
+                    leverAsset.basisEs.isBlank() -> {
+                        unresolved += "agronomy.${terpene.key}.${kind.key} -> $AGRONOMY_BASIS_REQUIRED_ES"
+                        null
+                    }
+                    leverAsset.detailEs.isBlank() -> {
+                        unresolved += "agronomy.${terpene.key}.${kind.key} -> no detail declared"
+                        null
+                    }
+                    else -> AgronomyLever(
+                        kind = kind,
+                        detailEs = leverAsset.detailEs,
+                        evidence = evidence,
+                        basisEs = leverAsset.basisEs
+                    )
+                }
+            }
+            if (asset.responseEs.isBlank()) {
+                unresolved += "agronomy.${terpene.key} -> no response declared"
+                null
+            } else {
+                EntourageAgronomy(
+                    terpene = terpene,
+                    responseEs = asset.responseEs,
+                    levers = levers
+                )
+            }
+        }
+    }
+
     return EntourageContent(
         disclaimerEs = disclaimerEs,
         synergies = synergies,
@@ -325,9 +437,20 @@ internal fun EntourageBible.toContent(): EntourageContent {
         vaporisation = vaporisation,
         cases = cases,
         questions = questions,
+        agronomy = agronomy,
         unresolvedReferences = unresolved
     )
 }
+
+/**
+ * Why an agronomy lever was dropped, recorded in `unresolvedReferences`.
+ *
+ * A lever without this sentence would reach the screen as a bare instruction
+ * with no evidence level attached — which is the one thing this module's card
+ * rules exist to prevent.
+ */
+private const val AGRONOMY_BASIS_REQUIRED_ES =
+    "the lever ships no basis_es and was dropped rather than shown unqualified"
 
 /**
  * The `Achievement` row for an entourage achievement.

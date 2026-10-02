@@ -63,6 +63,12 @@ fun EntourageNetworkSection(
         EntouragePlanner.matchedSynergy(selection, library.synergies)
     }
 
+    // F3: one agronomy index for the whole tab, built once per content load.
+    // The cards read it through `EntourageCards.cardFor`, so a card can never
+    // show a lever the asset does not carry and a compound with no entry is
+    // absent from the card instead of appearing as a blank block.
+    val agronomyIndex = remember(library) { library.agronomyIndex() }
+
     // (route key, visible label), with "all of them" as the first entry so the
     // filter always has a way out.
     val filterOptions: List<Pair<String?, String>> = remember(library.synergies) {
@@ -156,7 +162,9 @@ fun EntourageNetworkSection(
                 }
             }
         } else {
-            val card = remember(matched) { EntourageCards.cardFor(matched) }
+            val card = remember(matched, agronomyIndex) {
+                EntourageCards.cardFor(matched, agronomyIndex)
+            }
             EntourageSynergyCardPanel(card, themeState)
 
             if (matched.profiles.isNotEmpty()) {
@@ -211,7 +219,9 @@ fun EntourageNetworkSection(
         } else {
             shown.forEach { synergy ->
                 EntourageSynergyCardPanel(
-                    card = remember(synergy) { EntourageCards.cardFor(synergy) },
+                    card = remember(synergy, agronomyIndex) {
+                        EntourageCards.cardFor(synergy, agronomyIndex)
+                    },
                     themeState = themeState
                 )
             }

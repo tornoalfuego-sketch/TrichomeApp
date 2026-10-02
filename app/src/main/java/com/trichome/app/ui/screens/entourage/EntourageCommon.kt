@@ -166,6 +166,31 @@ fun EntourageSynergyCardPanel(card: EntourageSynergyCard, themeState: TrichomeTh
                         }
                     }
 
+                    EntourageCardRole.AGRONOMY -> {
+                        // F3. The agronomy block sits in the same list as the
+                        // evidence line and is drawn by the same unconditional
+                        // `forEach`, so it cannot be skipped and it is not behind
+                        // a disclosure either. It gets its own branch only so it
+                        // reads as a secondary block rather than another claim
+                        // about the combination — the body's `Base (…)` clause
+                        // carries each lever's evidence level in visible text.
+                        Spacer(Modifier.height(6.dp))
+                        Column(Modifier.fillMaxWidth()) {
+                            Text(
+                                line.labelEs,
+                                style = MaterialTheme.typography.labelLarge,
+                                color = tertiary,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Spacer(Modifier.height(2.dp))
+                            Text(
+                                line.bodyEs,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = scheme.onSurface
+                            )
+                        }
+                    }
+
                     else -> {
                         Spacer(Modifier.height(8.dp))
                         Text(

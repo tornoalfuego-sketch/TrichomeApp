@@ -24,9 +24,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.trichome.app.data.repository.Terpene
+import com.trichome.app.model.BiosynthesisExplainer
 import com.trichome.app.model.DataRowLayout
 import com.trichome.app.model.EntourageFilters
 import com.trichome.app.model.EntourageTab
+import com.trichome.app.model.GrowOutGuides
+import com.trichome.app.model.TerpeneAgronomyContent
+import com.trichome.app.model.TerpeneAgronomyCopy
 import com.trichome.app.model.TerpeneVolatility
 import com.trichome.app.model.TerpeneVolatilityCopy
 import com.trichome.app.model.VolatilityBar
@@ -74,6 +78,12 @@ fun TerpeneDetailScreen(
     var volatility by remember(terpeneId) { mutableStateOf<TerpeneVolatility?>(null) }
     var curve by remember(terpeneId) { mutableStateOf(VolatilityCurve(emptyList())) }
 
+    // F3: the agronomy block, beside the vapourisation card and not instead of
+    // it. The copy arrives fully built from the model — every lever, every
+    // evidence level and the sentence that says the catalog documents none for a
+    // compound without an entry — so this file decides only where it goes.
+    var agronomy by remember(terpeneId) { mutableStateOf<TerpeneAgronomyContent?>(null) }
+
     LaunchedEffect(terpeneId) {
         val found = vm.detail(terpeneId)
         if (found == null) {
@@ -87,6 +97,7 @@ fun TerpeneDetailScreen(
             }
             volatility = vm.volatilityOf(found)
             curve = vm.curveFor(found)
+            agronomy = vm.agronomyFor(found)
         }
     }
 
@@ -171,6 +182,16 @@ fun TerpeneDetailScreen(
             if (volatilityRow != null) {
                 item {
                     VolatilityCard(volatilityRow, curve, entry.id, scheme)
+                }
+            }
+
+            // F3. Rendered unconditionally once it exists, so a compound with no
+            // documented lever still gets the sentence that says so, and a
+            // documented one gets its basis lines with it.
+            val agronomyBlock = agronomy
+            if (agronomyBlock != null) {
+                item {
+                    AgronomyCard(agronomyBlock, scheme)
                 }
             }
 
@@ -556,6 +577,114 @@ private fun VolatilityCard(
                 )
             }
         }
+    }
+}
+
+/**
+ * F3: the agronomy section, beside the vapourisation card and not instead of it.
+ *
+ * ## What this composable decides and what it does not
+ *
+ * It decides placement and nothing else. Every sentence, every lever and every
+ * show-or-hide decision arrives inside [TerpeneAgronomyContent], built by
+ * `TerpeneAgronomyCopy` in `model/` — the rule the `weight(0f)` crash taught,
+ * written down: Compose has no JVM unit-test runtime in this project, so a
+ * number or a choice only a composable can reach is a choice nobody can catch
+ * before it ships.
+ *
+ * ## The gap is stated, not left blank
+ *
+ * A compound the catalog documents no lever for gets
+ * [TerpeneAgronomyCopy.NOT_DOCUMENTED_ES] — a sentence — instead of an empty
+ * block. Silence reads as "nothing to add here"; only a sentence can say "the
+ * catalog is silent about this one".
+ *
+ * ## The evidence level is rendered, never collapsed
+ *
+ * Each lever's `detailEs` is followed by its `basisEs` under a label that names
+ * [AgronomyEvidence.labelEs]. No `if` wraps either line, no `AnimatedVisibility`,
+ * no "ver más" — the same rule `TerpeneDetailVolatilityTest` holds for the
+ * volatility evidence line and `EntourageScrollOwnershipTest` holds for the
+ * synergy card.
+ *
+ * ## One scroll owner
+ *
+ * A plain [Column]. The page's `LazyColumn` owns the scroll, so this section
+ * declares none of its own — a nested `verticalScroll` inside it is measured
+ * with an infinite maximum height and throws.
+ *
+ * ## No hardcoded colour
+ *
+ * `scheme`, `tertiary` and nothing else. No literal, and no `Color.Unspecified`
+ * published into a `Surface`.
+ */
+@Composable
+private fun AgronomyCard(
+    content: TerpeneAgronomyContent,
+    scheme: androidx.compose.material3.ColorScheme
+) {
+    val tertiary = LocalTertiaryText.current
+    val biosynthesis = BiosynthesisExplainer.contentFor(content.family)
+
+    DetailCard(content.titleEs) {
+        // Either the documented response or the sentence saying the catalog is
+        // silent. One of the two is always printed.
+        if (content.isDocumented) {
+            DetailParagraph(TerpeneAgronomyCopy.RESPONSE_LABEL_ES, content.responseEs)
+        } else {
+            DetailParagraph("", content.notDocumentedEs)
+        }
+
+        // Levers, each with its basis immediately under it.
+        content.levers.forEach { lever ->
+            DetailParagraph(lever.titleEs, lever.detailEs)
+            DetailParagraph(
+                TerpeneAgronomyCopy.basisLabelEs(lever.evidenceLabelEs),
+                lever.basisEs
+            )
+        }
+
+        // The compound's route, always: it is a fact about the compound's size,
+        // not an agronomic claim, so it survives a compound with no levers.
+        DetailParagraph("", content.routeEs)
+
+        Spacer(Modifier.height(12.dp))
+        Text(
+            biosynthesis.titleEs,
+            style = MaterialTheme.typography.titleSmall,
+            color = tertiary
+        )
+        DetailParagraph("", biosynthesis.introEs)
+        biosynthesis.steps.forEach { step ->
+            DetailParagraph(step.titleEs, step.bodyEs)
+        }
+        DetailParagraph("", biosynthesis.sizeRuleEs)
+        DetailParagraph("", biosynthesis.trichomeEs)
+        // The caveat is rendered unconditionally, like the volatility evidence
+        // line: an explainer that can show its steps without saying what it
+        // cannot settle is half a statement.
+        DetailParagraph("", biosynthesis.caveatEs)
+
+        Spacer(Modifier.height(12.dp))
+        Text(
+            TerpeneAgronomyCopy.SHARED_GUIDES_HEADING_ES,
+            style = MaterialTheme.typography.titleSmall,
+            color = tertiary
+        )
+        DetailParagraph("", TerpeneAgronomyCopy.SHARED_GUIDES_SCOPE_ES)
+        GrowOutGuides.all.forEach { guide ->
+            DetailParagraph(guide.titleEs, guide.whatEs)
+            DetailParagraph(
+                TerpeneAgronomyCopy.basisLabelEs(guide.evidence.labelEs),
+                guide.basisEs
+            )
+        }
+
+        Text(
+            TerpeneAgronomyCopy.NOT_A_DIRECTIVE_ES,
+            style = MaterialTheme.typography.labelSmall,
+            color = tertiary
+        )
     }
 }
 

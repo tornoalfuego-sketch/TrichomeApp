@@ -54,9 +54,16 @@ enum class EntourageTab(val key: String, val labelEs: String) {
 
 /* ── T8.1: the synergy card ─────────────────────────────────────────────── */
 
-/** The parts of a synergy card, so a test can address one without counting lines. */
+/**
+ * The parts of a synergy card, so a test can address one without counting lines.
+ *
+ * [AGRONOMY] is F3's addition and follows the same rule as [EVIDENCE]: the role
+ * is unconditional, its body carries each lever's basis inline, and it is
+ * rendered by the card panel's ordinary label+body branch — no disclosure, no
+ * second `if` that could be skipped.
+ */
 enum class EntourageCardRole {
-    OUTCOME, DESCRIPTION, MECHANISM, EVIDENCE, STRAINS, INTERACTION
+    OUTCOME, DESCRIPTION, MECHANISM, EVIDENCE, AGRONOMY, STRAINS, INTERACTION
 }
 
 /** One labelled paragraph of a synergy card. */
@@ -78,10 +85,22 @@ data class EntourageSynergyCard(
     val mechanismEs: String,
     val evidenceEs: String,
     val strainsEs: String,
-    val interactionEs: String
+    val interactionEs: String,
+    /**
+     * F3: one line per compound of the combination the catalog documents
+     * agronomy for. Empty when the asset documents none of them.
+     *
+     * It sits **next to the evidence line** and not below the optional lines,
+     * because it is the same kind of statement: a lever with its basis folded
+     * into the body, visible without an interaction.
+     */
+    val agronomyLines: List<EntourageCardLine> = emptyList()
 ) {
     /** True when the shipped content actually declared an evidence level. */
     val evidenceWasDeclared: Boolean get() = evidenceEs != NO_EVIDENCE_DECLARED
+
+    /** True when at least one compound of this combination has agronomy. */
+    val hasAgronomy: Boolean get() = agronomyLines.isNotEmpty()
 
     /** The card in reading order, always including the evidence line. */
     val linesEs: List<EntourageCardLine> = buildList {
@@ -95,6 +114,7 @@ data class EntourageSynergyCard(
         add(EntourageCardLine(EntourageCardRole.DESCRIPTION, "Qué se percibe", descriptionEs))
         add(EntourageCardLine(EntourageCardRole.MECHANISM, "Mecanismo", mechanismEs))
         add(EntourageCardLine(EntourageCardRole.EVIDENCE, "Evidencia", evidenceEs))
+        addAll(agronomyLines)
         if (strainsEs.isNotBlank()) {
             add(EntourageCardLine(EntourageCardRole.STRAINS, "Cepas típicas", strainsEs))
         }
@@ -139,8 +159,16 @@ object EntourageCards {
      * so substituting a "the catalog does not describe this point" line would
      * put a warning on every synergy that has nothing to warn about. Blank stays
      * blank and the block is omitted.
+     *
+     * [agronomy] is F3's second surface for the agronomy block. It defaults to
+     * an empty index rather than being required, so a caller that has not loaded
+     * the agronomy block yet gets exactly the card it got before F3 — a missing
+     * asset row costs the agronomy lines, never the synergy.
      */
-    fun cardFor(synergy: EntourageSynergy): EntourageSynergyCard = EntourageSynergyCard(
+    fun cardFor(
+        synergy: EntourageSynergy,
+        agronomy: EntourageAgronomyIndex = EntourageAgronomyIndex()
+    ): EntourageSynergyCard = EntourageSynergyCard(
         synergyId = synergy.id,
         compoundsEs = compoundsEs(synergy),
         outcomeEs = synergy.outcomeEs.orDeclared(),
@@ -149,7 +177,8 @@ object EntourageCards {
         evidenceEs = synergy.evidenceEs.takeIf { it.isNotBlank() }
             ?: EntourageSynergyCard.NO_EVIDENCE_DECLARED,
         strainsEs = synergy.strainsEs.filter { it.isNotBlank() }.joinToString(" · "),
-        interactionEs = synergy.interactionEs
+        interactionEs = synergy.interactionEs,
+        agronomyLines = TerpeneAgronomyCopy.cardLinesFor(synergy.terpenes, agronomy)
     )
 
     /** The combination heading, cannabinoid side first. */

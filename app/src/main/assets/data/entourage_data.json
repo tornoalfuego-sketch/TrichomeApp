@@ -354,5 +354,133 @@
       "correctIndex": 0,
       "explanation_es": "Aislar el efecto de un terpeno dentro de una mezcla en personas es metodológicamente muy difícil, y casi toda la mecanística viene de roedores o de ensayos de unión. La consecuencia práctica: usa estas proporciones como guía de perfil, no como predicción de efecto."
     }
+  ],
+  "agronomy": [
+    {
+      "terpene": "MYRCENE",
+      "response_es": "El mirceno es un monoterpeno de floración temprana: acompaña el crecimiento activo y su proporción cae a medida que el tricoma madura. Responde sobre todo al momento de cosecha y, con menos solidez, al déficit hídrico controlado.",
+      "levers": [
+        {
+          "kind": "HARVEST_POINT",
+          "detail_es": "Es de los primeros compuestos en irse. La proporción de mirceno cae conforme el tricoma pasa de transparente a lechoso, y sigue cayendo con el secado y el almacenamiento posterior del material.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "La pérdida de mirceno durante la maduración, el secado y el almacenamiento está bien documentada en Cannabis. Lo que no está fijado es en qué grado de ámbar conviene dejar la planta ni cuánto mirceno sobrevive a un secado concreto: depende de la variedad y del proceso."
+        },
+        {
+          "kind": "WATER_DEFICIT",
+          "detail_es": "El mirceno aparece entre los monoterpenos que suben con un déficit hídrico controlado en cultivos de aceites esenciales, y ese efecto se ha reportado también en cannabis. El efecto es sobre la composición: si el déficit se prolonga, el rendimiento total de la planta baja.",
+          "evidence": "MIXTO",
+          "basis_es": "La respuesta del mirceno al estrés hídrico está documentada en otros cultivos y reportada en cannabis, sin curva dosis-respuesta ni ventana por variedad. Es una técnica real con resultados reportados, no con una cifra que este catálogo pueda fijar."
+        },
+        {
+          "kind": "UV_B",
+          "detail_es": "La respuesta global de la planta a la UV-B en la floración tardía es un aumento de los metabolitos secundarios, y el mirceno forma parte de ese agregado.",
+          "evidence": "MIXTO",
+          "basis_es": "La inducción de terpenos por UV-B está bien caracterizada a nivel de vía. No hay una medida publicada que separe el mirceno del resto del perfil dentro de ese aumento, así que la parte que le corresponde a este compuesto no se puede cuantificar."
+        }
+      ]
+    },
+    {
+      "terpene": "LIMONENE",
+      "response_es": "El limoneno es el monoterpeno más volátil de la lista y el primero en perderse: acompaña la maduración en la planta y, una vez cosechado, se oxida con facilidad.",
+      "levers": [
+        {
+          "kind": "HARVEST_POINT",
+          "detail_es": "Cae de forma sostenida conforme avanza la floración y sigue cayendo durante el secado y el almacenamiento. Su proporción se conserva mejor cuanto más corto es el intervalo entre la cosecha y el secado.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "El limoneno es el compuesto volátil cuya pérdida por oxidación está mejor caracterizada: se convierte en óxido de limoneno y en carveol. Las cifras dependen de la variedad y del proceso, y esta aplicación no mide ninguno de los dos."
+        }
+      ]
+    },
+    {
+      "terpene": "LINALOOL",
+      "response_es": "El linalool se asocia al final de la floración más que al principio: es más característico de plantas que ya entran en la maduración del tricoma.",
+      "levers": [
+        {
+          "kind": "HARVEST_POINT",
+          "detail_es": "A diferencia del limoneno y los pinenos, el linalool gana peso relativo conforme el tricoma madura, y con él el conjunto de los terpenos florales. Es uno de los compuestos que empuja la firma hacia el final del ciclo.",
+          "evidence": "MIXTO",
+          "basis_es": "La asociación del linalool con la floración tardía en cannabis está descrita en los estudios de caracterización de terpenos, pero como tendencia de perfil y no como comparación controlada entre dos momentos de la misma planta."
+        }
+      ]
+    },
+    {
+      "terpene": "ALPHA_PINENE",
+      "response_es": "El alfa-pineno acompaña el crecimiento vegetativo y la floración temprana, y su proporción cae de forma sostenida a medida que el tricoma madura.",
+      "levers": [
+        {
+          "kind": "HARVEST_POINT",
+          "detail_es": "Cae conforme el tricoma pasa de transparente a lechoso y sigue cayendo con el secado. Además se oxida: el almacenamiento prolongado lo convierte en óxido de pineno, así que una caída medida después de un almacenamiento largo no es sólo maduración.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "El pineno es de los terpenos más reactivos al almacenamiento y su oxidación a óxido de pineno está bien caracterizada. Lo que esta aplicación no puede hacer es separar maduración de almacenamiento en un análisis concreto."
+        }
+      ]
+    },
+    {
+      "terpene": "BETA_PINENE",
+      "response_es": "El beta-pineno sigue al alfa-pineno dentro de la planta: los dos isómeros comparten química de oxidación y el mismo comportamiento frente a la maduración.",
+      "levers": [
+        {
+          "kind": "HARVEST_POINT",
+          "detail_es": "Cae junto con el alfa-pineno durante la maduración y el secado, por el mismo mecanismo: es un monoterpeno volátil que se oxida una vez separado del resto de la resina.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "La química de oxidación del pineno está bien caracterizada. Lo que el catálogo no puede decir es cuánto beta-pineno hay junto a cuánto alfa-pineno en un material concreto, porque en un cribado rutinario no se separan los dos isómeros y los datos de perfil suelen reportarlos juntos."
+        }
+      ]
+    },
+    {
+      "terpene": "OCIMENE",
+      "response_es": "El ocimeno es el otro extremo de la lista en volatilidad: se le asocia con material más vegetativo y con floración temprana, y es de los primeros compuestos en irse con el secado.",
+      "levers": [
+        {
+          "kind": "HARVEST_POINT",
+          "detail_es": "Su proporción cae a lo largo de la floración y su contenido absoluto cae todavía más con el secado y el almacenamiento, porque es de los compuestos volátiles que menos aguantan la manipulación.",
+          "evidence": "MIXTO",
+          "basis_es": "La pérdida de volátiles durante el secado está bien documentada en Cannabis, pero el dato específico del ocimeno es escaso y la magnitud depende de cada proceso."
+        }
+      ]
+    },
+    {
+      "terpene": "BETA_CARYOPHYLLENE",
+      "response_es": "El cariofileno beta es el sesquiterpeno mejor caracterizado de la lista: se construye sobre el farnesil pirofosfato, es de los que más responden a la luz UV-B y comparte ventana de cosecha con el humuleno.",
+      "levers": [
+        {
+          "kind": "UV_B",
+          "detail_es": "Es uno de los sesquiterpenos con respuesta documentada a la UV-B en la floración tardía. La síntesis de sesquiterpenos es de las rutas que más se inducen bajo luz ultravioleta, a través de UVR8 y HY5.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "La inducción de sesquiterpenos por UV-B está bien caracterizada en varias especies y el mecanismo de señalización está bien descrito. Lo que no hay es una cifra para una variedad de cannabis concreta, ni un punto claro entre el efecto y el desgaste de la planta cuando la exposición se pasa de larga."
+        },
+        {
+          "kind": "HARVEST_POINT",
+          "detail_es": "A diferencia de los monoterpenos, el cariofileno beta gana peso relativo conforme el tricoma madura, porque los volátiles se van antes que él. Su ventana de cosecha es posterior a la del limoneno o el mirceno.",
+          "evidence": "MIXTO",
+          "basis_es": "El desplazamiento de la proporción hacia sesquiterpenos con la maduración está descrito en Cannabis, pero la dirección no es constante entre variedades y el secado y el almacenamiento también modifican el perfil medido. Por eso se usa como tendencia y no como objetivo de composición."
+        },
+        {
+          "kind": "WATER_DEFICIT",
+          "detail_es": "El déficit hídrico moderado antes de la cosecha se ha asociado a un aumento del contenido de sesquiterpenos en varios cultivos, y en cannabis hay reportes del mismo signo sin control de la magnitud.",
+          "evidence": "MIXTO",
+          "basis_es": "La respuesta al déficit hídrico está documentada en cultivos de aceites esenciales y hay reportes en cannabis. No hay ventana, sustrato ni variedad de referencia, y un déficit severo o prolongado reduce el rendimiento: no es la misma técnica."
+        }
+      ]
+    },
+    {
+      "terpene": "HUMULENE",
+      "response_es": "El humuleno comparte ruta, precursor y ventana con el cariofileno beta: los dos salen del mismo farnesil pirofosfato y casi siempre se miden juntos.",
+      "levers": [
+        {
+          "kind": "UV_B",
+          "detail_es": "Comparte la respuesta documentada a la UV-B del cariofileno beta: misma ruta, mismo precursor, misma inducción por UVR8 y HY5.",
+          "evidence": "BIEN_DOCUMENTADO",
+          "basis_es": "La inducción de la vía de sesquiterpenos por UV-B está bien caracterizada. No hay una medida que separe el humuleno del cariofileno beta dentro de esa respuesta, porque comparten la misma fuente de carbono."
+        },
+        {
+          "kind": "HARVEST_POINT",
+          "detail_es": "Al igual que el cariofileno beta, gana peso relativo conforme madura el tricoma y conforme se van los monoterpenos. Los dos sesquiterpenos de la biblioteca suben mientras el limoneno y el mirceno bajan.",
+          "evidence": "MIXTO",
+          "basis_es": "Misma base que la del cariofileno beta: tendencia descrita en la literatura de Cannabis, con magnitud variable entre variedades y dependiente del secado y el almacenamiento. Como comparten precursor, también comparten la curva."
+        }
+      ]
+    }
   ]
 }
