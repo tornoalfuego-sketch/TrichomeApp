@@ -693,3 +693,380 @@ unavailable in this module's copy. The agronomy text uses `secado`,
 `almacenamiento`, `lesiones` and `degradación` instead. That is a real constraint
 on the vocabulary, not a preference, and no guard was loosened to accommodate a
 nicer word.
+
+# F4 — the engineering / processing dimension
+
+F4 was not in this file's task list either (it was scoped to F1–F2) and is recorded
+here now, after F3. Objective: the dimension a user acts on **after** the harvest —
+which extraction route, what the heat does, and what the profile does between the
+cut and the pen.
+
+F1 and F2 describe the compound, F3 the plant. F4 describes **what you do to the
+material you have already grown**, and that is the only dimension of the module
+where a wrong sentence is not a wrong opinion but ruined material. So the honesty
+rules below are tighter than F1's, not looser.
+
+## What is different about F4's evidence
+
+F1 pinned every pharmacology claim to its level because the whole body is
+pre-clinical. F3 stated plant physiology directly because it is textbook. F4 sits
+between: the **directions** are well documented chemistry, and the **magnitudes**
+are not — for the good reason that they depend on the starting material, the
+equipment and the process, none of which this app can see.
+
+That split is expressed in the copy itself. A direction ships with a basis saying
+"no hay una comparación controlada entre métodos y entre disolventes concretos", so
+the reader gets the direction and the reason it stops there. What F4 refused to
+ship is the thing a direction invites: a number.
+
+## The three refusals
+
+| refused | why | how it is pinned |
+| --- | --- | --- |
+| a temperature | a schedule is a setpoint and a wrong one is irreversible | `noProcessingNumberReadsAsAnInstruction`, `theAuthoredCopyStatesNoTemperatureNoDurationAndNoQuantity`, `theBlockHoldsNoTemperatureOfItsOwn` |
+| a duration | same, and F2 already established that a temperature window says nothing about how long a compound survives | same two, plus `noCompoundInTheBlockStatesAShelfLife` |
+| a yield or quantity, even as a range | the only honest statement available is "a solvent extraction pulls more total material", which is a **direction** and is stated as one | the same tests, over `°C`, `%`, `g/mg/ml/kg` and `\d+\s*(min\|horas\|días\|semanas)` |
+
+The refusal is **stated on screen**, not merely observed by absence. The
+decarboxylation basis says in Spanish, where a number would have been, that there
+is none and that a number would be a recommendation rather than a datum —
+`theDecarboxylationBasisNamesTheRefusalOutLoud`.
+
+## Solvent safety is part of the block, not a footnote
+
+This is the one design decision that is not a copy decision.
+
+`ProcessingMethodGuide.safetyEs` is a **required constructor argument with no
+default**, and the `init` block refuses a blank one. There is therefore no code
+path — asset, copy, or a fourth method added later — that produces a named
+extraction method without its safety framing. That is what separates this from a
+disclaimer: a disclaimer can be scrolled past and a developer can weaken it in one
+edit; a constructor argument that will not compile without it cannot be dropped
+from the card, the page or the asset.
+
+It is also why the safety line is **not asset content**. There is no `safety_es`
+key in `entourage_data.json` at all. A missing key costs a note; it can never cost
+the residue sentence.
+
+Where it lands:
+
+- **Detail page.** The shared comparison names all three methods, so the
+  residue sentence is rendered immediately after it in the same `Column`, and each
+  method's own guide repeats its `safetyEs` next to its mechanism.
+- **Synergy card.** The card line *is* the comparison, so
+  `TerpeneProcessingCopy.cardLineEs` folds `Residuo y exposición: …` into the same
+  body. `theCardLineCarriesTheSolventSafetyBecauseItNamesTheMethods` and
+  `theComparisonNamesTheMethodsAndCarriesTheSolventSafety` assert both halves.
+- **The undocumented path.** A compound with no entry still renders the comparison
+  — and therefore still needs the residue sentence, or the honest "no entry" page
+  would be the one page naming a solvent route with no framing.
+  `anUndocumentedCompoundStillGetsTheComparisonAndTheSolventSafety`.
+
+What the solvent line says, and why each part is there: **"grado alimentario" on
+the bottle describes the bottle, not the product made with it**; as the solvent
+evaporates most of the volume leaves and what does not evaporate becomes
+progressively more concentrated; **the applicable limit is set by the finished
+product and its route of use, not by the bottle**; and the only reliable answer is
+analysing the finished product. Pinned by `theFoodGradeLabelIsNotPresentedAsASafetyClaim`.
+
+`usesSolvent` is a property of the enum, read by the copy and not by a composable,
+and `onlyTheSolventBasedMethodClaimsASolventAndItIsTheOneThatMentionsResidue`
+checks both directions: the solvent route mentions the residue, and each
+solvent-free route says **in its own words** that it has no solvent — so "no
+safety line" and "no solvent, so no residue question" cannot be confused.
+
+### The wording constraint that shaped it
+
+`EntourageLanguage` bans `peligro`, `insegur`, `tóxico`, `peor`, `daño` and
+`malo` **as substrings**, and `EntourageAssetTest` bans `cura` (so `curado` is
+also unavailable) and `es seguro`. Writing solvent safety without any of those is
+a real constraint, not a stylistic one, and the copy uses `residuo`,
+`concentración`, `análisis`, `oxidación`, `almacenamiento` and `degradación`
+instead. **No guard was loosened to accommodate a nicer word.**
+
+## T-F1 — the `processing` block
+
+`app/src/main/assets/data/entourage_data.json` gains a `processing` array of ten
+entries: one summary claim per compound plus three method notes and four
+preservation-factor notes each, seventy notes in total.
+
+Keyed by terpene, for the same two reasons decision D-B gave: `LIMONENE` appears
+in two shipped synergies, so a pair-keyed note writes the same paragraph twice
+with two chances to drift; and `CAMPHENE` and `TERPINOLENE` appear in no synergy
+at all, so a pair-keyed note for those two could never be reached.
+
+Resolved in `EntourageBible.toContent()` with **seven** independent
+drop-and-record paths, all landing in the existing `unresolvedReferences`:
+
+| dropped when | recorded as |
+| --- | --- |
+| unknown terpene key | `processing.<KEY> -> unknown terpene` |
+| unknown method key | `processing.<TERPENE>.methods -> <KEY>` |
+| unknown preservation-factor key | `processing.<TERPENE>.preservation -> <KEY>` |
+| unknown evidence level, at the entry or at a note | `processing.<TERPENE> -> <LEVEL>` / `processing.<TERPENE>.<METHOD\|FACTOR> -> <LEVEL>` |
+| **blank entry `basis_es`** | `processing.<TERPENE> -> the row ships no entry basis_es and was dropped rather than shown unqualified` |
+| blank note `basis_es` | `processing.<TERPENE>.<METHOD\|FACTOR> -> the note ships no basis_es and was dropped rather than shown unqualified` |
+| blank note `detail_es` | `processing.<TERPENE>.<METHOD\|FACTOR> -> no detail declared` |
+
+The **entry-level** basis path is F3's lever rule lifted to the row, and it is the
+one that matters most here: a row whose summary claim has nowhere to state what
+it cannot establish would still put that claim on screen, so the row goes rather
+than degrading.
+
+The unknown-method path has the most bite in this phase. Coercing it to a default
+would be the one coercion that could render a **solvent-based route as if it
+carried no solvent** —
+`anUnknownMethodKeyLandsInUnresolvedReferencesRatherThanBecomingASolventFreeMethod`.
+
+## T-F2 — the methods, as a comparison
+
+`ProcessingGuides.COMPARISON_ES` names all three and states the trade-off in
+three sentences. What each note says, and on what evidence:
+
+| method | direction claimed | level | what the basis says it cannot establish |
+| --- | --- | --- | --- |
+| Resina en vivo (prensado en caliente, sin disolvente) | the only route with **no evaporation step after it**, so the volatile fraction is lost in smaller measure and the aroma stays closest to a freshly cut plant | BIEN_DOCUMENTADO | that drying and storage carry away the volatile fraction is documented, and this route has neither step; a **controlled comparison** with the same starting material and the same measured profile does not exist |
+| Extracción con disolvente | pulls **more total material**, and buys a purge-and-dry step in which the volatile fraction goes in good part | BIEN_DOCUMENTADO | both directions are described in the processing literature; there is no controlled comparison between methods or between specific solvents, so the magnitude is open |
+| Descarboxilación | **not a third extraction route**: a reaction on the acids, and its effect on terpenes is the side effect of the heat it needs | BIEN_DOCUMENTADO | that heating drives off terpenes and that the acids decarboxylate are both documented; **how long** each takes, and which degradation products form, depend on material and process — so no temperature and no time |
+
+`theVolatileAndTheHeavyCompoundsDisagreeAboutWhatEachMethodDoes` fails if the
+block ever describes one volatility class only: limonene, alpha-pinene and ocimene
+have to say they leave during the separation step, and beta-caryophyllene — the
+least volatile compound in the module — has to say it is among the last to go.
+`theDecarboxylationNoteStatesWhatIsLostAndWhatForms` requires **both** halves on
+every row, because a note that only said "part of it goes" would not tell a reader
+what they end up holding.
+
+`ProcessingGuides.factorFor(HEAT)` reuses F2's framing rather than inventing a
+shelf life: the temperature window higher up the page describes where the compound
+is useful **in a vaporiser**, which is a use and not a storage, and a window does
+not say how long a compound survives in a closed jar.
+`theHeatFactorTellsTheReaderThatAVolatilityWindowIsNotAShelfLife` requires that
+distinction in the shared guide **and** in every compound's HEAT note, because a
+reader who has just scrolled past a band is the one most likely to misread it.
+
+## T-F3 — organoleptic preservation
+
+Four factors, not one: `LIGHT`, `OXIDATION`, `HEAT`, `TIME`. Merged into a single
+"store it well" they would teach nothing; kept apart, three of them accelerate the
+same oxidation chemistry and the fourth decides whether the other three have had
+their effect.
+
+| factor | direction claimed | level |
+| --- | --- | --- |
+| Luz | the more reactive volatiles react with oxygen **more under light than in the dark**, and the result is a different aroma, not merely a weaker one | BIEN_DOCUMENTADO |
+| Oxígeno | the profile shifts towards products that are no longer the compounds the plant built, and the shift accumulates | BIEN_DOCUMENTADO |
+| Calor | heat drives off the volatile fraction and accelerates the oxidation of what stays | BIEN_DOCUMENTADO |
+| Tiempo | the axis none of the other three replaces: oxidation advances while the material is closed and in air, and a long-stored sample cannot be told from a short-stored one by a later assay | BIEN_DOCUMENTADO |
+
+Per-compound, the entries name the specific transformation where the module already
+has it — limonene to limonene oxide and carveol, pinene to pinene oxide, caryophyllene
+to its oxide, myrcene's double bond — and **name the reaction rather than a product**
+where it does not. Linalool, ocimene, terpinolene and camphene say "oxidation, and
+this app cannot say which product predominates" rather than inventing one. That is
+the rule the brief set: if what a method does to a specific compound cannot be
+established, say that instead of writing a plausible sentence.
+
+## Which compounds got an entry, and which did not
+
+**All ten, and that is a deliberate difference from F3, not an oversight.**
+
+F3's rule was that an entry earns its place when a **lever's** direction can be
+stated for the compound — a lever being a response of the *plant* — and Camphene
+and Terpinolene have none documented. F4's question is different: what happens to
+the **compound** under a named method, which is chemistry of the molecule and
+which every one of the ten has. So `agronomy` ships 8 entries and `processing`
+ships 10, with Camphene and Terpinolene present in one and absent from the other.
+
+That asymmetry is pinned on both sides —
+`theProcessingBlockCoversEveryCompoundF3LeftOut` fails if either entry moves — and
+the two entries that look odd have to explain themselves in their own basis: both
+state that a palanca agronómica is a response of the plant while a note of
+processed material is a property of the compound, so a reader who sees a gap in one
+block and content in the other is not looking at a contradiction.
+
+Every compound documents all three methods and all four factors. That is stricter
+than F3 was with its levers, and the reason is specific rather than tidy: the
+comparison **names all three methods**, so a compound that shipped no solvent note
+would still name the method on its own page through the shared block.
+`theSolventRouteIsDocumentedForEveryCompoundSoNoPageNamesItWithoutTheResidueLine`.
+
+Evidence is not uniform inside the ten. `LIMONENE`, `ALPHA_PINENE`, `BETA_PINENE`,
+`LINALOOL`, `HUMULENE` and `BETA_CARYOPHYLLENE` are entered BIEN_DOCUMENTADO on
+their entry-level claim. `OCIMENE`, `TERPINOLENE` and `CAMPHENE` are entered
+**MIXTO**, because their absolute content in cannabis is low and its measurement
+is not routine, so the direction of their response is documented and the magnitude
+is not. That is F3's `MIXTO` reasoning applied to content rather than to the plant.
+
+## T-F4 — the two surfaces
+
+1. **Terpene detail page.** `ProcessingCard`, a **third** card, mounted
+   immediately after `AgronomyCard` and gated on the same "is this a compound the
+   Séquito module models" test — not on "does it have an entry", or the honest
+   no-entry sentence would be unreachable.
+   `TerpeneDetailProcessingTest.theProcessingBlockIsOnThePageAsItsOwnCardBesideTheOtherTwo`
+   asserts the three cards are all present **and in order**;
+   `theProcessingCardDoesNotFoldTheVolatilityOrAgronomyBlocksIntoItself` asserts
+   the card reads neither of the other two, because heat in a device and heat in a
+   jar are different subjects and only one of them carries a number.
+   The card holds **no non-blank string literal at all**, so every sentence is in
+   `model/` where a JVM test can reach it.
+2. **Synergy card.** `EntourageCardRole.PROCESSING`, added to `linesEs`
+   immediately after the agronomy lines and before the optional ones. The card line
+   carries the compound's claim with its level and basis **folded into the body**,
+   then the comparison, then the residue sentence — because a card that names a
+   method owes the reader that sentence in the same block.
+
+The card line deliberately does **not** carry the seven per-compound notes: a line
+with seven more paragraphs per combination is a line nobody finishes reading, and
+the comparison — which is what a combination has to say about processing — is
+method-independent anyway. Those notes are on the compound's own page, which is
+where a grower looks.
+
+## T-F5 — the third badge, and the bug the device pass found
+
+`EntourageAchievement.RESIN_ENGINEER`, "Ingeniero de Resina", written into the
+**existing** `achievements` table through the existing
+`EntourageReward.toAchievementRow` projector and deduplicated by name through the
+existing `EntourageRewards.pending`. No second progression system, no column, no
+migration.
+
+Its condition is "every compound the shipped `processing` block documents has been
+opened", resolved from the `discovered` set that already pays the discovery XP —
+there is no second "has this been read" ledger, and there is deliberately still
+none, because a second record of the same fact is a second source of truth for it.
+
+The text is **derived, not literal**: `EntourageAchievement.descriptionForProcessing(n)`
+builds "Lee el procesado de los n compuestos que el catálogo documenta" from the
+parsed block, for exactly the reason F1 derived the quiz badge's threshold — a
+literal would drift the first time a compound is added to or removed from
+`entourage_data.json`, and it would drift in the one place the player cannot check
+it, because the row is written once and then lives in the table forever.
+
+Two naming decisions there. It is **not** `descriptionFor`, because two functions
+of the same name and one parameter type would be a silent hazard: a caller holding
+the wrong badge would still compile and would put a quiz sentence into the resin
+row. And `EntourageAchievement.toAchievementRow(rounds)` **errors** for
+`RESIN_ENGINEER` rather than writing the quiz text —
+`theBadgeProjectionRefusesTheResinRowRatherThanWritingAQuizSentence`.
+
+### The duplicate rows, and what caused them
+
+The device pass paid the badge **four times**, and the first three causes were
+mine. Worth recording because none of them was visible in a unit test.
+
+1. `award the badge` claimed `awardedBadgeNames` **after** awaiting the insert, so
+   a second progress emission in the gap paid again.
+2. Moving the claim before the insert fixed that and did not fix it: `appViewModel`
+   scopes to the navigation entry, so **two live `TerpenesViewModel`s** each hold a
+   snapshot taken before the other wrote.
+3. The fix that holds re-reads the **table** inside the same coroutine that writes
+   it, under a companion `Mutex`, and claims the name inside the lock. The cheap
+   pure gate still runs first, so the common case costs no database read.
+
+Verified on the device after the fix: a session with two page opens, two progress
+emissions and two ViewModel instances added **zero** rows. The four rows already
+written are residue from the three buggy builds and **could not be removed** —
+deleting them would mean touching `/data/data/com.trichome.app.debug/databases/`,
+which this phase is forbidden to do. They are user data written by a bug in a build
+that was never released, and the honest resolution is to leave them and say so.
+
+The duplicate detection a JVM test can do is
+`theCallerHasToClaimTheNameTheMomentPendingReturnsIt`, which pins the contract
+over the pure functions — it cannot reach `viewModelScope`, and the test says so.
+
+## T-E — the tests
+
+**1139 tests, 68 suites, 0 failures.** Baseline was 1057 / 64: +82 tests, +4
+suites, no suite lost.
+
+| suite | n | covers |
+| --- | --- | --- |
+| `TerpeneProcessingTest` (model) | 24 | the safety constructor refuses a blank line; every named method carries one; `usesSolvent` is correct in both directions; "food grade" is refused as a safety claim; the comparison names all three and carries the residue sentence; the undocumented path still gets both; **no temperature, duration or quantity** in the authored copy; every basis says what it cannot establish; the decarboxylation basis says the refusal out loud; F4 reuses F3's enum and invents no third level; the index is a view over the list; an empty index is a first-class answer; an undocumented compound adds no card line; the card line carries level, basis and residue sentence in the body; a card built without the index is the F3 card unchanged; the processing line sits after agronomy and before the optional lines; the authored copy passes `EntourageLanguage` and the F1 banned list |
+| `TerpeneProcessingAssetTest` (reads the file) | 29 | no BOM; no row dropped; every terpene / method / factor / evidence key resolves; one entry per compound; **all seven drop-and-record paths** verified by mutating the bible; the F1 banned phrases and `EntourageLanguage` over the shipped text; **no instruction number** anywhere in the block; every basis states its limit; all three methods and all four factors documented for every compound; the volatile and heavy compounds disagree about the solvent route; decarboxylation states what is lost and what forms; the HEAT note makes the vaporiser-versus-storage distinction; no shelf life is claimed and every TIME note says none is published; every level and basis reaches the card body verbatim; the block is reachable from the shipped combinations; **the processing block covers every compound F3 left out**; the index and the list are one source of truth; the rest of the parse is untouched (10 bands, 4 profiles, 7 synergies, 8 agronomy entries, 10 questions, 0 unresolved) |
+| `TerpeneDetailProcessingTest` (structural) | 17 | the three cards are present and in order; the gate is the compound; the card folds neither of the other two in; the comparison and the residue sentence render unconditionally; every method's safety line renders in its block; every shared guide renders including the ones this compound has no note for; no disclosure on either surface; the synergy card has its own `PROCESSING` branch and still iterates every line; both network call sites carry the index; one scroll owner; no hardcoded colour; **no `Surface` at all**; no glassmorphism; **no non-blank string literal in the composable**; every label comes from the content model; the card holds no temperature and never reaches for the volatility window |
+| `TerpeneProcessingBadgeTest` | 12 | the badge text follows the shipped block; it changes with the data; the paid description names the shipped count; a partial read pays nothing; an empty block pays nothing; paid exactly once; the caller's claim contract; the reward projects through the existing row builder; the enum is the module's badge set and nothing else; the quiz badge is unaffected; the quiz badge still resolves its row from the run that paid it; the badge projection refuses the resin row |
+
+`ModelPurityTest` now includes `TerpeneProcessing.kt`.
+
+## F4 verification (observed)
+
+| command | observed |
+| --- | --- |
+| `:app:compileDebugKotlin --no-daemon` | BUILD SUCCESSFUL |
+| `:app:cleanTestDebugUnitTest :app:testDebugUnitTest --no-daemon` | BUILD SUCCESSFUL |
+| `:app:assembleDebug :app:installDebug --no-daemon` | BUILD SUCCESSFUL, `Installed on 1 device` |
+| `:app:lintDebug --no-daemon` | BUILD SUCCESSFUL |
+
+**1139 tests, 68 suites, 0 failures, 0 skipped.** Baseline 1057 / 64: +82 tests,
++4 suites, no suite lost. **Lint 0 errors, 353 issues** (333 warnings, 20
+information) — identical to baseline. No schema change, `APP_DATABASE_VERSION`
+still 3, no new dependency, `versionCode` 10 / `versionName` 1.8.0 untouched.
+
+### F4 device pass
+
+Mirceno's page: the third card renders directly under "🌱 Agronomía", carrying the
+claim with its `Base: Bien documentado`, the comparison, the "Residuo y exposición"
+block immediately after it, the three method notes each with their own safety line,
+the three shared method guides, the preservation block and the closing line. The
+`thc_myrcene` synergy card: the "⚗️ Mirceno" line sits directly under the
+"🌱 Mirceno" line, and scrolling the line through shows the comparison and then the
+residue sentence before "Cepas típicas" — same body, as the test requires.
+
+The "Logros" surface shows **"Ingeniero de Resina — Lee el procesado de los 10
+compuestos que el catálogo documenta"**, the count derived from the shipped block.
+
+No `FATAL EXCEPTION`, no `AndroidRuntime:` line, nothing from the app in logcat.
+The two competing third-party apps stole the foreground twice and were retried with
+~6 s spacing, not a tight loop.
+
+**Side effects, declared.** Opening terpene pages registers discoveries and pays
+20 XP each, as the app is designed to. This pass went from **19 discovered / 465 XP
+to 27 discovered / 1230 XP** and left **four** `Ingeniero de Resina` rows in the
+`achievements` table where one is correct. The +900 XP above the correct 630 is
+600 from the three duplicate badge rows and the rest from the extra discoveries,
+several of which were mis-taps during navigation: `Óxido de camfeno`, `Óxido
+piránico de linalool`, `Óxido de pineno alfa`, `Cariofileno` and `Pulegona` were
+opened by mistake and are real discoveries in the user's profile.
+
+**Not verified:** `assembleRelease` / `bundleRelease` with R8. Not run in this
+phase, and it is still the only build that catches a minification problem.
+`LunarEngine`, `AmbientClimate`, `TerpeneBlender`, `EntouragePlanner` and
+`VolatilityCurves.aggregate` were not touched.
+
+## A stale line in F1's record, corrected here
+
+F1's Constraints section still says: *"Agronomy, extraction and decarboxylation
+(F3, F4). Nothing exists yet: zero occurrences of UV, mevalonate, MEP,
+biosynthesis, harvest, rosin or decarboxylation across the whole asset."*
+
+That was true when F1 wrote it and is false now — F3 shipped `agronomy` and F4
+shipped `processing`. The sentence is left in place as part of F1's record rather
+than rewritten, because the constraint list is the spec the phases were measured
+against; this line is the correction.
+
+## Two things F4 found in code it did not own
+
+Both reported, not patched:
+
+- **`terpenes.json` spells linalool "Linaloel"** (catalog id `linalool`,
+  C10H18O, 198 °C). It is a data typo, not a key mismatch — `EntourageTerpene
+  .catalogId` and every F1/F2/F3 cross-source assertion agree with it, and the
+  encyclopaedia is internally consistent. It is visible in the UI as a misspelt
+  compound name and it makes the compound undiscoverable by its correct spelling.
+  Fixing it is a one-character data change and a content decision, not F4's.
+- **The terpenes screen search matches aroma, formula, mechanism, effects,
+  medical properties, strains and foundIn as well as the name**, so searching
+  "Camfeno" returns "Óxido de camfeno" first and "Linalool" returns only the two
+  linalool oxides. That is working as designed, but it made device navigation for
+  this phase slow and it is worth knowing before driving that screen with `adb`.
+
+## One vocabulary note worth keeping
+
+`ProcessingEvidence` is a `typealias` for F3's `AgronomyEvidence`, and that is the
+point rather than a convenience: a claim in this module cannot be labelled
+"bien documentado" on one card and something else one screen away. Two levels ship,
+`BIEN_DOCUMENTADO` and `MIXTO`. `LIMITADO` exists in the enum because F3 declared
+it and never used it, and F4 uses it too — asserted over what the copy uses rather
+than over what the enum declares, because "the enum has three members" and "three
+labels are in use" are different claims.
