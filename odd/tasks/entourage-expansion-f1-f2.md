@@ -1070,3 +1070,302 @@ point rather than a convenience: a claim in this module cannot be labelled
 it and never used it, and F4 uses it too — asserted over what the copy uses rather
 than over what the enum declares, because "the enum has three members" and "three
 labels are in use" are different claims.
+
+# F5 — the levelled quiz and the second scoring mode
+
+F5 was the phase F1's Out-of-scope list called "highest risk in the plan". The hard
+question was not the implementation, it was a mismatch between the spec and the
+domain: the spec asked for an agricultural Lab case — "preserve monoterpenes in a
+hot summer" — and the Lab's scoring model is pharmacological, with no cannabinoid
+profile to look at on a harvest. **The owner chose to add the second scoring mode**
+rather than bend the first, and that decision shapes everything below.
+
+## T-G1 — the levelled quiz
+
+`EntourageQuizLevel` is three members — `PRINCIPIANTE`, `AGRONOMO`, `BIOQUIMICO` —
+and `EntourageQuizQuestion.level` has **no default**, so there is no constructor
+path that produces a question the player cannot place. The asset ships a `level`
+per question; a blank or unknown key drops the row and names it in
+`unresolvedReferences`, which is a third drop-and-record path on top of the two the
+quiz already had.
+
+### The classification, and the two rules it is held to
+
+A level is a claim about a question, so the claim is asserted over the shipped
+asset rather than left in a comment. Two rules:
+
+1. a question whose explanation cites **human trials** is never `PRINCIPIANTE`;
+2. a question that **only names a receptor** is never `BIOQUIMICO` — naming a
+   receptor is recall, and the module already states the compound-to-receptor map
+   on the compound's own page.
+
+| id | level | why |
+| --- | --- | --- |
+| `q6_limonene_temperatura` | Principiante | one catalog row read back; no inference at all |
+| `q11_humuleno_ebullicion` | Principiante | **new** — one measured boiling point, read back |
+| `q12_cariofileno_ultimo` | Principiante | **new** — which compound has the highest point |
+| `q1_cariofileno_cb2` | Agrónomo | answer is "CB2"; excluded from Bioquímico by rule 2 |
+| `q3_pineno_acetilcolina` | Agrónomo | which two compounds carry the focus profile |
+| `q7_cariofileno_temperatura` | Agrónomo | two stated windows contradict each other |
+| `q13_ocimeno_cambia` | Agrónomo | **new** — a direction has to be read, not recalled |
+| `q14_fraccion_volatil_costo` | Agrónomo | **new** — the trade-off F4 documents, in words |
+| `q2_limonene_ansiedad` | Bioquímico | GABAergic/serotonergic mechanism plus an evidence class |
+| `q4_mirceno_hipotesis` | Bioquímico | judging what kind of evidence would establish a claim |
+| `q5_cbn_afinidad` | Bioquímico | affinity to partial agonism to observed character |
+| `q8_cbd_trpv1` | Bioquímico | two compounds converging on one pathway by distinct mechanisms |
+| `q9_interaccion_cbd` | Bioquímico | enzyme inhibition and its substrate class |
+| `q10_evidencia_entourage` | Bioquímico | why the whole body of evidence is pre-clinical |
+| `q15_linalool_acetilcolinesterasa` | Bioquímico | **new** — an enzyme claim and its evidence class |
+| `q16_humuleno_posicion` | Bioquímico | **new** — a sesquiterpene inside the monoterpene boiling band |
+
+**Six questions were added, and that is a decision, not a completion.** Levelled
+only, the ten shipped questions classify 1 / 3 / 6: one Principiante question in a
+sixteen-question run is a token, and `theClassificationIsNotTrivial` fails on it.
+Two per band were added so every rung carries at least three, and each one is drawn
+from a fact the repository already holds — a measured boiling point, F4's shipped
+comparison, a shipped `evidence_es` level. No new chemistry was introduced to fill
+a band.
+
+### What the level does on screen
+
+Two places, both derived in `model/`. `EntourageQuizLevels.badgeEs(question)` is
+the chip above every open question **and** every reveal — a level that appears and
+then disappears is worse than one that never appeared.
+`EntourageQuizLevels.orderByLevel` sorts the run in the **quiz machine's
+constructor**, not at the call site, so a run cannot be assembled unlevelled; the
+sort is stable, so two questions of the same band keep their authored order and the
+run is identical on every device. `countsByLevel` and `summaryEs` report the run's
+tally at the end. Every level carries a one-line gloss, because "Agrónomo" alone
+does not tell a reader what the band asks of them.
+
+### The Séquito badge's text: yes, it changed, and here is why
+
+F1 removed a literal "Acierta 8 de 10" and left `descriptionFor(rounds)` to build
+the sentence from the run actually played. What it also left behind was
+`const val QUIZ_ROUNDS = 10`, the argument for a zero-argument `description`. The
+moment F5 added six questions, that constant was a hand-maintained second copy of a
+number the asset already holds — the same drift F1's own KDoc warns about, one
+layer up. **F5 deleted `QUIZ_ROUNDS` and `val description`** rather than bumping
+them, on F4's precedent for `RESIN_ENGINEER`: every caller is handed the count it
+played, and there is deliberately no zero-argument reading left to reach for. The
+sentence now reads "Acierta 12 de 16 preguntas sobre modulación terpénica", and the
+threshold arithmetic is asserted over the shipped 16, over a five-round partial
+run, and over the degenerate one-round and zero-round runs.
+
+## T-G2 — the third badge, and what it honestly claims
+
+`EntourageAchievement.TERPENE_ALCHEMIST`, "Alquimista de Terpenos". It claims **a
+verdict in every case the asset ships** — not "solves" and not "completes",
+because `EntourageRewards.forLabVerdict` pays 20 XP for a `RIESGO` verdict and
+writes nothing at all for `INEFICAZ`, so a row's existence proves a verdict was
+obtained and nothing more. The sentence says exactly that: "Obtén un veredicto en
+los N casos del Laboratorio".
+`theBadgeDoesNotClaimToHaveSolvedTheCases` asserts the absence of *resuelve* /
+*completa* / *perfecto* / *domin* on purpose.
+
+The content behind it is the Lab's own case set, so **nothing was invented** — no
+fourth content block, no new asset section. The condition reads the names already
+in the `achievements` table, which `EntourageRewards.caseRowName(titleEs)` builds
+and `forAllCasesVerdicted` joins on, so there is no second "which cases have I
+played" ledger and no second source of truth for the same fact. That mirrors F4's
+`forProcessingRead`, and it reuses the F4 fix that holds: the table is re-read
+inside the same coroutine that writes it, under a `Mutex`, because `appViewModel`
+scopes to the navigation entry and two live `EntourageViewModel`s can each hold a
+snapshot taken before the other wrote.
+
+`EntourageAchievement.toAchievementRow(rounds)` **throws** for this badge as it does
+for the resin one — `theBadgeProjectionRefusesTheResinRowRatherThanWritingAQuizSentence`
+now checks both.
+
+## T-G3 — the agricultural Lab case
+
+`LabMode` is the field, not a heuristic: a pharmacological case with no declared
+ceiling is a valid pharmacological case, not a handling one.
+`EntourageCase.goal` became **nullable** for exactly this — a handling case must
+not have to invent a cannabinoid profile — and the parser drops a pharmacological
+case that ships without a goal rather than coercing it.
+
+`EntourageHandling.solve` scores a route against a goal over the compounds the
+player puts in the material. `HandlingGuides` is a 3x2 table of directions, and every
+cell restates a sentence F4 already ships;
+`everyCellInTheTableIsReachableSoNoRouteKeepsAStaleAnswer` fails if the table
+answers a cell it does not explain.
+
+### The two compound sets are declared, and a test re-derives them
+
+`HandlingCompounds.VOLATILE_FRACTION` (seven) and `RETAINED_IN_SEPARATION` (three)
+are hand-declared constants, and the KDoc says so plainly. Deriving them from a
+boiling-point threshold was tried and does not survive F4's own copy: **humulene
+boils at 166 °C**, inside the monoterpene band, yet its shipped solvent note says it
+"aguanta más que los monoterpenos", so a temperature cut would put it in the wrong
+class and contradict a note already on screen. The sets are therefore declared from
+the shipped notes, and
+`theDeclaredCompoundSetsAgreeWithTheShippedProcessingNotes` re-derives both from
+`entourage_data.json` by reading each compound's `SOLVENT_EXTRACTION` note, so
+editing a note underneath the constants fails there. A declaration with a drift
+detector is a defensible kind of data; one without is a rumour.
+`q16_humuleno_posicion` is the quiz question that asks the reader the same thing
+humulene broke.
+
+### A design defect this phase found in itself
+
+`theSameRouteAndMaterialReachesDifferentVerdictsUnderTheTwoGoals` exists because the
+first implementation got it wrong. Coverage was scored over the whole selection and
+the goal only added a note, so a solvent route over a mixed material came out
+`VIABLE` under **both** goals: `HandlingGoal` was a label, not a question. The goal
+now decides **which compounds count** — the volatile members under
+`VOLATILE_FRACTION`, all of them under `WHOLE_PROFILE` — so the same route over the
+same material reads `INEFICAZ` then `VIABLE`. Same input, two questions, two
+answers.
+
+## The case
+
+`cosecha_verano_aroma_citrico`: `mode: handling`,
+`handlingGoal: VOLATILE_FRACTION`, material = limoneno, ocimeno, mirceno and
+alfa-pineno, `handlingForbiddenRoutes: [DECARBOXYLATION]`, `handlingEvidence:
+BIEN_DOCUMENTADO`. F4's lever rule lifted to the row: a blank `handling_basis_es`
+drops the case and names it, because a handling claim with nowhere to state what it
+cannot establish is exactly what this module refuses to ship.
+
+**No temperature, no duration and no quantity** anywhere in the case, in the guide
+copy or in the outcome notes. The copy states the trade-off — live rosin has no
+evaporation step, a solvent route pulls more material and takes the volatile
+fraction in the separation, decarboxylation's effect on the profile is a side
+effect of its heat — and stops there. The basis says out loud that there is no
+controlled comparison with the same starting material and no assay of what
+proportion the lot held before processing, which is why the case carries none of
+those figures.
+
+## What the two modes cannot do
+
+`LabVerdict.RIESGO` is **unreachable** in handling mode, and that is a fact about
+the model rather than a policy: RIESGO exists because a selection can work on the
+goal *and* cross a ceiling, and that tension needs a patient to have a ceiling. A
+handling result has no `LabAxis` reading and `efficacy == 0`, so there is no number
+on that screen that could be read as potency. `EntourageLabUi.dialCannabinoids`
+returns an empty list for a handling case, which is what keeps a THC slider off an
+agricultural page.
+
+## The composable copy
+
+`EntourageLabCopy` holds every Spanish string the Lab section prints, **including
+the ones F1 shipped**. The structural test
+`EntourageF5StructureTest.noSpanishSentenceIsAuthoredInTheLabComposable` asserts the
+strong form — no non-blank string literal anywhere in the composable — and making
+that true meant moving F1's own strings into the model. The alternative was an
+exception clause for separators, and an exception clause is how "no literals"
+quietly stops being true.
+
+## T-G5 — the tests
+
+**1212 tests, 73 suites, 0 failures.** Baseline 1144 / 69: +68 tests, +4 suites, no
+suite lost.
+
+| suite | n | covers |
+| --- | --- | --- |
+| `EntourageHandlingTest` (model) | 21 | the two modes cannot produce the same verdict for the same input (inputs disjoint, outputs disjoint, `RISEGO` unreachable over 2 goals x 3 routes x every 1- and 2-compound material); **the two goals are not the same question**, which found a real defect; a goal the material has no compound for is unscorable; no route, empty selection, forbidden route, undocumented compound; the full verdict mapping; coverage counts kept compounds and is 0 for nothing; **the declared sets re-derived from the shipped processing notes**; the sets partition the library; `isVolatileFraction` returns `Boolean?` and the solver drops on the null rather than on `== false`; every route/class cell has a guide, a direction and a basis; every answered cell is explained; **no temperature, duration or quantity** in the authored copy; the copy passes `EntourageLanguage` and the F1 banned list; the shipped case declares a goal, material, level, basis, explanation and a forbidden route; allowed routes are never reported as undocumented; the case is solvable by at least one route; case titles are distinct |
+| `EntourageQuizLevelsTest` | 15 | every shipped question has a level and every level is used; **the two classification rules asserted over the real questions**, with the mechanism markers listed where a reviewer can argue with them; the classification is not trivial and Principiante is not a token; a run is ordered by level and the sort is stable **relative to its input**; the machine itself plays the levels in order and each question exactly once; every level has a label and a gloss and the copy is clean; the badge names the level and why it matters; the run summary names and counts every band it played; the badge text over the shipped 16, a five-round run, a one-round run and a zero-round run; the threshold arithmetic against the new total and a partial run; **no `QUIZ_ROUNDS` anywhere in `app/src/main`**; `level` is a constructor parameter with no default; a question with no level is dropped and named |
+| `EntourageCaseBadgeTest` | 15 | the text follows the shipped case list and changes with it; **it does not claim to have solved the cases**; a partial playthrough and an empty list pay nothing; a full playthrough pays exactly the badge, by name, icon and XP; the row name and the condition come from one function; an `INEFICAZ` verdict writes no row and so cannot unlock it; paid exactly once; the caller's claim contract; **two ViewModels racing over the same table pay one row**, simulated; the reward projects through the existing row builder; the other two badges are unaffected; a case row is paid once and order does not matter; **the shipped cases include both modes and both actually pay a row** |
+| `EntourageF5StructureTest` | 17 | the mode, not a heuristic, chooses the inputs; the dials are reachable only from the pharmacological branch and the route chips only from the handling branch; the dials are gated on the model returning no cannabinoid; the headline number and label are assembled in the model and neither percentage is interpolated in the composable; the side-effect panel is gated on the mode, not on an empty list; **the level chip renders on both open states**; the chip text and the run tally come from the model; the quiz section is handed the questions; **no non-blank string literal in the Lab composable or the chip**; every label both sections print comes from the model or a case; no second scroll, no hardcoded colour, no `Color.Unspecified` into a surface owner, no glassmorphism; the screen owns the route state, resets it with the case and passes it to the solver; the copy these screens print passes the language guard |
+
+`ModelPurityTest` now includes `EntourageHandling.kt`.
+
+### What the tests do not cover
+
+That a row is persisted, or that the badge is written **once** under two live
+ViewModels. Those need Room and a device; F4 shipped four duplicate rows before the
+caller was fixed, and the fix that holds is a read of the table inside the writing
+coroutine, which no JVM test can reach. What is pinned here is the pure half: the
+text follows the data, the condition is a set, and the caller must treat
+`pending`'s output as consumed the moment it is non-empty. The device pass below
+did not finish all four Lab cases, so the badge row itself is unverified on a
+device.
+
+## F5 verification (observed)
+
+| command | observed |
+| --- | --- |
+| `:app:compileDebugKotlin --no-daemon` | BUILD SUCCESSFUL |
+| `:app:cleanTestDebugUnitTest :app:testDebugUnitTest --no-daemon` | BUILD SUCCESSFUL |
+| `:app:assembleDebug :app:installDebug --no-daemon` | BUILD SUCCESSFUL, `Installed on 1 device` |
+| `:app:lintDebug --no-daemon` | BUILD SUCCESSFUL |
+
+**1212 tests, 73 suites, 0 failures, 0 skipped.** Baseline 1144 / 69: +68 tests,
++4 suites, no suite lost. **Lint 0 errors, 353 issues** (333 warnings, 20
+information) — identical to baseline. No schema change, `APP_DATABASE_VERSION` still
+3 (confirmed on device as "Room v3"), `versionCode` 11 / `versionName` 1.9.0
+untouched, no new dependency.
+
+### F5 device pass
+
+**Trivia.** The header reads "Pregunta 1 de 16 · 0 correctas" and immediately below
+it a full-width chip in `secondaryContainer` reads **"Principiante · Un dato que
+este módulo ya afirma en otra parte."** The chip is still there after the reveal,
+between the score line and the prompt, and it is still there on round two. The new
+question `q11_humuleno_ebullicion` appears with four options and the shuffled
+correct answer marked in `primaryContainer`.
+
+**Laboratorio, pharmacological case.** "Objetivo del caso: Sedante" with the mode
+label "Caso clínico" directly beneath it, then "Límites de aporte / THC hasta 20%".
+
+**Laboratorio, agricultural case.** Case 4 in the picker, "Cosecha de verano:
+conservar el aroma cítrico". The card reads **"Qué tiene que conservar: Conservar
+la fracción volátil del perfil"** with **"Decisión de procesado"** beneath it, then
+**"Base de la decisión / Bien documentado"** followed by the whole basis paragraph.
+**"Rutas que el caso descarta / Descarboxilación"** renders in `error`. The input
+section is headed **"Ruta de procesado"** with the three route chips, and the
+compound section is headed **"Compuestos del material"** with all ten compounds,
+the case's four leading. **There is no cannabinoid dial and no "Aportes" heading
+anywhere on this case**, and the button reads "Evaluar la ruta" and stays disabled
+until a route is picked.
+
+Solved it: **"La ruta cumple lo que el caso pide conservar"**, **"Compuestos que la
+ruta conserva: 100%"**, the gloss "Es la parte de lo que elegiste que sale del
+proceso como el compuesto de la planta. No es un rendimiento, ni una concentración,
+ni cuánto dura.", the four compounds each reading "Se conserva tal cual", the note
+"Resina en vivo (prensado en caliente, sin disolvente) conserva los 4 compuestos del
+caso.", and the explanation panel. **No "Efectos secundarios" block and no efficacy
+number**, because there are none.
+
+No `FATAL EXCEPTION` and nothing from `com.trichome.app` in `logcat`; the only
+`AndroidRuntime` lines are from `com.android.commands.input.Input`, the
+`adb shell input` helper.
+
+**Side effects, declared.** Solving the Lab case paid one row and its XP, as the app
+is designed to. No terpene detail page was opened in this phase, so no discovery was
+registered.
+
+**Not verified.** The third badge **in the progress surface**. Paying it needs a
+paid verdict in all four Lab cases, and the three pharmacological cases each need
+their own dials and profile terpenes tapped; the pass ran out of road on that before
+finding the surface. The badge's text, condition, idempotency and row projection are
+covered on the JVM; the row itself is not verified on a device.
+`assembleRelease` / `bundleRelease` with R8 was not run in this phase.
+`LunarEngine`, `AmbientClimate`, `TerpeneBlender`, `EntouragePlanner` and
+`VolatilityCurves.aggregate` were not touched.
+
+## Six existing tests F5 had to change, and why each is honest
+
+| test | what changed | why it is not a softening |
+| --- | --- | --- |
+| `EntourageAssetTest.theQuizShipsTenAnswerableQuestions` | renamed, 10 to 16, plus a per-level distribution assertion | the count changed by design; the per-question assertions are unchanged |
+| `EntourageAssetTest.everyCaseDeclaresAllFourAxes` | narrowed to the pharmacological mode, plus the inverse for handling | a handling case must declare **no** patient ceiling, so the narrowing is itself the assertion |
+| `EntourageAssetTest.everyCaseAimsAtAShippedProfile` | same split, plus "a handling case must not name a pharmacological goal" | same |
+| `TerpeneAgronomyAssetTest` / `TerpeneProcessingAssetTest` "the quiz is untouched" | the total became "F1's ten ids are all still present" | the guard's intent was "this phase did not rewrite the quiz"; identity survives, a total does not |
+| `TerpeneProcessingBadgeTest.theBadgeIsTheThirdAndSharesTheBadgeEnum…` | 2 to 3 badges, and the label set now includes "Alquimista de Terpenos" | a badge was added, so the count had to argue for it |
+| `EntourageQuizTest.theBadgeIsWorthExperienceWorthEarning` | `badge.description` to `descriptionFor(10)`, spelled out | the zero-argument reading was deleted, so the assertion moves to the only reading left |
+
+`EntourageAssetTest.theQuizAsksAboutMechanismsAndNotAboutStrains` was **not**
+loosened: it failed on the new `q14` because its explanation named no mechanism, and
+the fix was to the **copy** — it now states that what orders the volatile fraction is
+the boiling point and names caryophyllene's 262 °C — not to the guard.
+
+## One thing F5 found in code it did not own
+
+`EntourageTerpene` is a closed enum of exactly the ten compounds F4 documents, and
+`HandlingCompounds` classifies all ten. That means the `isVolatileFraction` null
+branch is **unreachable today**, and two tests that wanted to exercise it had to be
+replaced by assertions over the declared contract instead of a fabricated compound.
+Reported rather than papered over: the null branch exists for the eleventh compound,
+and a test that invents one to reach it would be testing a fiction.
+
