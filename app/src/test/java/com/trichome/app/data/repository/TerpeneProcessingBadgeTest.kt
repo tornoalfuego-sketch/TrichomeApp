@@ -247,14 +247,14 @@ class TerpeneProcessingBadgeTest {
         // One enum, one table, one idempotency rule. A second progression system
         // would be a second source of truth for the same XP number, and the two
         // would drift.
-        // Two badges in the module enum, not three. The module's Lab pays XP through
+        // Three badges in the module enum, not four. The module's Lab pays XP through
         // the same table but is not a badge, and `EntourageAchievement` holds only
         // what a screen names as a seal. The count is asserted so a future badge
         // cannot be added without this test arguing for it.
         assertEquals(
-            "the module ships exactly two badges in this enum: the quiz seal and " +
-                "F4's resin engineer seal",
-            2,
+            "the module ships exactly three badges in this enum: the quiz seal, " +
+                "F4's resin engineer seal and F5's terpene alchemist seal",
+            3,
             EntourageAchievement.entries.size
         )
         assertEquals(
@@ -268,13 +268,14 @@ class TerpeneProcessingBadgeTest {
             EntourageAchievement.entries.all { it.xpReward > 0 }
         )
         assertEquals(
-            "the two existing badges keep their identity, so a save written before " +
-                "F4 still resolves",
-            setOf("Maestro del Efecto Séquito", "Ingeniero de Resina"),
+            "the three existing badges keep their identity, so a save written " +
+                "before F5 still resolves",
             setOf(
-                EntourageAchievement.ENTOURAGE_MASTER.labelEs,
-                EntourageAchievement.RESIN_ENGINEER.labelEs
-            )
+                "Maestro del Efecto Séquito",
+                "Ingeniero de Resina",
+                "Alquimista de Terpenos"
+            ),
+            EntourageAchievement.entries.map { it.labelEs }.toSet()
         )
     }
 
@@ -344,6 +345,20 @@ class TerpeneProcessingBadgeTest {
             "writing the resin badge from a round count would put a quiz sentence " +
                 "in a row that has to describe the processing block",
             thrown
+        )
+
+        // F5's third badge derives from the case list, for the same reason, and
+        // has to be refused by the same function rather than by a caller-side
+        // check — F4's duplicate-row bug was a caller-side check that two
+        // ViewModels raced past.
+        val alchemist = runCatching {
+            EntourageAchievement.TERPENE_ALCHEMIST.toAchievementRow(10)
+        }.exceptionOrNull()
+
+        assertNotNull(
+            "the alchemist's text is derived from the shipped case count, not " +
+                "from a round count",
+            alchemist
         )
     }
 }

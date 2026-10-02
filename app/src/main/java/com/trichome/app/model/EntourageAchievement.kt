@@ -26,8 +26,14 @@ import kotlin.math.floor
  *
  * So [descriptionFor] is the single place the sentence is built, from the round
  * count the caller actually played, and no `QUIZ_ROUNDS` constant survives to be
- * a second, drifting copy of the asset's question count. `description` remains as
- * the shipped-quiz reading of the same function.
+ * a second, drifting copy of the asset's question count.
+ *
+ * **F5 removed that constant, and the no-argument [description] with it.** F5
+ * added questions to the asset, and the moment it did, `QUIZ_ROUNDS = 10` beside a
+ * sixteen-question file was exactly the drift F1's own KDoc warned about: a
+ * hand-maintained copy of a number the asset already holds. There is deliberately
+ * **no** zero-argument reading left to reach for, on the same grounds F4 gave for
+ * `RESIN_ENGINEER` — every caller is handed the count it actually played.
  *
  * [labelEs] is named for what it is rather than `name`, which `Enum` already
  * owns: the value here is Spanish display text, while `Enum.name` is the
@@ -39,7 +45,7 @@ enum class EntourageAchievement(
     val xpReward: Int
 ) {
     /**
-     * The single badge the module ships.
+     * The quiz badge, unlocked by a good run.
      *
      * A perfect run is not required: the quiz asks about mechanisms that are
      * genuinely pre-clinical, and demanding every answer would reward guessing
@@ -68,6 +74,33 @@ enum class EntourageAchievement(
         labelEs = "Ingeniero de Resina",
         icon = "⚗️",
         xpReward = 300
+    ),
+
+    /**
+     * F5's badge: the Lab, unlocked by having played every shipped case.
+     *
+     * ## What it honestly claims
+     *
+     * It claims a **verdict in every case the asset ships**, which is a fact the
+     * `achievements` table already records: `EntourageRewards.forLabVerdict`
+     * writes one row per case, named `Séquito: <título del caso>`, and writes
+     * nothing at all for [LabVerdict.INEFICAZ]. So the condition reads a set of
+     * names that is already persisted rather than inventing a second
+     * "have I opened this" ledger — which F4 refused to create for the resin
+     * badge and which would be a second source of truth for the same fact.
+     *
+     * The wording is deliberately **not** "resuelve": a case answered with
+     * [LabVerdict.RIESGO] also pays, so the row's existence proves a verdict was
+     * obtained, not that it was the best one. The sentence says what it can prove.
+     *
+     * It cannot exist before F5's own case ships. Before this phase the Lab had
+     * three cases; the count is derived from the parsed case list for the same
+     * reason [descriptionFor] takes its count as an argument.
+     */
+    TERPENE_ALCHEMIST(
+        labelEs = "Alquimista de Terpenos",
+        icon = "⚖️",
+        xpReward = 400
     );
 
     /**
@@ -80,9 +113,6 @@ enum class EntourageAchievement(
      */
     fun descriptionFor(rounds: Int): String =
         "Acierta ${thresholdFor(rounds)} de $rounds preguntas sobre modulación terpénica"
-
-    /** Description for a full run of the shipped quiz. */
-    val description: String get() = descriptionFor(QUIZ_ROUNDS)
 
     /**
      * F4: the resin engineer's description, derived from the shipped block.
@@ -105,19 +135,27 @@ enum class EntourageAchievement(
     fun descriptionForProcessing(documentedCompounds: Int): String =
         "Lee el procesado de los $documentedCompounds compuestos que el catálogo documenta"
 
-    companion object {
-        /**
-         * Rounds a full run of the shipped quiz has.
-         *
-         * Kept only as the argument for [description]'s reading and asserted
-         * against the asset by
-         * `EntourageAssetTest.theBadgeTextFollowsTheShippedQuizLength` — which
-         * is the whole point: the constant cannot drift from the file without a
-         * test failing, and the sentence the player reads is built from
-         * [descriptionFor] either way.
-         */
-        const val QUIZ_ROUNDS = 10
+    /**
+     * F5: the terpene alchemist's description, derived from the shipped case list.
+     *
+     * Same discipline as the two above, for the same reason: the condition is a
+     * **count of the cases the asset ships**, so a literal beside it would drift
+     * the first time a case is added or removed — and it would drift in the one
+     * place the player cannot check it, because the row is written once into the
+     * `achievements` table and lives there forever.
+     *
+     * Deliberately distinct in name from [descriptionFor] and
+     * [descriptionForProcessing] for the reason F4 gave: two of the three take
+     * different data, so a shared signature would let a caller holding the wrong
+     * badge compile and write the wrong sentence into the row.
+     *
+     * @param shippedCases how many cases the parsed asset resolves. Zero still
+     *   gets a sentence; no caller renders an empty one.
+     */
+    fun descriptionForCases(shippedCases: Int): String =
+        "Obtén un veredicto en los $shippedCases casos del Laboratorio"
 
+    companion object {
         /** Correct answers needed, as a fraction of the rounds played. */
         const val QUIZ_THRESHOLD = 0.8f
 

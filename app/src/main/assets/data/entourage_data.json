@@ -221,6 +221,7 @@
       "id": "insomnio_alta_tolerancia",
       "title_es": "Insomnio con tolerancia alta a THC",
       "brief_es": "Paciente con insomnio persistente, tolerancia alta a THC y taquicardia al superar dosis moderadas. Los intentos con dosis altas de THC empeoran el sueño: la taquicardia y la ansiedad residual lo mantienen despierto.",
+      "mode": "pharmacological",
       "goalProfile": "SEDANTE",
       "forbiddenCannabinoids": [],
       "maxCannabinoidShare": { "THC": 0.20 },
@@ -231,6 +232,7 @@
       "id": "bloque_trabajo_antes_presentar",
       "title_es": "Bloque de trabajo antes de presentar",
       "brief_es": "Paciente con dos horas de trabajo profundo antes de una presentación, sin tolerancia previa. Busca foco sin sedación y con el menor riesgo posible de perder el hilo.",
+      "mode": "pharmacological",
       "goalProfile": "FOCO_CREATIVIDAD",
       "forbiddenCannabinoids": ["CBN"],
       "maxCannabinoidShare": { "THC": 0.55 },
@@ -241,16 +243,34 @@
       "id": "dolor_articular_cronico",
       "title_es": "Dolor articular crónico",
       "brief_es": "Paciente con dolor articular crónico que quiere mantener la jornada laboral. Necesita alivio sin sedación ni deterioro de la concentración.",
+      "mode": "pharmacological",
       "goalProfile": "ANALGESICO",
       "forbiddenCannabinoids": [],
       "maxCannabinoidShare": { "THC": 0.40 },
       "sideEffectCeilings": { "ANSIEDAD": 0.60, "TACHYCARDIA": 0.70, "SEDACION": 0.65, "IMPAIRMENT_COGNITIVO": 0.60 },
       "explanation_es": "El perfil analgésico del catálogo apoya CBD y cariofileno beta, con algo de CBN y THC. El cariofileno beta es el único de la lista que actúa de forma directa sobre CB2, así que es el eje; el mirceno y el humuleno acompañan. Vigila el techo de sedación: el mirceno es útil, pero en exceso pesa."
+    },
+    {
+      "id": "cosecha_verano_aroma_citrico",
+      "title_es": "Cosecha de verano: conservar el aroma cítrico",
+      "brief_es": "Un lote cosechado en un verano caluroso, con limoneno, ocimeno y mirceno presentes en el material. La decisión pendiente no es de efecto ni de cantidad: es qué ruta de procesado deja esa fracción todavía siendo el compuesto de la planta y no otra cosa. El lote no tiene un perfil de referencia de THC ni un análisis que diga qué proporción tenía antes de procesarse.",
+      "mode": "handling",
+      "goalProfile": "",
+      "forbiddenCannabinoids": [],
+      "maxCannabinoidShare": {},
+      "sideEffectCeilings": {},
+      "handlingGoal": "VOLATILE_FRACTION",
+      "handlingCompounds": ["LIMONENE", "OCIMENE", "MYRCENE", "ALPHA_PINENE"],
+      "handlingForbiddenRoutes": ["DECARBOXYLATION"],
+      "handlingEvidence": "BIEN_DOCUMENTADO",
+      "handling_basis_es": "Que las tres rutas difieren en lo que le ocurre a la fracción volátil está bien documentado en la literatura de procesado de productos vegetales, y las notas de procesado del limoneno, el ocimeno, el mirceno y el alfa-pineno dicen lo mismo que se afirma aquí. Lo que no está fijado es cuánto de cada compuesto sobrevive a una ruta concreta: no hay comparación controlada con el mismo material de partida y el mismo perfil medido, ni un análisis del lote que fije su composición antes de procesarlo. Por eso este caso no lleva ninguna cantidad, ninguna temperatura y ningún tiempo.",
+      "explanation_es": "El caso no pide más material ni más efecto: pide que la fracción volátil salga del proceso siendo el mismo compuesto que era en la planta. La resina en vivo es la ruta que menos la expulsa, porque no tiene ninguna etapa de evaporación posterior. La extracción con disolvente recupera más material total y, a cambio, se lleva buena parte de esa fracción durante la separación. La descarboxilación queda fuera porque su efecto sobre el perfil terpénico es el efecto secundario del calor que la acompaña: los compuestos volátiles son los primeros en irse y lo que se queda ya no es el compuesto de la planta. Ninguna de las tres rutas viene acompañada de una cantidad, porque las cifras dependen del material de partida, del equipo y del proceso."
     }
   ],
   "quiz": [
     {
       "id": "q1_cariofileno_cb2",
+      "level": "AGRONOMO",
       "prompt_es": "El cariofileno beta aparece en la literatura como el único terpeno con actividad directa sobre un receptor del sistema endocannabinoide. ¿Cuál es ese receptor y por qué se le llama cannabinoide dietario?",
       "options_es": [
         "CB2, porque es un agonista directo sobre una vía que regula el sistema inmunitario",
@@ -263,6 +283,7 @@
     },
     {
       "id": "q2_limonene_ansiedad",
+      "level": "BIOQUIMICO",
       "prompt_es": "El THC produce euforia intensa y, en algunas personas, ansiedad y paranoia. ¿Qué terpeno se ha propuesto en la literatura para modular a la baja esa respuesta ansiosa?",
       "options_es": ["Mirceno", "Limoneno", "Cariofileno beta", "Humuleno"],
       "correctIndex": 1,
@@ -270,6 +291,7 @@
     },
     {
       "id": "q3_pineno_acetilcolina",
+      "level": "AGRONOMO",
       "prompt_es": "Varios terpenos de la biblioteca se describen como inhibidores de la acetilcolinesterasa, la enzima que degrada la acetilcolina. ¿Cuáles son los que esta biblioteca usa como eje del perfil de foco?",
       "options_es": ["Alfa-pineno y beta-pineno", "Camfeno", "Ocimeno", "Mirceno"],
       "correctIndex": 0,
@@ -277,6 +299,7 @@
     },
     {
       "id": "q4_mirceno_hipotesis",
+      "level": "BIOQUIMICO",
       "prompt_es": "El mirceno se ha propuesto como modulador alostérico del receptor CB1 y como facilitador del paso de otros cannabinoids al sistema nervioso central. ¿Cómo hay que leer esa hipótesis?",
       "options_es": [
         "Es una hipótesis mecanicista sostenida por datos preclínicos, no un hallazgo clínico",
@@ -289,6 +312,7 @@
     },
     {
       "id": "q5_cbn_afinidad",
+      "level": "BIOQUIMICO",
       "prompt_es": "El CBN tiene una afinidad por CB1 entre diez y veinte veces menor que la del THC. ¿Qué consecuencia práctica tiene esa baja afinidad?",
       "options_es": [
         "Se le atribuye un efecto sedante suave y poco psicoactivo, que es la base de su asociación con el sueño",
@@ -301,6 +325,7 @@
     },
     {
       "id": "q6_limonene_temperatura",
+      "level": "PRINCIPIANTE",
       "prompt_es": "El limoneno hierve alrededor de 176 °C. ¿Qué temperatura de trabajo mantiene sus notas cítricas en una vaporización?",
       "options_es": ["Alrededor de 176 a 200 °C", "Por debajo de 60 °C", "Por encima de 300 °C", "Exactamente a 0 °C"],
       "correctIndex": 0,
@@ -308,6 +333,7 @@
     },
     {
       "id": "q7_cariofileno_temperatura",
+      "level": "AGRONOMO",
       "prompt_es": "El cariofileno beta hierve alrededor de 262 °C, muy por encima del resto de monoterpenos de la biblioteca. ¿Qué implica eso al vaporizar?",
       "options_es": [
         "Necesita 250 °C o más; en una vaporización a 180 °C apenas se extrae",
@@ -320,6 +346,7 @@
     },
     {
       "id": "q8_cbd_trpv1",
+      "level": "BIOQUIMICO",
       "prompt_es": "El CBD modula el receptor TRPV1, implicado en la percepción del dolor y de los irritantes. ¿Qué otra acción del CBD converge con la del cariofileno beta en el efecto antiinflamatorio?",
       "options_es": [
         "La activación de CB2 y la señalización por 5-HT1A",
@@ -332,6 +359,7 @@
     },
     {
       "id": "q9_interaccion_cbd",
+      "level": "BIOQUIMICO",
       "prompt_es": "Una persona toma warfarina y consume una mezcla rica en CBD y cariofileno beta. ¿Por qué el CBD merece atención en este caso?",
       "options_es": [
         "Inhibe enzimas del citocromo P450 (CYP2C19, CYP3A4) y puede alterar los niveles de otros fármacos",
@@ -344,6 +372,7 @@
     },
     {
       "id": "q10_evidencia_entourage",
+      "level": "BIOQUIMICO",
       "prompt_es": "¿Por qué el efecto entourage se describe en la literatura como un fenómeno preclínico y no como un hecho clínico?",
       "options_es": [
         "Porque casi todos los estudios son in vitro o en modelos animales, y los ensayos en personas no aíslan el papel de cada terpeno",
@@ -353,6 +382,84 @@
       ],
       "correctIndex": 0,
       "explanation_es": "Aislar el efecto de un terpeno dentro de una mezcla en personas es metodológicamente muy difícil, y casi toda la mecanística viene de roedores o de ensayos de unión. La consecuencia práctica: usa estas proporciones como guía de perfil, no como predicción de efecto."
+    },
+    {
+      "id": "q11_humuleno_ebullicion",
+      "prompt_es": "El humuleno tiene un punto de ebullición de 166 °C, el mismo valor medido que trae el beta-pineno en esta biblioteca. ¿Con qué compuesto comparte ese punto de ebullición?",
+      "options_es": [
+        "Con el beta-pineno, 166 °C",
+        "Con el camfeno, 160 °C",
+        "Con el terpinoleno, 186 °C",
+        "Con el linalool, 198 °C"
+      ],
+      "correctIndex": 0,
+      "explanation_es": "El catálogo mide 166 °C para el humuleno y 166 °C para el beta-pineno. Es un caso que sorprende: el humuleno es un sesquiterpeno y, aun así, hierve dentro del rango de los monoterpenos más pequeños. La razón está en el tamaño de la molécula, no en la familia, y por eso el nombre de la familia no sirve para predecir el orden de salida.",
+      "level": "PRINCIPIANTE"
+    },
+    {
+      "id": "q12_cariofileno_ultimo",
+      "prompt_es": "¿Cuál de estos compuestos es el último en irse del material cuando se calienta, según el punto de ebullición que trae el catálogo?",
+      "options_es": [
+        "El cariofileno beta, con 262 °C, el punto de ebullición más alto de los diez",
+        "El alfa-pineno, con 156 °C",
+        "El limoneno, con 176 °C",
+        "El camfeno, con 160 °C"
+      ],
+      "correctIndex": 0,
+      "explanation_es": "El cariofileno beta hierve a 262 °C y ningún otro compuesto de la biblioteca se acerca. En cualquier proceso térmico es el último en irse, y su nota de procesado dice exactamente eso: es el compuesto que más conserva de los tres métodos. La magnitud de esa ventaja en cada método concreto no está fijada.",
+      "level": "PRINCIPIANTE"
+    },
+    {
+      "id": "q13_ocimeno_cambia",
+      "prompt_es": "Durante el procesado, la proporción del ocimeno cae mientras sube la de los compuestos pesados. ¿Qué explica ese intercambio dentro del mismo intervalo?",
+      "options_es": [
+        "Que el calor expulsa primero a los compuestos más volátiles y los menos volátiles se quedan",
+        "Que el ocimeno se transforma en otro ocimeno y por eso parece bajar",
+        "Que los compuestos pesados se concentran porque el material se evapora",
+        "Que ese intercambio ocurre solo en la extracción con disolvente"
+      ],
+      "correctIndex": 0,
+      "explanation_es": "Es el orden de volatilidad el que explica el intercambio: el ocimeno está entre los compuestos que más pronto se van y el cariofileno beta, con 262 °C, es el último. La dirección está bien documentada en las notas de procesado de los compuestos implicados; la magnitud del cambio no la puede fijar este catálogo, porque depende del material y del equipo.",
+      "level": "AGRONOMO"
+    },
+    {
+      "id": "q14_fraccion_volatil_costo",
+      "prompt_es": "El bloque de procesado dice que las tres rutas se diferencian en una sola cosa que importa: qué le ocurre a la fracción volátil. ¿Cuál de estas afirmaciones es la que el catálogo sostiene?",
+      "options_es": [
+        "Que la resina en vivo es la que menos expulsa a los terpenos más volátiles, porque no tiene ninguna etapa de evaporación posterior",
+        "Que la extracción con disolvente conserva la fracción volátil porque el disolvente la fija",
+        "Que la descarboxilación no toca los terpenos, porque actúa solo sobre los ácidos",
+        "Que existe una comparación controlada entre las tres rutas con el mismo material de partida"
+      ],
+      "correctIndex": 0,
+      "explanation_es": "Las dos direcciones de esa comparación están bien descritas en la literatura de procesado de productos vegetales: una extracción con disolvente recupera más material total y su etapa de separación se lleva la fracción más volátil. Lo que ordena esa fracción es el punto de ebullición de cada compuesto, y el cariofileno beta, con 262 °C, es el último de la biblioteca. Lo que no existe es la comparación controlada entre métodos y entre disolventes concretos, así que la magnitud de esa pérdida no la puede fijar este catálogo.",
+      "level": "AGRONOMO"
+    },
+    {
+      "id": "q15_linalool_acetilcolinesterasa",
+      "prompt_es": "El linalool aparece en la literatura como inhibidor de la acetilcolinesterasa. ¿Qué límite tiene el catálogo con esa afirmación?",
+      "options_es": [
+        "Que la medición es in vitro o en modelos animales, y no en personas",
+        "Que la afirmación es falsa",
+        "Que solo cuenta cuando se aplica por vía oral",
+        "Que la acetilcolinesterasa no interviene en el foco"
+      ],
+      "correctIndex": 0,
+      "explanation_es": "Todas las mediciones de inhibición de acetilcolinesterasa que sustentan esa afirmación son in vitro o proceden de modelos animales; no hay ensayos en personas que la confirmen. El perfil de foco de la biblioteca no se apoya en el linalool para esto: lo que sostiene ese perfil son los pinenos. Confundir una medición de laboratorio con un efecto medido en una persona es justo el error que este módulo no quiere cometer.",
+      "level": "BIOQUIMICO"
+    },
+    {
+      "id": "q16_humuleno_posicion",
+      "prompt_es": "El humuleno es un sesquiterpeno cuyo punto de ebullición medido, 166 °C, cae dentro del rango de los monoterpenos. ¿Qué consecuencia tiene eso en una etapa de separación con disolvente?",
+      "options_es": [
+        "Que aguanta más que los monoterpenos en esa etapa, aunque menos que el cariofileno beta",
+        "Que se va antes que todos los monoterpenos, precisamente por ser un sesquiterpeno",
+        "Que la temperatura no le afecta, porque no es volátil",
+        "Que se oxida por completo antes de llegar al extracto"
+      ],
+      "correctIndex": 0,
+      "explanation_es": "Su nota de procesado dice que sale entero en el extracto y aguanta más que los monoterpenos en la etapa de separación, aunque menos que el cariofileno beta. La familia no determina el comportamiento: lo determina el punto de ebullición, y a 166 °C ese punto lo coloca por debajo de la mayoría de los monoterpenos. La magnitud de esa ventaja sobre cada ruta concreta no está fijada.",
+      "level": "BIOQUIMICO"
     }
   ],
   "agronomy": [

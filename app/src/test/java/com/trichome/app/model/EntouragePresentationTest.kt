@@ -529,7 +529,8 @@ class EntouragePresentationTest {
             promptEs = "P$index",
             optionsEs = listOf("a", "b", "c"),
             correctIndex = 0,
-            explanationEs = "E$index"
+            explanationEs = "E$index",
+            level = EntourageQuizLevel.AGRONOMO
         )
     }
 
@@ -657,7 +658,7 @@ class EntouragePresentationTest {
         assertEquals(achievement.labelEs, reward.nameEs)
         assertEquals(achievement.icon, reward.icon)
         assertEquals(achievement.xpReward, reward.xpReward)
-        assertEquals(achievement.description, reward.descriptionEs)
+        assertEquals(achievement.descriptionFor(10), reward.descriptionEs)
     }
 
     /* ── Data integrity ───────────────────────────────────────────────────── */

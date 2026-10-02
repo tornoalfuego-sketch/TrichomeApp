@@ -105,6 +105,8 @@ fun EntourageModuleScreen(
     var caseIndex by remember { mutableIntStateOf(0) }
     var labDials by remember { mutableStateOf(emptyMap<Cannabinoid, Float>()) }
     var labTerpenes by remember { mutableStateOf(emptySet<EntourageTerpene>()) }
+    // F5: the chosen handling route, reset with the rest of the case state.
+    var labRoute by remember { mutableStateOf<ProcessingMethod?>(null) }
     var labResult by remember { mutableStateOf<LabResult?>(null) }
 
     // Quiz state. The lifecycle lives in the model machine; this only renders it.
@@ -259,18 +261,27 @@ fun EntourageModuleScreen(
                             caseIndex = index
                             // A new case starts from its own dials: keeping the
                             // previous case's numbers would score the wrong
-                            // puzzle.
+                            // puzzle. The route is part of that reset for the
+                            // same reason.
                             labDials = emptyMap()
                             labTerpenes = emptySet()
+                            labRoute = null
                             labResult = null
                         },
                         dials = labDials,
                         onDials = { labDials = it },
                         labTerpenes = labTerpenes,
                         onLabTerpenes = { labTerpenes = it },
+                        route = labRoute,
+                        onRoute = { labRoute = it },
                         result = labResult,
                         onEvaluate = { case, selection ->
-                            val solved = EntourageLab.solve(case, selection, library.profiles)
+                            val solved = EntourageLab.solve(
+                                case = case,
+                                selection = selection,
+                                profiles = library.profiles,
+                                route = labRoute
+                            )
                             labResult = solved
                             // One payment per case, ever: `pending` drops the
                             // reward once the row is in the table, so retrying a
@@ -289,6 +300,7 @@ fun EntourageModuleScreen(
 
                     EntourageTab.QUIZ -> EntourageQuizSection(
                         state = quizState,
+                        questions = questions,
                         onAnswer = { index -> quizState = quiz.answer(index) },
                         onNext = { quizState = quiz.next() },
                         onRestart = { quizState = quiz.restart() },

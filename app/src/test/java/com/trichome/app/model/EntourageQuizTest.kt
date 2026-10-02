@@ -16,12 +16,17 @@ import kotlin.random.Random
  */
 class EntourageQuizTest {
 
-    private fun question(id: String, correct: Int = 0) = EntourageQuizQuestion(
+    private fun question(
+        id: String,
+        correct: Int = 0,
+        level: EntourageQuizLevel = EntourageQuizLevel.AGRONOMO
+    ) = EntourageQuizQuestion(
         id = id,
         promptEs = "Prompt de $id",
         optionsEs = listOf("A", "B", "C", "D"),
         correctIndex = correct,
-        explanationEs = "Explicación de $id"
+        explanationEs = "Explicación de $id",
+        level = level
     )
 
     private fun quiz(size: Int = 3, seed: Int = 7) =
@@ -287,13 +292,22 @@ class EntourageQuizTest {
 
         assertTrue("a badge with no XP is not a reward", badge.xpReward > 0)
         assertTrue(badge.labelEs.isNotBlank())
-        assertTrue(badge.description.isNotBlank())
         assertTrue(badge.icon.isNotBlank())
+        // F5 removed the zero-argument `description` and the `QUIZ_ROUNDS` it
+        // was built from. The sentence is now only reachable through the count
+        // the caller actually played, which is what stops it drifting from the
+        // asset; the threshold it promises is still checked, over the shape the
+        // asset shipped, spelled out rather than recomputed with the same call.
+        val rounds = 10
+        assertTrue(badge.descriptionFor(rounds).isNotBlank())
         assertEquals(
-            "the shipped description has to match the threshold the code enforces",
-            "Acierta ${EntourageAchievement.thresholdFor(EntourageAchievement.QUIZ_ROUNDS)} " +
-                "de ${EntourageAchievement.QUIZ_ROUNDS} preguntas sobre modulación terpénica",
-            badge.description
+            "the description has to match the threshold the code enforces",
+            "Acierta 8 de 10 preguntas sobre modulación terpénica",
+            badge.descriptionFor(rounds)
+        )
+        assertEquals(
+            8,
+            EntourageAchievement.thresholdFor(rounds)
         )
     }
 

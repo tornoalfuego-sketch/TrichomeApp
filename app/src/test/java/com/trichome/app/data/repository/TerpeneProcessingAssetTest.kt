@@ -783,7 +783,20 @@ class TerpeneProcessingAssetTest {
         assertEquals("the measured bands are untouched", 10, parsed.vaporisation.size)
         assertEquals("the profiles are untouched", 4, parsed.profiles.size)
         assertEquals("the synergies are untouched", 7, parsed.synergies.size)
-        assertEquals("the quiz is untouched", 10, parsed.questions.size)
+        // F5 grew the quiz, so the count is no longer the guard; the guard's real
+        // intent is "F4 did not rewrite what F1 to F3 shipped", which survives by
+        // identity rather than by total. See the same line in
+        // `TerpeneAgronomyAssetTest`.
+        val originalQuiz = setOf(
+            "q1_cariofileno_cb2", "q2_limonene_ansiedad", "q3_pineno_acetilcolina",
+            "q4_mirceno_hipotesis", "q5_cbn_afinidad", "q6_limonene_temperatura",
+            "q7_cariofileno_temperatura", "q8_cbd_trpv1", "q9_interaccion_cbd",
+            "q10_evidencia_entourage"
+        )
+        assertTrue(
+            "F1's ten questions have to survive verbatim",
+            parsed.questions.map { it.id }.containsAll(originalQuiz)
+        )
         assertEquals("the agronomy block is untouched", 8, parsed.agronomy.size)
         assertTrue(
             "a schema-version bump or a dropped row would show up here",

@@ -694,13 +694,77 @@ data class TerpeneWindow(
 
 /* ── Quiz ──────────────────────────────────────────────────────────────── */
 
-/** One question of the Séquito quiz, with its answer inside the prompt. */
+/**
+ * How much the module a question draws on, in three steps.
+ *
+ * ## The rule a level has to satisfy
+ *
+ * A level the player cannot perceive is a number in a table, so [labelEs] is on
+ * the enum and is rendered with every question. The classification itself is
+ * deliberately narrow, because a level that means "amount of chemistry" would put
+ * a temperature question and a receptor question on the same rung:
+ *
+ *  - [PRINCIPIANTE] — the answer is a fact the module states outright. No
+ *    inference, no reading of a trade-off, nothing to weigh.
+ *  - [AGRONOMO] — the answer needs the module's own substance: which lever moves
+ *    which compound, or that two stated goals contradict each other. Still no
+ *    receptor reasoning.
+ *  - [BIOQUIMICO] — the answer needs mechanism (a receptor, an enzyme, an
+ *    affinity, a route of degradation) or needs judging what *kind* of evidence
+ *    would establish a claim.
+ *
+ * Two rules the assignment is held to, because either one made a level meaningless:
+ *
+ *  1. a question whose explanation cites **human trials** is never
+ *    [PRINCIPIANTE] — a beginner is not being asked to weigh a trial;
+ *  2. a question that **only names a receptor** is never [BIOQUIMICO] — naming a
+ *     receptor is recall, and this module already states the compound-to-receptor
+ *     map on the compound's own page.
+ *
+ * `EntourageQuizLevelsTest.theShippedClassificationFollowsTheRuleItDocuments`
+ * asserts both rules over the shipped asset rather than over this comment.
+ */
+enum class EntourageQuizLevel(val key: String, val labelEs: String, val blurbEs: String) {
+    PRINCIPIANTE(
+        key = "PRINCIPIANTE",
+        labelEs = "Principiante",
+        blurbEs = "Un dato que este módulo ya afirma en otra parte."
+    ),
+
+    AGRONOMO(
+        key = "AGRONOMO",
+        labelEs = "Agrónomo",
+        blurbEs = "Hay que leer una dirección o un compromiso entre dos."
+    ),
+
+    BIOQUIMICO(
+        key = "BIOQUIMICO",
+        labelEs = "Bioquímico",
+        blurbEs = "Hay que razonar sobre un mecanismo o sobre qué evidencia haría falta."
+    );
+
+    companion object {
+        /** The asset's `level` key, or null when it is not one of these. */
+        fun fromKey(key: String): EntourageQuizLevel? =
+            entries.firstOrNull { it.key == key.trim().uppercase() }
+    }
+}
+
+/**
+ * One question of the Séquito quiz, with its answer inside the prompt.
+ *
+ * [level] has no default on purpose. A question that ships without a level would
+ * render with no level chip on screen, and the reader would have no way to know
+ * the module had decided to hide one — so there is no constructor path that
+ * produces a question the player cannot place.
+ */
 data class EntourageQuizQuestion(
     val id: String,
     val promptEs: String,
     val optionsEs: List<String>,
     val correctIndex: Int,
-    val explanationEs: String
+    val explanationEs: String,
+    val level: EntourageQuizLevel
 )
 
 /** Every state the Séquito quiz can be in. Mirrors [TerpeneQuizState]. */
@@ -756,9 +820,20 @@ sealed interface EntourageQuizState {
  * ```
  */
 class EntourageQuiz(
-    private val questions: List<EntourageQuizQuestion>,
+    questions: List<EntourageQuizQuestion>,
     private val random: kotlin.random.Random = kotlin.random.Random.Default
 ) {
+
+    /**
+     * The run's questions, ordered by level and then by shipped position.
+     *
+     * Ordered in the constructor rather than by the caller, so a run cannot be
+     * assembled unlevelled: [EntourageQuizLevels.orderByLevel] is a stable sort,
+     * which means two questions of the same level keep the order the asset
+     * authored and the run cannot reshuffle them into a different sequence on a
+     * different device.
+     */
+    private val questions: List<EntourageQuizQuestion> = EntourageQuizLevels.orderByLevel(questions)
 
     /** The current state. Read-only; every change goes through a transition. */
     var state: EntourageQuizState = initialState()
@@ -837,6 +912,64 @@ class EntourageQuiz(
     }
 }
 
+/**
+ * F5: what the quiz does with the level it now carries.
+ *
+ * Kept out of [EntourageQuiz] so the rules are assertable on their own, without a
+ * game to run, and so there is exactly one definition of "a levelled run" rather
+ * than one in the machine and one in the screen.
+ */
+object EntourageQuizLevels {
+
+    /**
+     * [questions] sorted by level, stable within a level.
+     *
+     * The run ramps: a beginner does not meet a mechanism question on round one.
+     * `sortedBy` on a list is stable in Kotlin, which is what keeps the authored
+     * order inside each band.
+     */
+    fun orderByLevel(questions: List<EntourageQuizQuestion>): List<EntourageQuizQuestion> =
+        questions.sortedBy { it.level.ordinal }
+
+    /**
+     * How many questions each level holds.
+     *
+     * Every level named in the enum appears in the map, including at zero: an
+     * absent level and an empty one are the same fact, and a map that simply omits
+     * the key cannot tell the two apart on screen.
+     */
+    fun countsByLevel(questions: List<EntourageQuizQuestion>): Map<EntourageQuizLevel, Int> =
+        EntourageQuizLevel.entries.associateWith { level ->
+            questions.count { it.level == level }
+        }
+
+    /** Every level the run actually reaches. Empty levels are left out. */
+    fun levelsIn(questions: List<EntourageQuizQuestion>): List<EntourageQuizLevel> =
+        EntourageQuizLevel.entries.filter { level -> questions.any { it.level == level } }
+
+    /**
+     * The chip a question shows, level plus its one-line gloss.
+     *
+     * Two sentences in the model rather than one in the composable, because this
+     * is text a player reads to decide how hard the run is and a string authored
+     * in a composable is a string no test on this classpath can hold to the
+     * language guard.
+     */
+    fun badgeEs(question: EntourageQuizQuestion): String =
+        "${question.level.labelEs} · ${question.level.blurbEs}"
+
+    /**
+     * The level tally a finished run reports, in Spanish.
+     *
+     * Derived from the run rather than shipped, so a run and the asset cannot
+     * disagree about how many of each level were played.
+     */
+    fun summaryEs(questions: List<EntourageQuizQuestion>): String =
+        countsByLevel(questions).entries
+            .filter { (_, count) -> count > 0 }
+            .joinToString(" · ") { (level, count) -> "${level.labelEs}: $count" }
+}
+
 /* ── Mini-game: Entourage Lab ──────────────────────────────────────────── */
 
 /** An axis the case constrains: the more of it, the worse for the patient. */
@@ -864,7 +997,22 @@ data class EntourageCase(
     val id: String,
     val titleEs: String,
     val briefEs: String,
-    val goal: PharmacologicalProfile,
+    /**
+     * F5: which scoring mode answers this case.
+     *
+     * Defaults to the pharmacological mode, which is the mode that shipped and the
+     * one every existing case is scored by. The field exists so the branch is
+     * read rather than inferred from which other fields happen to be populated —
+     * a case with no forbidden cannabinoid and no ceiling is a valid
+     * pharmacological case, not a handling one.
+     */
+    val mode: LabMode = LabMode.PHARMACOLOGICAL,
+    /**
+     * The pharmacological target. Null for a [LabMode.HANDLING] case, which is
+     * what keeps an agricultural case from being scored against a cannabinoid
+     * profile it has nothing to do with.
+     */
+    val goal: PharmacologicalProfile? = null,
     /** Cannabinoids that disqualify the selection outright. */
     val forbiddenCannabinoids: Set<Cannabinoid> = emptySet(),
     /**
@@ -877,6 +1025,28 @@ data class EntourageCase(
     val maxCannabinoidShare: Map<Cannabinoid, Float> = emptyMap(),
     /** How much of each axis the patient tolerates, 0..1. */
     val ceilings: Map<LabAxis, Float> = emptyMap(),
+    /** F5: what a handling case is trying to keep. Null outside handling mode. */
+    val handlingGoal: HandlingGoal? = null,
+    /**
+     * F5: the compounds whose processing note the shipped catalogue documents.
+     *
+     * A declared set rather than an implicit "any compound": a selection holding
+     * a compound outside it cannot be scored against the processing notes, and
+     * [EntourageHandling] says so instead of guessing.
+     */
+    val handlingCompounds: Set<EntourageTerpene> = emptySet(),
+    /** F5: routes this case rules out outright, the handling analogue of [forbiddenCannabinoids]. */
+    val handlingForbiddenRoutes: Set<ProcessingMethod> = emptySet(),
+    /**
+     * F5: the evidence level for the case's own handling claim.
+     *
+     * Required by the parser for a handling case and dropped with a reason when
+     * blank — F4's lever rule lifted to the row, and for the same reason: an
+     * agricultural claim with no level is exactly what this module refuses to ship.
+     */
+    val handlingEvidence: ProcessingEvidence? = null,
+    /** F5: what the handling claim cannot establish. Required for a handling case. */
+    val handlingBasisEs: String = "",
     val explanationEs: String
 ) {
     /** The share ceilings this case imposes, as percentages for display. */
@@ -916,11 +1086,15 @@ data class LabAxisReading(
 data class LabResult(
     val caseId: String,
     val verdict: LabVerdict,
-    /** 0..100 efficacy against the case goal. */
+    /** 0..100 efficacy against the case goal. Zero outside pharmacological mode. */
     val efficacy: Int,
     val readings: List<LabAxisReading>,
     /** Player-facing lines explaining the verdict. */
-    val notesEs: List<String>
+    val notesEs: List<String>,
+    /** F5: which mode produced this. Defaults to the pharmacological one. */
+    val mode: LabMode = LabMode.PHARMACOLOGICAL,
+    /** F5: per-compound readings. Empty outside handling mode. */
+    val handlingReadings: List<HandlingReading> = emptyList()
 )
 
 /**
@@ -990,16 +1164,60 @@ object EntourageLab {
     /**
      * Scores [selection] as an answer to [case].
      *
+     * ## F5: two modes, one entry point, no shared arithmetic
+     *
+     * The dispatch is a single `when` on [EntourageCase.mode] and each branch is
+     * a **separate function**. Nothing is factored out between them, on purpose:
+     * the pharmacological branch below is the code that shipped and has an
+     * established suite, and sharing a helper with the handling mode would make
+     * every later edit to one a change to the other's arithmetic. The two are
+     * joined by a mode field and nothing else.
+     *
+     * [route] is ignored by the pharmacological branch and [profiles] by the
+     * handling one. A caller that passes both pays nothing for it; a caller that
+     * passes neither argument its mode needs gets [LabVerdict.INEFICAZ] and a note
+     * saying why, never a score against an invented default.
+     *
      * @param profiles the shipped profile library, so the Lab and the planner
      *   can never disagree about what a target means. A case whose goal has no
      *   shipped profile is reported as unscorable rather than scored against an
      *   invented one.
+     * @param route the chosen handling route, for a [LabMode.HANDLING] case.
      */
     fun solve(
         case: EntourageCase,
         selection: EntourageSelection,
+        profiles: List<EntourageProfile>,
+        route: ProcessingMethod? = null
+    ): LabResult = when (case.mode) {
+        LabMode.HANDLING -> EntourageHandling.solve(case, route, selection)
+        LabMode.PHARMACOLOGICAL -> solvePharmacological(case, selection, profiles)
+    }
+
+    /**
+     * The pharmacological mode, unchanged from the code that shipped.
+     *
+     * Extracted so the mode dispatch above reads as one line per branch and this
+     * body stays byte-for-byte what F1 shipped and its suite covers.
+     */
+    private fun solvePharmacological(
+        case: EntourageCase,
+        selection: EntourageSelection,
         profiles: List<EntourageProfile>
     ): LabResult {
+        val goal = case.goal
+        if (goal == null) {
+            // Only reachable for a pharmacological case that shipped without a
+            // target, which the parser drops. Reported rather than scored against
+            // an invented profile, the same rule as the branch below it.
+            return LabResult(
+                caseId = case.id,
+                verdict = LabVerdict.INEFICAZ,
+                efficacy = 0,
+                readings = emptyList(),
+                notesEs = listOf("Este caso no declara un objetivo clínico.")
+            )
+        }
         val forbiddenHit = selection.cannabinoids intersect case.forbiddenCannabinoids
         if (forbiddenHit.isNotEmpty()) {
             return LabResult(
@@ -1014,7 +1232,7 @@ object EntourageLab {
             )
         }
 
-        val goalProfile = profiles.firstOrNull { it.key == case.goal }
+        val goalProfile = profiles.firstOrNull { it.key == goal }
         if (goalProfile == null) {
             return LabResult(
                 caseId = case.id,

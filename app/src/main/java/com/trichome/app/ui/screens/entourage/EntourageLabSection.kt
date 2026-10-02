@@ -11,31 +11,44 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.trichome.app.data.repository.EntourageContent
 import com.trichome.app.model.*
+import com.trichome.app.model.EntourageHandling.EntourageLabCopy
 import com.trichome.app.ui.components.SolidPanel
 import com.trichome.app.ui.components.accentButtonColors
 import com.trichome.app.ui.theme.LocalTertiaryText
 import com.trichome.app.ui.theme.TrichomeThemeState
+import java.util.Locale
 
 /**
- * T8.3 — the Entourage Lab, a clinical-case puzzle.
+ * T8.3 — the Entourage Lab, a case puzzle.
  *
- * The case is data: a goal, a set of forbidden compounds, a ceiling per
- * cannabinoid share and a ceiling per side-effect axis. The player moves dials
- * and picks terpenes, presses **Evaluar**, and [EntourageLab.solve] returns the
- * verdict.
+ * ## F5: two modes on one screen
+ *
+ * The case is data and the case declares its own [LabMode]. A
+ * pharmacological case moves cannabinoid dials and is scored against side-effect
+ * ceilings; a [LabMode.HANDLING] case picks a processing route and is scored
+ * against what that route does to the compounds. They share the case picker, the
+ * verdict panel and the explanation, and nothing else — in particular the
+ * pharmacological inputs are not rendered at all for a handling case, because
+ * [EntourageLabUi.dialCannabinoids] returns nothing for one.
  *
  * ## What is deliberately not on screen
  *
  * [LabWeights]. Those constants are puzzle numbers, not measurements — the enum
- * says so in its own KDoc — so this section renders the verdict, each axis
- * against the ceiling the *case* declares, and the shipped notes. A dial or a
- * bar labelled with a raw weight would be a dose-response curve the app cannot
- * support, so [EntourageLabUi.feedback] has no way to reach the weights at all
- * and the tests pin that.
+ * says so in its own KDoc — so this section renders the verdict, each axis against
+ * the ceiling the *case* declares, the compound readings the handling mode
+ * produces, and the shipped notes. A dial or a bar labelled with a raw weight
+ * would be a dose-response curve the app cannot support, so
+ * [EntourageLabUi.feedback] has no way to reach the weights at all and the tests
+ * pin that.
  *
- * The efficacy number is the planner's percentage against the case's goal, which
- * is what the efficacy means: how close the terpene set is to the target
- * profile, and nothing about potency.
+ * The pharmacological efficacy number is the planner's percentage against the
+ * case's goal, which is what that efficacy means: how close the terpene set is to
+ * the target profile, and nothing about potency. The handling headline number is
+ * the share of the selection the route keeps, and its label says so.
+ *
+ * Every sentence this screen prints comes from `model/` or from the shipped case.
+ * A string authored in a composable is a string no JVM test on this classpath can
+ * reach, and F3 found three that way.
  *
  * A plain [Column] — the module's single `LazyColumn` owns the scroll. See
  * [EntourageNetworkSection] for why a nested vertical scroll is not an option.
@@ -49,6 +62,8 @@ fun EntourageLabSection(
     onDials: (Map<Cannabinoid, Float>) -> Unit,
     labTerpenes: Set<EntourageTerpene>,
     onLabTerpenes: (Set<EntourageTerpene>) -> Unit,
+    route: ProcessingMethod?,
+    onRoute: (ProcessingMethod?) -> Unit,
     result: LabResult?,
     onEvaluate: (EntourageCase, EntourageSelection) -> Unit,
     themeState: TrichomeThemeState
@@ -58,7 +73,7 @@ fun EntourageLabSection(
 
     if (library.cases.isEmpty()) {
         Text(
-            "El catálogo no trae casos clínicos para el Laboratorio.",
+            EntourageLabCopy.NO_CASES_ES,
             style = MaterialTheme.typography.bodyMedium,
             color = scheme.onSurfaceVariant
         )
@@ -73,22 +88,32 @@ fun EntourageLabSection(
         library.profiles.firstOrNull { it.key == case.goal }
     }
     val dialCannabinoids = remember(case) { EntourageLabUi.dialCannabinoids(case) }
-    val terpeneOptions = remember(goalProfile) { EntourageLabUi.terpeneOrder(goalProfile) }
+    val handling = case.mode == LabMode.HANDLING
+    val routes = remember(case) { EntourageLabUi.handlingRoutes(case) }
+    val compoundOptions = remember(case, goalProfile) {
+        if (handling) {
+            EntourageLabUi.handlingOrder(case)
+        } else {
+            EntourageLabUi.terpeneOrder(goalProfile)
+        }
+    }
     val selection = remember(dials, labTerpenes) {
         EntourageLabUi.selectionFromDials(dials, labTerpenes)
     }
     val ceilings = case.shareCeilings()
+    val evidenceLabel = remember(case) { EntourageLabUi.evidenceLabelEs(case) }
+    val handlingBasis = remember(case) { EntourageLabUi.basisEs(case) }
 
     Column(
         Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        EntourageSectionHeading("Caso", themeState)
+        EntourageSectionHeading(EntourageLabCopy.CASES_ES, themeState)
 
         EntourageChipFlow(
             options = library.cases.indices.toList(),
             selected = setOf(safeIndex),
-            labelOf = { "${it + 1}. ${library.cases[it].titleEs}" },
+            labelOf = { EntourageLabCopy.caseChipEs(it + 1, library.cases[it].titleEs) },
             onToggle = onCaseIndex
         )
 
@@ -108,91 +133,149 @@ fun EntourageLabSection(
                 )
                 Spacer(Modifier.height(10.dp))
                 Text(
-                    "Objetivo del caso: ${goalProfile?.labelEs ?: case.goal.labelEs}",
+                    EntourageLabUi.goalLabelEs(case, goalProfile?.labelEs),
                     style = MaterialTheme.typography.labelLarge,
                     color = scheme.primary
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    case.mode.labelEs,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = tertiary
                 )
             }
         }
 
-        // The case's own constraints, printed before the dials. They are the
+        // F5: the handling case's own evidence framing, printed above the inputs
+        // and unconditionally. A claim about what a route does to a harvest with
+        // no level attached is the one thing this module refuses to put on
+        // screen, and the level plus the limit belong before the chips rather
+        // than in a footer nobody scrolls to.
+        if (evidenceLabel != null) {
+            EntourageSectionHeading(EntourageLabCopy.EVIDENCE_ES, themeState)
+            Text(
+                evidenceLabel,
+                style = MaterialTheme.typography.labelLarge,
+                color = scheme.primary
+            )
+            if (handlingBasis != null) {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    handlingBasis,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = scheme.onSurface
+                )
+            }
+        }
+
+        // The case's own constraints, printed before the inputs. They are the
         // rules the player is playing against, so they cannot be something the
         // player has to infer from a slider.
         if (case.forbiddenCannabinoids.isNotEmpty()) {
-            EntourageSectionHeading("Compuestos que el caso descarta", themeState)
+            EntourageSectionHeading(EntourageLabCopy.FORBIDDEN_COMPOUNDS_ES, themeState)
             Text(
-                case.forbiddenCannabinoids.sortedBy { it.key }
-                    .joinToString(" · ") { it.labelEs },
+                EntourageLabCopy.joinNamesEs(
+                    case.forbiddenCannabinoids.sortedBy { it.key }.map { it.labelEs }
+                ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = scheme.error
             )
         }
 
         if (ceilings.isNotEmpty()) {
-            EntourageSectionHeading("Límites de aporte", themeState)
+            EntourageSectionHeading(EntourageLabCopy.SHARE_CEILINGS_ES, themeState)
             Text(
-                ceilings.joinToString(" · ") { (cannabinoid, max) ->
-                    "${cannabinoid.labelEs} hasta $max%"
-                },
+                EntourageLabCopy.joinNamesEs(
+                    ceilings.map { (cannabinoid, max) ->
+                        EntourageLabCopy.shareCeilingEs(cannabinoid.labelEs, max)
+                    }
+                ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = scheme.onSurface
             )
         }
 
         if (case.ceilings.isNotEmpty()) {
-            EntourageSectionHeading("Techos del paciente", themeState)
+            EntourageSectionHeading(EntourageLabCopy.PATIENT_CEILINGS_ES, themeState)
             Text(
-                case.ceilings.entries.sortedBy { it.key.key }
-                    .joinToString(" · ") { (axis, max) ->
-                        "${axis.labelEs} hasta ${(max * 100).toInt()}%"
-                    },
+                EntourageLabCopy.joinNamesEs(
+                    case.ceilings.entries.sortedBy { it.key.key }.map { (axis, max) ->
+                        EntourageLabCopy.patientCeilingEs(axis.labelEs, (max * 100).toInt())
+                    }
+                ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = scheme.onSurface
             )
         }
 
-        EntourageSectionHeading("Aportes", themeState)
+        if (case.handlingForbiddenRoutes.isNotEmpty()) {
+            EntourageSectionHeading(EntourageLabCopy.FORBIDDEN_ROUTES_ES, themeState)
+            Text(
+                EntourageLabCopy.joinNamesEs(
+                    case.handlingForbiddenRoutes.sortedBy { it.key }.map { it.labelEs }
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = scheme.error
+            )
+        }
 
-        dialCannabinoids.forEach { cannabinoid ->
-            val value = dials[cannabinoid] ?: 0f
-            val forbidden = cannabinoid in case.forbiddenCannabinoids
-            val ceiling = case.maxCannabinoidShare[cannabinoid]
-            Column {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        cannabinoid.labelEs,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.weight(1f)
+        EntourageSectionHeading(EntourageLabUi.inputsHeadingEs(case.mode), themeState)
+
+        if (handling) {
+            EntourageChipFlow(
+                options = routes,
+                selected = setOfNotNull(route),
+                labelOf = { it.labelEs },
+                onToggle = { candidate -> onRoute(if (candidate == route) null else candidate) }
+            )
+        } else {
+            dialCannabinoids.forEach { cannabinoid ->
+                val value = dials[cannabinoid] ?: 0f
+                val forbidden = cannabinoid in case.forbiddenCannabinoids
+                val ceiling = case.maxCannabinoidShare[cannabinoid]
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            cannabinoid.labelEs,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            EntourageLabCopy.dialReadoutEs(
+                                percent = (value * 100).toInt(),
+                                maxPercent = ceiling?.let { (it * 100).toInt() }
+                            ),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = if (forbidden) scheme.error else scheme.primary
+                        )
+                    }
+                    Slider(
+                        value = value,
+                        onValueChange = { moved ->
+                            onDials(dials + (cannabinoid to EntourageLabUi.clampDial(moved)))
+                        },
+                        valueRange = 0f..1f,
+                        modifier = Modifier.fillMaxWidth()
                     )
-                    Text(
-                        "${(value * 100).toInt()}%" +
-                            if (ceiling != null) " · máx ${(ceiling * 100).toInt()}%" else "",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = if (forbidden) scheme.error else scheme.primary
-                    )
-                }
-                Slider(
-                    value = value,
-                    onValueChange = { moved ->
-                        onDials(dials + (cannabinoid to EntourageLabUi.clampDial(moved)))
-                    },
-                    valueRange = 0f..1f,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                if (forbidden) {
-                    Text(
-                        "Este caso descarta ${cannabinoid.labelEs}: cualquier aporte " +
-                            "da por perdido el caso.",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = scheme.error
-                    )
+                    if (forbidden) {
+                        Text(
+                            String.format(
+                                Locale.US,
+                                EntourageLabCopy.FORBIDDEN_DIAL_ES,
+                                cannabinoid.labelEs
+                            ),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = scheme.error
+                        )
+                    }
                 }
             }
         }
 
-        EntourageSectionHeading("Terpenos", themeState)
+        EntourageSectionHeading(EntourageLabUi.compoundsHeadingEs(case.mode), themeState)
+
         EntourageChipFlow(
-            options = terpeneOptions,
+            options = compoundOptions,
             selected = labTerpenes,
             labelOf = { it.labelEs },
             onToggle = { candidate ->
@@ -205,15 +288,15 @@ fun EntourageLabSection(
 
         Button(
             onClick = { onEvaluate(case, selection) },
-            // Disabled only when there is nothing to score. A case with no
-            // compound selected at all is an unanswered puzzle, not a
-            // submission, and scoring it would report a result the player never
+            // Disabled only when there is nothing to score, and for a handling
+            // case also when no route has been picked: the route is the decision,
+            // and a verdict with no route would report a result the player never
             // chose.
-            enabled = !selection.isEmpty,
+            enabled = !selection.isEmpty && (!handling || route != null),
             colors = accentButtonColors(scheme.primary),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Evaluar la combinación")
+            Text(EntourageLabUi.evaluateLabelEs(case.mode))
         }
 
         if (result == null) return@Column
@@ -233,48 +316,87 @@ fun EntourageLabSection(
                     fontWeight = FontWeight.SemiBold
                 )
                 Spacer(Modifier.height(4.dp))
+                // The number *and* its label come from the model, so a handling
+                // feedback cannot print a pharmacological efficacy and a
+                // pharmacological one cannot print a coverage figure.
                 Text(
-                    "Eficacia contra el objetivo: ${feedback.efficacyPercent}%",
+                    EntourageLabUi.headlineEs(feedback),
                     style = MaterialTheme.typography.bodyMedium,
                     color = scheme.onSurface
                 )
                 Text(
-                    "Mide qué tan cerca están tus terpenos del perfil objetivo del caso.",
+                    feedback.headlineGlossEs,
                     style = MaterialTheme.typography.labelSmall,
                     color = tertiary
                 )
 
-                Spacer(Modifier.height(12.dp))
-                Text(
-                    "Efectos secundarios",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = scheme.primary
-                )
-                Spacer(Modifier.height(4.dp))
+                if (feedback.hasCompounds) {
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        EntourageLabCopy.COMPOUND_READINGS_ES,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = scheme.primary
+                    )
+                    Spacer(Modifier.height(4.dp))
 
-                feedback.axes.forEach { axis ->
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 3.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            axis.labelEs,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Text(
-                            "${axis.loadPercent}% / ${axis.ceilingPercent}%",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = if (axis.crossed) scheme.error else scheme.onSurfaceVariant
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            if (axis.crossed) "supera" else "dentro",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = if (axis.crossed) scheme.error else tertiary
-                        )
+                    feedback.compounds.forEach { compound ->
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 3.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                compound.labelEs,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Text(
+                                compound.outcomeEs,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = if (compound.kept) {
+                                    scheme.onSurfaceVariant
+                                } else {
+                                    scheme.error
+                                }
+                            )
+                        }
+                    }
+                }
+
+                if (feedback.hasAxes) {
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        EntourageLabCopy.SIDE_EFFECTS_ES,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = scheme.primary
+                    )
+                    Spacer(Modifier.height(4.dp))
+
+                    feedback.axes.forEach { axis ->
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 3.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                axis.labelEs,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Text(
+                                EntourageLabCopy.axisReadingEs(axis.loadPercent, axis.ceilingPercent),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = if (axis.crossed) scheme.error else scheme.onSurfaceVariant
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                if (axis.crossed) EntourageLabCopy.AXIS_OVER_ES else EntourageLabCopy.AXIS_WITHIN_ES,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (axis.crossed) scheme.error else tertiary
+                            )
+                        }
                     }
                 }
             }
@@ -295,7 +417,7 @@ fun EntourageLabSection(
         ) {
             Column(Modifier.padding(14.dp)) {
                 Text(
-                    "Por qué el caso es así",
+                    EntourageLabCopy.WHY_ES,
                     style = MaterialTheme.typography.labelLarge,
                     color = scheme.primary
                 )

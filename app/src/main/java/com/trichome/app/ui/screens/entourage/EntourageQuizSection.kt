@@ -11,6 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.trichome.app.model.EntourageAchievement
+import com.trichome.app.model.EntourageQuizLevels
+import com.trichome.app.model.EntourageQuizQuestion
 import com.trichome.app.model.EntourageQuizState
 import com.trichome.app.model.EntourageQuizUi
 import com.trichome.app.ui.components.SolidPanel
@@ -37,6 +39,7 @@ import com.trichome.app.ui.theme.TrichomeThemeState
 @Composable
 fun EntourageQuizSection(
     state: EntourageQuizState,
+    questions: List<EntourageQuizQuestion>,
     onAnswer: (Int) -> Unit,
     onNext: () -> Unit,
     onRestart: () -> Unit,
@@ -44,6 +47,9 @@ fun EntourageQuizSection(
 ) {
     val scheme = themeState.colorScheme()
     val tertiary = LocalTertiaryText.current
+    val levelTally = remember(questions) {
+        EntourageQuizLevels.orderByLevel(questions)
+    }
 
     Column(
         Modifier.fillMaxWidth(),
@@ -75,6 +81,12 @@ fun EntourageQuizSection(
                     style = MaterialTheme.typography.labelMedium,
                     color = scheme.onSurfaceVariant
                 )
+                // F5: the level is a chip on every open question, not a number in
+                // a table. A level the player cannot see is a level the module
+                // classified for its own bookkeeping and nothing else, and the
+                // chip text comes from the model so it is the same sentence a
+                // test can hold to the language guard.
+                LevelChip(EntourageQuizLevels.badgeEs(state.question), themeState)
                 QuestionPanel(state.question.promptEs, themeState)
                 state.question.optionsEs.forEachIndexed { index, option ->
                     OptionRow(
@@ -93,6 +105,7 @@ fun EntourageQuizSection(
                     style = MaterialTheme.typography.labelMedium,
                     color = scheme.onSurfaceVariant
                 )
+                LevelChip(EntourageQuizLevels.badgeEs(question), themeState)
                 QuestionPanel(question.promptEs, themeState)
 
                 // The reveal marks the correct option *and* the player's own
@@ -148,6 +161,12 @@ fun EntourageQuizSection(
                 val threshold = remember(state.totalRounds) {
                     EntourageAchievement.thresholdFor(state.totalRounds)
                 }
+                // F5: the run's level tally. Derived from the questions the run
+                // actually played, so it cannot disagree with the badge row the
+                // same run is about to write.
+                val levelSummary = remember(state.totalRounds, levelTally) {
+                    EntourageQuizLevels.summaryEs(levelTally)
+                }
 
                 SolidPanel(contentColor = scheme.onSurface) {
                     Column(Modifier.padding(16.dp)) {
@@ -174,6 +193,14 @@ fun EntourageQuizSection(
                             style = MaterialTheme.typography.bodyMedium,
                             color = scheme.onSurface
                         )
+                        if (levelSummary.isNotBlank()) {
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                levelSummary,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = tertiary
+                            )
+                        }
                     }
                 }
 
@@ -225,6 +252,31 @@ fun EntourageQuizSection(
                 }
             }
         }
+    }
+}
+
+/**
+ * F5: the level chip every open question carries.
+ *
+ * Its text is a parameter and never authored here, for the reason the whole file
+ * exists: a sentence written inside a composable cannot be checked against
+ * [EntourageLanguage] by any test on this classpath. [EntourageQuizLevels.badgeEs]
+ * builds it and a test asserts it.
+ */
+@Composable
+private fun LevelChip(text: String, themeState: TrichomeThemeState) {
+    val scheme = themeState.colorScheme()
+    Surface(
+        color = scheme.secondaryContainer,
+        shape = RoundedCornerShape(8.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            text,
+            style = MaterialTheme.typography.labelMedium,
+            color = scheme.onSecondaryContainer,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+        )
     }
 }
 

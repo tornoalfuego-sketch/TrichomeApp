@@ -1527,6 +1527,26 @@ class EntourageViewModel(container: AppContainer) : ViewModel() {
     private var awardedNames by mutableStateOf<Set<String>>(emptySet())
         private set
 
+    /**
+     * F5: badge names this ViewModel has claimed for itself.
+     *
+     * Separate from [awardedNames] for the same reason it is separate on
+     * `TerpenesViewModel`: a claim made inside [badgeGrantLock] has to survive
+     * past the coroutine that made it, and it is the badge grant that races, not
+     * the case payment.
+     */
+    private var awardedBadgeNames by mutableStateOf<Set<String>>(emptySet())
+
+    /**
+     * F5: serialises the badge's read-then-write across every live
+     * [EntourageViewModel].
+     *
+     * Deliberately a companion of the class, matching `TerpenesViewModel`: the
+     * only caller of the table from this side is the badge grant, so a wider lock
+     * would be a claim about code that does not exist.
+     */
+    private val badgeGrantLock = Mutex()
+
     /** The last reward granted, so the screen can acknowledge it once. */
     var lastReward by mutableStateOf<EntourageReward?>(null)
         private set
@@ -1563,6 +1583,58 @@ class EntourageViewModel(container: AppContainer) : ViewModel() {
             fresh.forEach { achievements.insertAchievement(it.toAchievementRow()) }
             awardedNames = awardedNames + fresh.map { it.nameEs }
             lastReward = fresh.last()
+            // F5: this payment may have completed the case set, so the badge is
+            // evaluated here, inside the same coroutine that wrote the row the
+            // condition reads. Not in a collector: this is the one place that
+            // knows a verdict was just paid.
+            grantCaseBadgeIfComplete()
+        }
+    }
+
+    /**
+     * F5: pays the terpene alchemist badge if every shipped case now has a
+     * verdict row.
+     *
+     * ## Why the table is re-read rather than trusted from [awardedNames]
+     *
+     * The F4 lesson, applied verbatim. `appViewModel` scopes to the navigation
+     * entry, so two live [EntourageViewModel]s can each hold a snapshot taken
+     * before the other wrote; a check against the snapshot would let the second
+     * one decide the badge is not earned when the row is already in the table.
+     * Reading the table inside the same coroutine that writes it, under
+     * [badgeGrantLock], makes the check and the insert one serialised step.
+     *
+     * There is no second "which cases have I played" ledger, deliberately: the
+     * condition is read from the rows [EntourageRewards.forLabVerdict] already
+     * writes, and a second record of the same fact would be a second source of
+     * truth for it.
+     */
+    private fun grantCaseBadgeIfComplete() {
+        viewModelScope.launch {
+            badgeGrantLock.withLock {
+                val persisted = runCatching {
+                    achievements.getAllAchievements().first()
+                }.getOrDefault(emptyList())
+
+                val cases = runCatching { content.getCases() }.getOrDefault(emptyList())
+                // Cheap pure gate first, so the common case — not every case
+                // played yet — costs nothing beyond the read the insert already
+                // needed.
+                val rewards = EntourageRewards.forAllCasesVerdicted(
+                    cases = cases,
+                    awardedNames = persisted.map { it.name }.toSet()
+                )
+                if (rewards.isEmpty()) return@withLock
+
+                val names = awardedBadgeNames + persisted.map { it.name }
+                val fresh = EntourageRewards.pending(rewards, names)
+                if (fresh.isEmpty()) return@withLock
+                // Claim before inserting, inside the lock, so a crash costs a
+                // missing badge rather than a duplicated one.
+                awardedBadgeNames = names + fresh.map { it.nameEs }
+                // The same existing projector every other reward goes through.
+                fresh.forEach { achievements.insertAchievement(it.toAchievementRow()) }
+            }
         }
     }
 }

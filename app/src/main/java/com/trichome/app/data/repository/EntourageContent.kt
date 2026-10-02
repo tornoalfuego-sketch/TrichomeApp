@@ -13,10 +13,13 @@ import com.trichome.app.model.EntourageCase
 import com.trichome.app.model.EntourageProfile
 import com.trichome.app.model.EntourageProcessing
 import com.trichome.app.model.EntourageProcessingIndex
+import com.trichome.app.model.EntourageQuizLevel
 import com.trichome.app.model.EntourageQuizQuestion
 import com.trichome.app.model.EntourageSynergy
 import com.trichome.app.model.EntourageTerpene
+import com.trichome.app.model.HandlingGoal
 import com.trichome.app.model.LabAxis
+import com.trichome.app.model.LabMode
 import com.trichome.app.model.PharmacologicalProfile
 import com.trichome.app.model.PreservationFactorKind
 import com.trichome.app.model.PreservationFactorNote
@@ -156,10 +159,16 @@ internal data class EntourageCaseAsset(
     val id: String = "",
     @SerialName("title_es") val titleEs: String = "",
     @SerialName("brief_es") val briefEs: String = "",
+    val mode: String = "",
     @SerialName("goalProfile") val goalProfile: String = "",
     @SerialName("forbiddenCannabinoids") val forbiddenCannabinoids: List<String> = emptyList(),
     @SerialName("maxCannabinoidShare") val maxCannabinoidShare: Map<String, Float> = emptyMap(),
     @SerialName("sideEffectCeilings") val sideEffectCeilings: Map<String, Float> = emptyMap(),
+    @SerialName("handlingGoal") val handlingGoal: String = "",
+    @SerialName("handlingCompounds") val handlingCompounds: List<String> = emptyList(),
+    @SerialName("handlingForbiddenRoutes") val handlingForbiddenRoutes: List<String> = emptyList(),
+    val handlingEvidence: String = "",
+    @SerialName("handling_basis_es") val handlingBasisEs: String = "",
     @SerialName("explanation_es") val explanationEs: String = ""
 )
 
@@ -169,7 +178,8 @@ internal data class EntourageQuizQuestionAsset(
     @SerialName("prompt_es") val promptEs: String = "",
     @SerialName("options_es") val optionsEs: List<String> = emptyList(),
     @SerialName("correctIndex") val correctIndex: Int = 0,
-    @SerialName("explanation_es") val explanationEs: String = ""
+    @SerialName("explanation_es") val explanationEs: String = "",
+    val level: String = ""
 )
 
 @Serializable
@@ -400,24 +410,91 @@ internal fun EntourageBible.toContent(): EntourageContent {
         }
     }
 
+    // F5. A case now declares which question it asks, and each mode needs a
+    // different set of fields. The eight drop-and-record paths below are all
+    // recorded rather than defaulted, for the same reason the processing block
+    // records its seven: a defaulted key would render a label with nothing behind
+    // it, or — the expensive one — score an agricultural case against a
+    // cannabinoid profile it has no business being measured against.
     val cases = cases.mapNotNull { asset ->
-        val goal = PharmacologicalProfile.fromKey(asset.goalProfile)
-        if (goal == null) {
-            unresolved += "cases.${asset.id} -> ${asset.goalProfile}"
-            null
+        val mode = LabMode.fromKey(asset.mode)
+        if (mode == null) {
+            unresolved += "cases.${asset.id} -> ${asset.mode.ifBlank { "no mode" }}"
+            return@mapNotNull null
+        }
+        val goal = asset.goalProfile
+            .takeIf { it.isNotBlank() }
+            ?.let { PharmacologicalProfile.fromKey(it) }
+            ?: if (mode == LabMode.PHARMACOLOGICAL) {
+                // A pharmacological case without a goal cannot be scored at all,
+                // and coercing it to a default would score the puzzle against a
+                // target the asset never named.
+                unresolved += "cases.${asset.id} -> ${asset.goalProfile.ifBlank { "no goalProfile" }}"
+                return@mapNotNull null
+            } else {
+                null
+            }
+        val maxShare = asset.maxCannabinoidShare.mapNotNull { (raw, value) ->
+            Cannabinoid.fromKey(raw)?.let { it to value }
+                ?: run { unresolved += "cases.${asset.id}.maxCannabinoidShare -> $raw"; null }
+        }.toMap()
+        val ceilings = asset.sideEffectCeilings.mapNotNull { (raw, value) ->
+            LabAxis.fromKey(raw)?.let { it to value }
+                ?: run { unresolved += "cases.${asset.id}.sideEffectCeilings -> $raw"; null }
+        }.toMap()
+
+        val handlingGoal = if (mode == LabMode.HANDLING) {
+            HandlingGoal.fromKey(asset.handlingGoal).also { parsed ->
+                if (parsed == null) {
+                    unresolved += "cases.${asset.id}.handlingGoal -> " +
+                        asset.handlingGoal.ifBlank { "no handlingGoal" }
+                }
+            }
         } else {
-            val maxShare = asset.maxCannabinoidShare.mapNotNull { (raw, value) ->
-                Cannabinoid.fromKey(raw)?.let { it to value }
-                    ?: run { unresolved += "cases.${asset.id}.maxCannabinoidShare -> $raw"; null }
-            }.toMap()
-            val ceilings = asset.sideEffectCeilings.mapNotNull { (raw, value) ->
-                LabAxis.fromKey(raw)?.let { it to value }
-                    ?: run { unresolved += "cases.${asset.id}.sideEffectCeilings -> $raw"; null }
-            }.toMap()
-            EntourageCase(
+            null
+        }
+        val handlingCompounds = if (mode == LabMode.HANDLING) {
+            resolve(asset.id, asset.handlingCompounds, EntourageTerpene::fromKey, "cases")
+        } else {
+            emptySet()
+        }
+        val handlingRoutes = if (mode == LabMode.HANDLING) {
+            resolve(asset.id, asset.handlingForbiddenRoutes, ProcessingMethod::fromKey, "cases")
+        } else {
+            emptySet()
+        }
+        val handlingEvidence = if (mode == LabMode.HANDLING) {
+            AgronomyEvidence.entries
+                .firstOrNull { it.key == asset.handlingEvidence.trim().uppercase() }
+                .also { parsed ->
+                    if (parsed == null) {
+                        unresolved += "cases.${asset.id}.handlingEvidence -> " +
+                            asset.handlingEvidence.ifBlank { "no handlingEvidence" }
+                    }
+                }
+        } else {
+            null
+        }
+
+        when {
+            // F4's lever rule, lifted to the row: a handling claim with no level
+            // and nowhere to say what it cannot establish is exactly what this
+            // module refuses to ship, so the row goes rather than degrading.
+            mode == LabMode.HANDLING && handlingGoal == null -> null
+            mode == LabMode.HANDLING && handlingCompounds.isEmpty() -> {
+                unresolved += "cases.${asset.id} -> no resolvable handling compound"
+                null
+            }
+            mode == LabMode.HANDLING && handlingEvidence == null -> null
+            mode == LabMode.HANDLING && asset.handlingBasisEs.isBlank() -> {
+                unresolved += "cases.${asset.id} -> $HANDLING_BASIS_REQUIRED_ES"
+                null
+            }
+            else -> EntourageCase(
                 id = asset.id,
                 titleEs = asset.titleEs,
                 briefEs = asset.briefEs,
+                mode = mode,
                 goal = goal,
                 forbiddenCannabinoids = resolve(
                     asset.id,
@@ -427,24 +504,41 @@ internal fun EntourageBible.toContent(): EntourageContent {
                 ),
                 maxCannabinoidShare = maxShare,
                 ceilings = ceilings,
+                handlingGoal = handlingGoal,
+                handlingCompounds = handlingCompounds,
+                handlingForbiddenRoutes = handlingRoutes,
+                handlingEvidence = handlingEvidence,
+                handlingBasisEs = asset.handlingBasisEs,
                 explanationEs = asset.explanationEs
             )
         }
     }
 
-    val questions = quiz
-        .filter { it.optionsEs.isNotEmpty() && it.correctIndex in it.optionsEs.indices }
-        .map { asset ->
-            EntourageQuizQuestion(
+    val questions = quiz.mapNotNull { asset ->
+        // Three ways this drops a row, all recorded: no options, an answer
+        // outside them, or no level. The third is F5's: a question with no level
+        // would render with no level chip, and the player would have no way to
+        // know the module had decided to hide one.
+        val level = EntourageQuizLevel.fromKey(asset.level)
+        when {
+            asset.optionsEs.isEmpty() || asset.correctIndex !in asset.optionsEs.indices -> {
+                unresolved += "quiz.${asset.id} -> unanswerable"
+                null
+            }
+            level == null -> {
+                unresolved += "quiz.${asset.id}.level -> ${asset.level.ifBlank { "no level" }}"
+                null
+            }
+            else -> EntourageQuizQuestion(
                 id = asset.id,
                 promptEs = asset.promptEs,
                 optionsEs = asset.optionsEs,
                 correctIndex = asset.correctIndex,
-                explanationEs = asset.explanationEs
+                explanationEs = asset.explanationEs,
+                level = level
             )
         }
-    quiz.filter { it.optionsEs.isEmpty() || it.correctIndex !in it.optionsEs.indices }
-        .forEach { unresolved += "quiz.${it.id} -> unanswerable" }
+    }
 
     // F3. Three separate ways this can drop a row, and all three are recorded
     // rather than defaulted:
@@ -662,6 +756,18 @@ private const val PROCESSING_ENTRY_BASIS_REQUIRED_ES =
     "the row ships no entry basis_es and was dropped rather than shown unqualified"
 
 /**
+ * Why a whole handling case row was dropped, recorded in `unresolvedReferences`.
+ *
+ * F4's rule again, and it matters more here than there: a pharmacological case
+ * that lost its target would score as ineffective, which is wrong but harmless. A
+ * handling case that lost its goal, its material or its evidence level would score
+ * a harvest against a question nobody asked, so the row goes.
+ */
+private const val HANDLING_BASIS_REQUIRED_ES =
+    "the handling case ships no handling_basis_es and was dropped rather than " +
+        "shown unqualified"
+
+/**
  * The `Achievement` row for an entourage achievement.
  *
  * The module has no XP table of its own: it writes into the existing
@@ -675,12 +781,13 @@ private const val PROCESSING_ENTRY_BASIS_REQUIRED_ES =
  * claim in the achievements table that the player's run may not match.
  *
  * This overload exists for [EntourageAchievement.ENTOURAGE_MASTER] alone, and it
- * does not compile for [EntourageAchievement.RESIN_ENGINEER]: that badge's text
- * is derived from the shipped processing block rather than from a round count, so
- * a caller holding it has to be handed the catalog's compound count explicitly
- * ([EntourageAchievement.RESIN_ENGINEER.descriptionForProcessing]).
- * Making the two
- * incompatible is the point — a shared signature would let the resin row be
+ * does not compile for the other two: their texts are derived from the shipped
+ * processing block and from the shipped case list rather than from a round count,
+ * so a caller holding one has to be handed that count explicitly
+ * ([EntourageAchievement.RESIN_ENGINEER.descriptionForProcessing] and
+ * [EntourageAchievement.TERPENE_ALCHEMIST.descriptionForCases]).
+ * Making the three
+ * incompatible is the point — a shared signature would let either row be
  * written from the wrong data and nobody would notice until a player read a
  * sentence that disagreed with the content they had read.
  *
@@ -709,5 +816,11 @@ internal fun EntourageAchievement.toAchievementRow(rounds: Int): Achievement =
                 "block, not from a round count: write it through " +
                 "EntourageReward.toAchievementRow() with a description built " +
                 "from EntourageAchievement.descriptionForProcessing(documented)"
+        )
+        EntourageAchievement.TERPENE_ALCHEMIST -> throw IllegalStateException(
+            "the terpene alchemist's text is derived from the shipped case list, " +
+                "not from a round count: write it through " +
+                "EntourageReward.toAchievementRow() with a description built " +
+                "from EntourageAchievement.descriptionForCases(shippedCases)"
         )
     }

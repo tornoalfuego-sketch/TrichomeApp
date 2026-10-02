@@ -8,6 +8,8 @@ import com.trichome.app.model.LabAxis
 import com.trichome.app.model.PharmacologicalProfile
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -90,9 +92,20 @@ class EntourageAssetTest {
 
         assertTrue("synergies", content.synergies.size >= 7)
         assertEquals("all four target profiles", PharmacologicalProfile.entries.size, content.profiles.size)
-        assertTrue("quiz questions", content.questions.size == 10)
-        assertTrue("lab cases", content.cases.size >= 3)
+        assertTrue("quiz questions", content.questions.size == 16)
+        assertTrue("lab cases", content.cases.size >= 4)
         assertTrue("a vaporisation row per terpene", content.vaporisation.size >= 10)
+        // F5: the two Lab modes both have to be represented, or the second mode
+        // is a code path no shipped case reaches.
+        assertTrue(
+            "a pharmacological case has to ship, or the mode that already existed " +
+                "is unreachable",
+            content.cases.any { it.mode == com.trichome.app.model.LabMode.PHARMACOLOGICAL }
+        )
+        assertTrue(
+            "and a handling case, or the second mode is dead code",
+            content.cases.any { it.mode == com.trichome.app.model.LabMode.HANDLING }
+        )
     }
 
     @Test
@@ -639,22 +652,53 @@ class EntourageAssetTest {
     }
 
     @Test
-    fun everyCaseDeclaresAllFourAxes() {
-        content().cases.forEach {
-            assertEquals(
-                "${it.id} has to constrain all four axes, or the minigame silently stops constraining one",
-                LabAxis.entries.toSet(),
-                it.ceilings.keys
-            )
-        }
+    fun everyPharmacologicalCaseDeclaresAllFourAxes() {
+        // F5 narrowed this to the pharmacological mode, and the narrowing is the
+        // assertion: a handling case has to declare **no** axis, because there is
+        // no patient and no side-effect ceiling behind one. A handling case that
+        // started declaring ceilings would be borrowing the other mode's question.
+        val cases = content().cases
+        cases.filter { it.mode == com.trichome.app.model.LabMode.PHARMACOLOGICAL }
+            .forEach {
+                assertEquals(
+                    "${it.id} has to constrain all four axes, or the minigame silently stops constraining one",
+                    LabAxis.entries.toSet(),
+                    it.ceilings.keys
+                )
+            }
+        cases.filter { it.mode == com.trichome.app.model.LabMode.HANDLING }
+            .forEach {
+                assertTrue(
+                    "${it.id} is a handling case and must not declare a patient ceiling",
+                    it.ceilings.isEmpty()
+                )
+                assertTrue(
+                    "${it.id} is a handling case and must not carry a cannabinoid",
+                    it.forbiddenCannabinoids.isEmpty() && it.maxCannabinoidShare.isEmpty()
+                )
+            }
     }
 
     @Test
-    fun everyCaseAimsAtAShippedProfile() {
+    fun everyPharmacologicalCaseAimsAtAShippedProfile() {
         val shipped = content().profiles.map { it.key }.toSet()
 
         content().cases.forEach {
-            assertTrue("${it.id} aims at ${it.goal}, which is not shipped", it.goal in shipped)
+            if (it.mode == com.trichome.app.model.LabMode.PHARMACOLOGICAL) {
+                assertTrue("${it.id} aims at ${it.goal}, which is not shipped", it.goal in shipped)
+            } else {
+                // The inverse, and the reason F5 made `goal` nullable: a handling
+                // case must not carry a pharmacological goal, and it must declare
+                // a handling one.
+                assertNull(
+                    "${it.id} is a handling case and must not name a pharmacological goal",
+                    it.goal
+                )
+                assertNotNull(
+                    "${it.id} is a handling case and has to declare what it keeps",
+                    it.handlingGoal
+                )
+            }
         }
     }
 
@@ -688,22 +732,33 @@ class EntourageAssetTest {
 
     @Test
     fun noCaseForbidsACompoundItAlsoAimsFor() {
-        content().cases.forEach { case ->
-            assertTrue(
-                "${case.id} forbids ${case.forbiddenCannabinoids} while aiming at ${case.goal}",
-                case.forbiddenCannabinoids.isEmpty() ||
-                    content().profile(case.goal)!!.cannabinoidWeights.keys.none { it in case.forbiddenCannabinoids }
-            )
-        }
+        content().cases.filter { it.mode == com.trichome.app.model.LabMode.PHARMACOLOGICAL }
+            .forEach { case ->
+                // F5 made `goal` nullable so a handling case never has to invent
+                // a pharmacological target. That narrows what this assertion
+                // applies to; it does not weaken it, and a pharmacological case
+                // with no goal is asserted separately.
+                val goal = case.goal
+                assertTrue(
+                    "${case.id} is a pharmacological case with no goal",
+                    goal != null
+                )
+                assertTrue(
+                    "${case.id} forbids ${case.forbiddenCannabinoids} while aiming at $goal",
+                    case.forbiddenCannabinoids.isEmpty() ||
+                        content().profile(goal!!)!!.cannabinoidWeights.keys
+                            .none { it in case.forbiddenCannabinoids }
+                )
+            }
     }
 
     // --- quiz ---------------------------------------------------------------
 
     @Test
-    fun theQuizShipsTenAnswerableQuestions() {
+    fun theQuizShipsSixteenAnswerableLevelledQuestions() {
         val questions = content().questions
 
-        assertEquals(10, questions.size)
+        assertEquals(16, questions.size)
         questions.forEach { question ->
             assertTrue("${question.id} has no id", question.id.isNotBlank())
             assertTrue("${question.id} has no prompt", question.promptEs.isNotBlank())
@@ -717,6 +772,16 @@ class EntourageAssetTest {
                 question.correctIndex in question.optionsEs.indices
             )
             assertTrue("${question.id} has no explanation", question.explanationEs.isNotBlank())
+        }
+        // F5: `level` has no default on the model, so this cannot fail by
+        // construction alone — but the *distribution* can, and a run that is 15
+        // Bioquímico and 1 Principiante is not a levelled quiz.
+        val counts = com.trichome.app.model.EntourageQuizLevels.countsByLevel(questions)
+        com.trichome.app.model.EntourageQuizLevel.entries.forEach { level ->
+            assertTrue(
+                "$level has to ship at least one question, got ${counts[level]}",
+                (counts[level] ?: 0) >= 1
+            )
         }
     }
 

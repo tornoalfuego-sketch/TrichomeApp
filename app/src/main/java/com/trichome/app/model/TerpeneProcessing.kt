@@ -121,7 +121,22 @@ enum class ProcessingMethod(val key: String, val labelEs: String, val usesSolven
         key = "DECARBOXYLATION",
         labelEs = "Descarboxilación",
         usesSolvent = false
-    )
+    );
+
+    companion object {
+        /**
+         * F5: the asset's key, or null when it is not one of these.
+         *
+         * Added for the handling case's `handlingForbiddenRoutes`. Null rather
+         * than a default, for the reason every other `fromKey` in this module is
+         * null rather than a default: a typo must be dropped and named, never
+         * coerced into a route — and coercing *this* enum specifically would be
+         * the one coercion that could render a solvent-based route as if it
+         * carried no solvent.
+         */
+        fun fromKey(key: String): ProcessingMethod? =
+            entries.firstOrNull { it.key == key.trim().uppercase() }
+    }
 }
 
 /**

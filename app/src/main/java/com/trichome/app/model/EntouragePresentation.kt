@@ -521,23 +521,58 @@ data class LabAxisFeedback(
     val crossed: Boolean
 )
 
+/** One compound as the handling mode reports it. */
+data class HandlingCompoundFeedback(
+    val labelEs: String,
+    /** [HandlingOutcome.labelEs]. */
+    val outcomeEs: String,
+    /** Whether this route keeps the compound. */
+    val kept: Boolean
+)
+
 /** The Lab's verdict, as the screen shows it. */
 data class LabFeedback(
     val verdict: LabVerdict,
     val verdictEs: String,
     val efficacyPercent: Int,
     val axes: List<LabAxisFeedback>,
-    val notesEs: List<String>
+    val notesEs: List<String>,
+    /**
+     * F5: which mode produced this.
+     *
+     * On the instance rather than derived from the axis list, because "are there
+     * axes" is not the same question as "which question was asked": a
+     * pharmacological case with no declared ceiling renders zero axes too, and a
+     * screen that branched on emptiness would drop its ceilings panel for the
+     * wrong reason.
+     */
+    val mode: LabMode = LabMode.PHARMACOLOGICAL,
+    /** F5: the handling mode's headline number. Never a yield. */
+    val coveragePercent: Int = 0,
+    /** F5: per-compound readings. Empty outside handling mode. */
+    val compounds: List<HandlingCompoundFeedback> = emptyList(),
+    /** F5: always visible. What the headline number means, per mode. */
+    val headlineLabelEs: String = "",
+    /** F5: always visible. What the headline number is not. */
+    val headlineGlossEs: String = ""
 ) {
     /** Everything the Lab feedback shows, for the "no weights are displayed" assertion. */
     val allTextEs: String
         get() = buildString {
             append(verdictEs)
+            append(" ").append(headlineLabelEs).append(" ").append(headlineGlossEs)
             axes.forEach {
                 append(" ${it.labelEs}: ${it.loadPercent}% sobre un máximo de ${it.ceilingPercent}%")
             }
+            compounds.forEach { append(" ${it.labelEs}: ${it.outcomeEs}") }
             notesEs.forEach { append(" $it") }
         }
+
+    /** Whether this feedback has side-effect axes to render. */
+    val hasAxes: Boolean get() = mode == LabMode.PHARMACOLOGICAL && axes.isNotEmpty()
+
+    /** Whether this feedback has per-compound readings to render. */
+    val hasCompounds: Boolean get() = mode == LabMode.HANDLING && compounds.isNotEmpty()
 }
 
 /**
@@ -586,8 +621,16 @@ object EntourageLabUi {
      * Whatever the case constrains, plus the whole enum when it constrains
      * nothing: a case with no share ceilings and no forbidden compounds would
      * otherwise present an empty panel and look broken.
+     *
+     * **Nothing** for a [LabMode.HANDLING] case, and that is the point rather
+     * than an edge case. This function is the only thing that decides which
+     * cannabinoids the Lab can express, so returning the whole enum for an
+     * agricultural case would put a THC slider on a screen whose question is what
+     * happens to the volatile fraction. A handling case has no cannabinoid, so it
+     * gets no dial, no share and no ceiling.
      */
     fun dialCannabinoids(case: EntourageCase): List<Cannabinoid> {
+        if (case.mode == LabMode.HANDLING) return emptyList()
         val constrained =
             (case.maxCannabinoidShare.keys + case.forbiddenCannabinoids).toList()
         return if (constrained.isEmpty()) Cannabinoid.entries.toList()
@@ -597,6 +640,97 @@ object EntourageLabUi {
     /** The compounds a case leaves unconstrained, so a dial can still be moved. */
     fun openCannabinoids(case: EntourageCase): List<Cannabinoid> =
         Cannabinoid.entries.filter { it !in dialCannabinoids(case) }
+
+    /**
+     * F5: the routes a handling case offers, in the order F4 names them.
+     *
+     * Enum order, not sorted by label: the shipped comparison reads live resin,
+     * solvent, decarboxylation, and a screen that reordered them would break the
+     * one paragraph the reader is being asked to hold against three chips.
+     */
+    fun handlingRoutes(case: EntourageCase): List<ProcessingMethod> =
+        if (case.mode == LabMode.HANDLING) ProcessingMethod.entries.toList() else emptyList()
+
+    /**
+     * F5: the compounds a handling case can be scored over.
+     *
+     * The case's own [EntourageCase.handlingCompounds] first, then everything
+     * [HandlingCompounds] knows, so a player can still put a compound in and be
+     * told the catalogue has no note for it rather than finding the chip missing.
+     * The leading group is what makes the case's material readable as the
+     * case's material.
+     */
+    fun handlingOrder(case: EntourageCase): List<EntourageTerpene> {
+        if (case.mode != LabMode.HANDLING) return emptyList()
+        val declared = case.handlingCompounds.sortedBy { it.key }
+        return declared + EntourageTerpene.entries.filter { it !in declared }
+    }
+
+    /**
+     * F5: the case's objective, in one line, whichever mode it is.
+     *
+     * The pharmacological reading and the handling reading are different sentences
+     * about different questions, so they cannot share a fallback — which is why
+     * this exists instead of the composable reaching for `case.goal?.labelEs`.
+     */
+    fun goalLabelEs(case: EntourageCase, profileLabelEs: String?): String = when (case.mode) {
+        LabMode.PHARMACOLOGICAL ->
+            "Objetivo del caso: ${profileLabelEs ?: case.goal?.labelEs.orEmpty()}"
+        LabMode.HANDLING ->
+            "Qué tiene que conservar: ${case.handlingGoal?.labelEs.orEmpty()}"
+    }
+
+    /** F5: the section heading each mode uses for its inputs. */
+    fun inputsHeadingEs(mode: LabMode): String = when (mode) {
+        LabMode.PHARMACOLOGICAL -> "Aportes"
+        LabMode.HANDLING -> "Ruta de procesado"
+    }
+
+    /**
+     * F5: the headline line, label and number together.
+     *
+     * One function so the number that goes with a label cannot be swapped for the
+     * other mode's. Building the string here rather than in the composable is
+     * also what lets a structural test assert the pharmacological branch still
+     * reads exactly as it did before the handling mode existed.
+     */
+    fun headlineEs(feedback: LabFeedback): String = when (feedback.mode) {
+        LabMode.PHARMACOLOGICAL ->
+            "${feedback.headlineLabelEs}: ${feedback.efficacyPercent}%"
+        LabMode.HANDLING ->
+            "${feedback.headlineLabelEs}: ${feedback.coveragePercent}%"
+    }
+
+    /** F5: the section heading each mode uses for the compounds it judges. */
+    fun compoundsHeadingEs(mode: LabMode): String = when (mode) {
+        LabMode.PHARMACOLOGICAL -> "Terpenos"
+        LabMode.HANDLING -> "Compuestos del material"
+    }
+
+    /** F5: the action label each mode's evaluation button carries. */
+    fun evaluateLabelEs(mode: LabMode): String = when (mode) {
+        LabMode.PHARMACOLOGICAL -> "Evaluar la combinación"
+        LabMode.HANDLING -> "Evaluar la ruta"
+    }
+
+    /**
+     * F5: the line that states why a case is scored the way it is.
+     *
+     * Both modes carry an evidence level on screen, per the module's standing
+     * rule, and the level's own label is reused rather than a fourth one invented.
+     */
+    fun evidenceLabelEs(case: EntourageCase): String? = when (case.mode) {
+        LabMode.PHARMACOLOGICAL -> null
+        LabMode.HANDLING -> case.handlingEvidence?.labelEs
+    }
+
+    /** F5: the line naming what the handling claim cannot establish. */
+    fun basisEs(case: EntourageCase): String? =
+        if (case.mode == LabMode.HANDLING && case.handlingBasisEs.isNotBlank()) {
+            case.handlingBasisEs
+        } else {
+            null
+        }
 
     /**
      * The terpenes to offer, goal profile first.
@@ -613,27 +747,80 @@ object EntourageLabUi {
     /**
      * The feedback for a solved case.
      *
-     * The verdict, the efficacy, the axes against their ceilings and the
+     * The verdict, the headline number, the axes or the compound readings, and the
      * shipped notes — and nothing else. [LabWeights] is deliberately not
      * reachable from here: those constants are puzzle numbers, and a slider
      * labelled "0.55 de carga" would be a dose-response curve the app cannot
      * support.
+     *
+     * F5 adds the handling branch. It is a separate constructor call rather than a
+     * set of conditionals inside one, so a pharmacological feedback can never
+     * acquire a coverage percentage by a field default and a handling feedback
+     * can never acquire an efficacy.
      */
-    fun feedback(result: LabResult): LabFeedback = LabFeedback(
-        verdict = result.verdict,
-        verdictEs = verdictEs(result.verdict),
-        efficacyPercent = result.efficacy,
-        axes = result.readings.map { reading ->
-            LabAxisFeedback(
-                axis = reading.axis,
-                labelEs = reading.labelEs,
-                loadPercent = sharePercent(reading.load),
-                ceilingPercent = sharePercent(reading.ceiling),
-                crossed = reading.crosses
-            )
-        },
-        notesEs = result.notesEs
-    )
+    fun feedback(result: LabResult): LabFeedback = when (result.mode) {
+        LabMode.PHARMACOLOGICAL -> LabFeedback(
+            verdict = result.verdict,
+            verdictEs = verdictEs(result.verdict),
+            efficacyPercent = result.efficacy,
+            axes = result.readings.map { reading ->
+                LabAxisFeedback(
+                    axis = reading.axis,
+                    labelEs = reading.labelEs,
+                    loadPercent = sharePercent(reading.load),
+                    ceilingPercent = sharePercent(reading.ceiling),
+                    crossed = reading.crosses
+                )
+            },
+            notesEs = result.notesEs,
+            mode = LabMode.PHARMACOLOGICAL,
+            headlineLabelEs = PHARMACOLOGICAL_HEADLINE_ES,
+            headlineGlossEs = PHARMACOLOGICAL_GLOSS_ES
+        )
+
+        LabMode.HANDLING -> LabFeedback(
+            verdict = result.verdict,
+            verdictEs = handlingVerdictEs(result.verdict),
+            // Zero, always: there is no cannabinoid profile in this mode, so
+            // there is no distance to a target and no number that could read as
+            // potency. The panel shows [coveragePercent] instead.
+            efficacyPercent = 0,
+            axes = emptyList(),
+            notesEs = result.notesEs,
+            mode = LabMode.HANDLING,
+            coveragePercent = EntourageHandling.coveragePercent(result.handlingReadings),
+            compounds = result.handlingReadings.map { reading ->
+                HandlingCompoundFeedback(
+                    labelEs = reading.labelEs,
+                    outcomeEs = reading.outcome.labelEs,
+                    kept = reading.keeps
+                )
+            },
+            headlineLabelEs = HANDLING_HEADLINE_ES,
+            headlineGlossEs = HANDLING_GLOSS_ES
+        )
+    }
+
+    /** The pharmacological mode's headline label, with the percentage already in it. */
+    const val PHARMACOLOGICAL_HEADLINE_ES: String = "Eficacia contra el objetivo"
+
+    /** What that percentage is, in the pharmacological mode. */
+    const val PHARMACOLOGICAL_GLOSS_ES: String =
+        "Mide qué tan cerca están tus terpenos del perfil objetivo del caso."
+
+    /** The handling mode's headline label. */
+    const val HANDLING_HEADLINE_ES: String = "Compuestos que la ruta conserva"
+
+    /**
+     * What that percentage is not.
+     *
+     * Stated on screen rather than left to be inferred, because a percentage
+     * beside a list of compounds reads as a yield and this is not one: it is the
+     * share of the selection the route leaves as the plant's own compound.
+     */
+    const val HANDLING_GLOSS_ES: String =
+        "Es la parte de lo que elegiste que sale del proceso como el compuesto de " +
+            "la planta. No es un rendimiento, ni una concentración, ni cuánto dura."
 
     /**
      * The verdict in words, phrased about the case.
@@ -646,6 +833,24 @@ object EntourageLabUi {
         LabVerdict.VIABLE -> "Ayuda al objetivo del caso y respeta sus techos"
         LabVerdict.RIESGO -> "Cruza al menos un techo del caso"
         LabVerdict.INEFICAZ -> "No cumple el objetivo del caso"
+    }
+
+    /**
+     * F5: the handling verdict, in words about the route.
+     *
+     * A separate function from [verdictEs] rather than two more branches in it,
+     * because "Resuelve el caso sin cruzar ningún techo" would be a lie here —
+     * there is no ceiling to cross, and the sentence would describe a patient that
+     * does not exist.
+     */
+    fun handlingVerdictEs(verdict: LabVerdict): String = when (verdict) {
+        LabVerdict.OPTIMO -> "La ruta cumple lo que el caso pide conservar"
+        LabVerdict.VIABLE -> "La ruta conserva parte del material, no todo"
+        LabVerdict.INEFICAZ -> "La ruta no deja el material del caso como estaba"
+        // Unreachable: the handling mode has no ceiling to cross. Present rather
+        // than absent so that a future change that made it reachable still says
+        // something true.
+        LabVerdict.RIESGO -> "La ruta cumple el objetivo con una parte del material fuera"
     }
 }
 
@@ -753,10 +958,55 @@ object EntourageRewards {
     }
 
     /**
+     * F5: the reward for having obtained a verdict in **every** shipped case, or
+     * nothing.
+     *
+     * The condition is read from [awardedNames], which is the set of names already
+     * in the `achievements` table — the very rows [forLabVerdict] wrote. That is
+     * the whole design: no second ledger of "which cases have I played", because
+     * such a ledger would be a second source of truth for a fact the table
+     * already holds, and F4 refused to create one for the resin badge for the same
+     * reason.
+     *
+     * It works because [forLabVerdict] writes **nothing** for
+     * [LabVerdict.INEFICAZ]: a name is present exactly when a paid verdict was
+     * obtained. A case that crossed a ceiling and paid 20 XP counts, so the badge
+     * says "un veredicto" rather than "resuelve" — see
+     * [EntourageAchievement.descriptionForCases].
+     *
+     * A case whose name collides with another row is the one failure mode here,
+     * and it is why the check is over [EntourageCase.titleEs] verbatim rather than
+     * over an id: the reward's `nameEs` is built from the title, so the title is
+     * the only handle the two can be joined on, and a duplicated title in the
+     * asset would quietly make the badge unreachable. An asset test asserts the
+     * titles are distinct.
+     *
+     * @param cases the shipped case list.
+     * @param awardedNames every name already in the `achievements` table.
+     */
+    fun forAllCasesVerdicted(
+        cases: List<EntourageCase>,
+        awardedNames: Set<String>
+    ): List<EntourageReward> {
+        if (cases.isEmpty()) return emptyList()
+        val expected = cases.map { caseRowName(it.titleEs) }
+        if (expected.any { it !in awardedNames }) return emptyList()
+        val achievement = EntourageAchievement.TERPENE_ALCHEMIST
+        return listOf(
+            EntourageReward(
+                nameEs = achievement.labelEs,
+                descriptionEs = achievement.descriptionForCases(expected.size),
+                icon = achievement.icon,
+                xpReward = achievement.xpReward
+            )
+        )
+    }
+
+    /**
      * The rewards for one Lab verdict on [caseTitleEs].
      *
      * Empty for [LabVerdict.INEFICAZ]: a case the selection does not solve
-     * pays nothing, so the XP means "a case was solved", not "a button was
+     * pays nothing, so the XP means "a case produced a verdict", not "a button was
      * pressed". A verdict that crossed a ceiling still pays a smaller amount,
      * because reading the feedback and trying again is the behaviour the module
      * is trying to teach.
@@ -775,13 +1025,26 @@ object EntourageRewards {
         if (xp <= 0) return emptyList()
         return listOf(
             EntourageReward(
-                nameEs = "Séquito: $caseTitleEs",
+                nameEs = caseRowName(caseTitleEs),
                 descriptionEs = "Resolviste el caso \"$caseTitleEs\" ($caseId)",
                 icon = "🧪",
                 xpReward = xp
             )
         )
     }
+
+    /**
+     * The `nameEs` an [EntourageCase] pays under.
+     *
+     * One function because the name is the idempotency key **and** the join handle
+     * [forAllCasesVerdicted] reads. Two literals would be two chances to drift, and
+     * a drift here is invisible: the case would pay, and the badge would never
+     * unlock, because the two halves were looking for different strings.
+     */
+    fun caseRowName(caseTitleEs: String): String = "$CASE_ROW_PREFIX$caseTitleEs"
+
+    /** Prefix every Lab case row carries, so those names are recognisable. */
+    const val CASE_ROW_PREFIX: String = "Séquito: "
 
     /**
      * The rewards that have not been paid yet.

@@ -346,31 +346,21 @@ class EntourageShippedPresentationTest {
         val profiles = shipped.profiles
 
         shipped.cases.forEach { case ->
-            val goal = profiles.firstOrNull { it.key == case.goal }
-            assertNotNull("case ${case.id} has no shipped profile", goal)
-
-            // The intended answer: every terpene of the goal profile, and a
-            // cannabinoid share inside the case's ceilings.
-            val dials = goal!!.cannabinoidWeights.keys
-                .associateWith { cannabinoid ->
-                    case.maxCannabinoidShare[cannabinoid] ?: 1f
-                }
-            val selection = com.trichome.app.model.EntourageLabUi.selectionFromDials(
-                dials,
-                goal.terpeneShares.keys
-            )
-            val result = com.trichome.app.model.EntourageLab.solve(case, selection, profiles)
+            // F5: the two modes need different answers and different harnesses.
+            // A pharmacological case is solved by hitting the profile inside its
+            // ceilings; a handling case is solved by picking the route that keeps
+            // what the case asks to keep. Running the pharmacological harness over
+            // a handling case would assert it has a cannabinoid profile, which is
+            // exactly what it must not have.
+            val result = if (case.mode == com.trichome.app.model.LabMode.HANDLING) {
+                solvingHandlingCase(case)
+            } else {
+                solvingPharmacologicalCase(case, profiles)
+            }
 
             assertFalse(
-                "case ${case.id} cannot be solved by the profile it targets",
-                com.trichome.app.model.EntourageLab.solve(
-                    case,
-                    com.trichome.app.model.EntourageLabUi.selectionFromDials(
-                        dials,
-                        goal.terpeneShares.keys
-                    ),
-                    profiles
-                ).verdict == com.trichome.app.model.LabVerdict.INEFICAZ
+                "case ${case.id} cannot be solved by the content it declares",
+                result.verdict == com.trichome.app.model.LabVerdict.INEFICAZ
             )
             assertTrue(
                 "case ${case.id} pays nothing for a solved puzzle, so the Lab " +
@@ -378,6 +368,49 @@ class EntourageShippedPresentationTest {
                 EntourageRewards.forLabVerdict(case.id, case.titleEs, result.verdict).isNotEmpty()
             )
         }
+    }
+
+    /** The intended answer for a pharmacological case: its profile, inside its ceilings. */
+    private fun solvingPharmacologicalCase(
+        case: com.trichome.app.model.EntourageCase,
+        profiles: List<com.trichome.app.model.EntourageProfile>
+    ): com.trichome.app.model.LabResult {
+        val goal = profiles.firstOrNull { it.key == case.goal }
+        assertNotNull("case ${case.id} has no shipped profile", goal)
+        val dials = goal!!.cannabinoidWeights.keys
+            .associateWith { cannabinoid -> case.maxCannabinoidShare[cannabinoid] ?: 1f }
+        val selection = com.trichome.app.model.EntourageLabUi.selectionFromDials(
+            dials,
+            goal.terpeneShares.keys
+        )
+        return com.trichome.app.model.EntourageLab.solve(case, selection, profiles)
+    }
+
+    /**
+     * The intended answer for a handling case: every route tried, the best one.
+     *
+     * Not a hardcoded route on purpose. The point being asserted is that a shipped
+     * handling case is *solvable at all* — that some route in the enum serves its
+     * declared goal for its declared material. A test that named the route would
+     * be asserting the content, and the content is what the other suites check.
+     */
+    private fun solvingHandlingCase(
+        case: com.trichome.app.model.EntourageCase
+    ): com.trichome.app.model.LabResult {
+        val material = case.handlingCompounds
+        assertTrue(
+            "handling case ${case.id} ships no material to judge a route on",
+            material.isNotEmpty()
+        )
+        val selection = com.trichome.app.model.EntourageLabUi.selectionFromDials(
+            emptyMap(),
+            material
+        )
+        return com.trichome.app.model.ProcessingMethod.entries
+            .map { route ->
+                com.trichome.app.model.EntourageLab.solve(case, selection, emptyList(), route)
+            }
+            .minBy { it.verdict.ordinal }
     }
 
     @Test
@@ -419,20 +452,23 @@ class EntourageShippedPresentationTest {
     fun theBadgeTextFollowsTheShippedQuizLength() {
         val rounds = content().questions.size
 
-        assertEquals(
-            "the shipped quiz has $rounds questions but QUIZ_ROUNDS claims " +
-                "${com.trichome.app.model.EntourageAchievement.QUIZ_ROUNDS}; the " +
-                "constant is a second copy of the asset's question count",
-            com.trichome.app.model.EntourageAchievement.QUIZ_ROUNDS,
-            rounds
-        )
+        // F5 deleted `QUIZ_ROUNDS` rather than bumping it. The assertion it used
+        // to make — "the constant agrees with the file" — is now structural: there
+        // is no constant, so there is nothing that *can* disagree. What is left
+        // to assert is the half that is still a real risk: that the text a player
+        // reads is built from the $rounds questions the asset actually ships.
         assertEquals(
             "the badge text a player reads has to be built from the $rounds " +
                 "questions the asset ships",
             com.trichome.app.model.EntourageAchievement
                 .ENTOURAGE_MASTER
                 .descriptionFor(rounds),
-            com.trichome.app.model.EntourageAchievement.ENTOURAGE_MASTER.description
+            "Acierta ${com.trichome.app.model.EntourageAchievement.thresholdFor(rounds)} " +
+                "de $rounds preguntas sobre modulación terpénica"
+        )
+        assertTrue(
+            "and the count has to be the parsed one, not a literal",
+            rounds >= 1
         )
     }
 

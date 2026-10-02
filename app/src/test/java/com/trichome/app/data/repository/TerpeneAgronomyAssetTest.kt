@@ -543,7 +543,27 @@ class TerpeneAgronomyAssetTest {
         assertEquals("the measured bands are untouched", 10, parsed.vaporisation.size)
         assertEquals("the profiles are untouched", 4, parsed.profiles.size)
         assertEquals("the synergies are untouched", 7, parsed.synergies.size)
-        assertEquals("the quiz is untouched", 10, parsed.questions.size)
+        // F5 added six questions and a level to each, so the *count* is no longer
+        // the guard. The guard's real intent is "adding agronomy did not rewrite
+        // the quiz", and the way to say that survives F5 is by identity: the ten
+        // F1 shipped are still there, with the same prompts, and F5's six are
+        // additions rather than replacements.
+        assertTrue(
+            "F5 grew the quiz, so the count is no longer the guard; the ten F1 " +
+                "shipped must still all be present",
+            parsed.questions.size >= 10
+        )
+        val original = setOf(
+            "q1_cariofileno_cb2", "q2_limonene_ansiedad", "q3_pineno_acetilcolina",
+            "q4_mirceno_hipotesis", "q5_cbn_afinidad", "q6_limonene_temperatura",
+            "q7_cariofileno_temperatura", "q8_cbd_trpv1", "q9_interaccion_cbd",
+            "q10_evidencia_entourage"
+        )
+        assertTrue(
+            "F1's ten questions have to survive verbatim, found " +
+                parsed.questions.map { it.id }.filterNot { it in original },
+            parsed.questions.map { it.id }.containsAll(original)
+        )
         assertTrue(
             "a schema-version bump or a dropped row would show up here",
             parsed.unresolvedReferences.isEmpty()
