@@ -7,9 +7,9 @@
       "cannabinoids": ["THC"],
       "terpenes": ["MYRCENE"],
       "profiles": ["SEDANTE"],
-      "outcome_es": "Sedación profunda y efecto couch-lock",
+      "outcome_es": "Sedación y efecto couch-lock, sin confirmar que el mirceno los produzca",
       "description_es": "La combinación de THC con un perfil rico en mirceno se asocia a un efecto más sedante, con relajación muscular marcada y una duración percibida más larga. Es la base del perfil conocido como couch-lock: el cuerpo se siente pesado y la relajación muscular domina la experiencia.",
-      "mechanism_es": "El mirceno se ha propuesto como modulador alostérico del receptor CB1 y como modulador de la señalización de CB2, de modo que aumenta la afinidad y la actividad del receptor sobre la señal ya presente, sin aportar más THC. En dosis altas, esa vía mediada por CB1 produce sedación y relajación muscular. También se ha propuesto que el mirceno facilitaría el paso de otros cannabinoids al sistema nervioso central; ese punto sigue siendo una hipótesis y no un hallazgo medido en personas.",
+      "mechanism_es": "El mirceno se ha propuesto como modulador alostérico del receptor CB1 y como modulador de la señalización de CB2, de modo que aumenta la afinidad y la actividad del receptor sobre la señal ya presente, sin aportar más THC. En dosis altas, esa misma vía mediada por CB1, la del propio THC, produce sedación y relajación muscular; lo que no está medido es cuánto de ese efecto añade el mirceno. También se ha propuesto que el mirceno facilitaría el paso de otros cannabinoids al sistema nervioso central; ese punto sigue siendo una hipótesis y no un hallazgo medido en personas.",
       "evidence_es": "Los datos disponibles son preclínicos y mecanicistas. No hay ensayos en personas que confirmen un aumento de la permeabilidad de la barrera hematoencefálica ni un couch-lock atribuible al mirceno. Trátalo como hipótesis de trabajo.",
       "strains_es": ["OG Kush", "Granddaddy Purple", "Blue Dream", "Mango Kush", "Amnesia Haze", "Sour Kush"],
       "interaction_es": "El THC aumenta la frecuencia cardíaca y puede producir hipotensión ortostática. Combinado con alcohol o con pastillas sedantes aumenta el riesgo de somnolencia excesiva y de caídas."

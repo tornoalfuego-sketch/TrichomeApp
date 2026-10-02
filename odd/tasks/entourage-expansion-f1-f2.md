@@ -134,6 +134,16 @@ F1 closed at `823ccaa`, off `18d5d29`. Branch
 `compileDebugKotlin` green. No schema change, `APP_DATABASE_VERSION` still 3, no
 new dependency.
 
+Re-verified independently, then extended with the structural fix above: **889
+tests, 57 suites, 0 failures**; `lintDebug` 0 errors / 353 issues with an identical
+category distribution. The writer's own last test run had left a mutation-run XML
+on disk showing 3 failures, so the 886 figure was confirmed by a clean re-run
+before anything was reported green.
+
+**Lesson worth keeping:** a mutation test that leaves its mutated state in the
+working tree poisons the next reader. The `test-results` XML on disk was the
+failing run, not the passing one. Always re-run before quoting a total.
+
 No device verification: F1 adds no visible feature, so a screenshot could only
 show a module that looks exactly as it did before.
 
@@ -164,6 +174,54 @@ prose observations, left for a content decision:
    relajación muscular" is the only unhedged present-tense outcome claim among the
    seven, and its own evidence line says the data is pre-clinical and mechanistic.
    Not changed.
+2. `thc_myrcene`'s "En dosis altas, esa vía mediada por CB1 produce sedación y
+   relajación muscular" is the only unhedged present-tense outcome claim among the
+   seven, and its own evidence line says the data is pre-clinical and mechanistic.
+   Not changed.
+
+## F1 finding the T5 audit was scoped past
+
+The T5 audit read `mechanism_es` for overclaiming. The bigger defect lives in
+`outcome_es`, which nobody audited, and it is not one bad sentence — it is the
+whole headline layer.
+
+Asked directly of each synergy: does the headline assert what the evidence line
+denies? **Five of seven do.**
+
+| synergy | headline on screen | its own evidence line |
+| --- | --- | --- |
+| `thc_pinene` | "Atenuación de la paranoia con atención sostenida" | AChE measured in vitro and in animals, no human confirmation |
+| `cbd_caryophyllene` | "Analgesia y antiinflamación sistémica" | the additivity is **not** proven in human trials |
+| `cbn_linalool_myrcene` | "Inducción de sueño y relajación muscular prolongada" | CBN has no human support as a sleep aid |
+| `thc_linalool` | "Euforia atenuada con sedación suave" | in vitro and animals, no human interaction data |
+| `cbg_limonene_myrcene` | "Claridad y bienestar sin sedación pesada" | evidence almost entirely preclinical |
+
+The mechanism prose is mostly careful. The headline above it is not, and the
+headline is what a user reads first.
+
+**The cause is structural, not editorial.** `EntourageCards` rendered the headline
+under the bare label `"Efecto"` — a noun that asserts the body below it *is* an
+effect. Rewriting five headlines into disclaimers would make the card unreadable,
+and the disclaimer is already at the top of every tab with the evidence line
+directly beneath the headline. So the label carries the qualifier for the layer.
+
+Two-part fix:
+
+1. `thc_myrcene` was the worst case: it claimed "Sedación profunda y efecto
+   couch-lock" while its own evidence line said couch-lock is not attributable to
+   myrcene. A headline naming the exact outcome its evidence denies carries the
+   denial inline now.
+2. The layer label became `"Efecto descrito"`, qualifying every headline by its own
+   label. Pinned by a test admitting only a qualified label.
+
+Three tests added, all refusing to soften anything: the outcome label must stay
+qualified; a headline denied by its evidence must carry the denial inline; and a
+synergy that disclaims human proof must still render that disclaimer on the same
+card. `cbd_caryophyllene` stays pinned and untouched.
+
+**Not done, offered to the user:** hedging all five headlines inline. It is the
+maximally conservative reading and it stacks five disclaimers in the layer that
+already carries one. Recommended against; their call.
 
 ## Next step
 

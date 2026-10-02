@@ -1,6 +1,8 @@
 package com.trichome.app.data.repository
 
 import com.trichome.app.model.Cannabinoid
+import com.trichome.app.model.EntourageCardRole
+import com.trichome.app.model.EntourageCards
 import com.trichome.app.model.EntourageTerpene
 import com.trichome.app.model.LabAxis
 import com.trichome.app.model.PharmacologicalProfile
@@ -211,6 +213,74 @@ class EntourageAssetTest {
             forbidden.forEach { phrase ->
                 assertFalsePhrase(synergy.id, text, phrase)
             }
+        }
+    }
+
+    @Test
+    fun theOutcomeLineIsLabelledAsDescribedAndNotAsAnEstablishedEffect() {
+        // The defect this pins: the outcome headline shipped under the bare
+        // label "Efecto", which asserts that the body below it IS an effect.
+        // Five of seven headlines state as fact what their own evidence line
+        // denies — "Atenuación de la paranoia" over an evidence line that says
+        // there is no human confirmation; "Analgesia y antiinflamación
+        // sistémica" over one that says the additivity is unproven in people.
+        //
+        // Rewriting all five into disclaimers would make the card unreadable,
+        // and the disclaimer is already at the top of every tab with the
+        // evidence line directly under the headline. So the label carries the
+        // qualifier for the whole layer, and this asserts it stays qualified.
+        val qualified = setOf("Efecto descrito")
+
+        content().synergies.forEach { synergy ->
+            val outcome = EntourageCards.cardFor(synergy)
+                .linesEs.first { it.role == EntourageCardRole.OUTCOME }
+
+            assertTrue(
+                "${synergy.id}: the outcome label \"${outcome.labelEs}\" asserts " +
+                    "rather than describes. Allowed: $qualified",
+                outcome.labelEs in qualified
+            )
+        }
+    }
+
+    @Test
+    fun anOutcomeHeadlineDeniedByItsOwnEvidenceLineCarriesTheDenialInline() {
+        // The label change above covers the layer, but one headline was the
+        // worst case: thc_myrcene claimed "Sedación profunda y efecto
+        // couch-lock" while its own evidence line said couch-lock is not
+        // attributable to myrcene. A headline that names the exact outcome its
+        // evidence denies has to carry the denial in the headline itself.
+        val headline = content().synergyById("thc_myrcene")!!.outcomeEs.lowercase()
+
+        assertTrue(
+            "thc_myrcene's outcome re-asserts the couch-lock as fact: \"$headline\"",
+            listOf("sin confirmar", "no confirmad", "no se ha confirmad", "atribuible").any { it in headline }
+        )
+    }
+
+    @Test
+    fun everySynergyThatDisclaimsHumanProofStillShowsThatDisclaimeronTheSameCard() {
+        // The card's credibility rests on the evidence line being visible, not
+        // behind a disclosure. If a synergy's evidence line denies human proof
+        // and the card that shows it omits that line, the headline is the only
+        // thing the user reads, and it is the unqualified half.
+        val disclaimsHumanProof = listOf(
+            "no hay", "no está", "no se ha", "sin datos", "sin confirmación",
+            "no confirmad", "no está probad", "hipótesis", "hipotesis"
+        )
+
+        content().synergies.forEach { synergy ->
+            val disclaims = disclaimsHumanProof.any { it in synergy.evidenceEs.lowercase() }
+            if (!disclaims) return@forEach
+
+            val card = EntourageCards.cardFor(synergy)
+            val evidence = card.linesEs.firstOrNull { it.role == EntourageCardRole.EVIDENCE }
+
+            assertTrue("${synergy.id} disclaims human proof but its card has no evidence line", evidence != null)
+            assertTrue(
+                "${synergy.id} declares evidence so the card must not claim it was never declared",
+                card.evidenceWasDeclared
+            )
         }
     }
 

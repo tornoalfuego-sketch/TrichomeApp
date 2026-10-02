@@ -85,7 +85,13 @@ data class EntourageSynergyCard(
 
     /** The card in reading order, always including the evidence line. */
     val linesEs: List<EntourageCardLine> = buildList {
-        add(EntourageCardLine(EntourageCardRole.OUTCOME, "Efecto", outcomeEs))
+        // "Efecto" is a bare noun: it asserts that the body below it *is* an
+        // effect. Five of the seven shipped headlines state as fact what their
+        // own evidence line denies, and hedging all five would bury the card in
+        // disclaimers. The label carries the honesty instead — the line names a
+        // *described* effect, and the evidence line directly beneath it says
+        // what that description rests on.
+        add(EntourageCardLine(EntourageCardRole.OUTCOME, "Efecto descrito", outcomeEs))
         add(EntourageCardLine(EntourageCardRole.DESCRIPTION, "Qué se percibe", descriptionEs))
         add(EntourageCardLine(EntourageCardRole.MECHANISM, "Mecanismo", mechanismEs))
         add(EntourageCardLine(EntourageCardRole.EVIDENCE, "Evidencia", evidenceEs))
