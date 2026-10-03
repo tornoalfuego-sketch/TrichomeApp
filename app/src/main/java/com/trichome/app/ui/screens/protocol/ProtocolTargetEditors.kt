@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -272,7 +273,17 @@ private fun TargetEditorPage(
                 Spacer(Modifier.height(6.dp))
             }
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                // `navigationBarsPadding` because this row was measured on a device at
+                // 1080x2340 with the buttons' own geometry: the button spans y 2191 to
+                // 2300 on a 2340-tall screen, and the system navigation bar overlays
+                // everything below roughly y 2240. The system bar takes those touches
+                // before this app ever sees them, so "Guardar" — the only control that
+                // writes anything — was drawn half-covered and could not reliably be
+                // pressed. `PlantDetailScreen` and `MainBottomBar` already carry this
+                // padding for the same reason.
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End)
             ) {
                 TextButton(onClick = onClose) {

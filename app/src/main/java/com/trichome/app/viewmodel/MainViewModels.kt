@@ -555,7 +555,28 @@ class ProtocolViewModel(container: AppContainer) : ViewModel() {
      * untouched. A targets surface that rebuilt a `Protocol` from its defaults would
      * quietly zero the fourteen columns it never mentioned.
      */
-    suspend fun saveProtocol(protocol: Protocol): Long = protocolRepo.insertProtocol(protocol)
+    suspend fun saveProtocol(protocol: Protocol): Long =
+        if (protocol.id == 0L) {
+            protocolRepo.insertProtocol(protocol)
+        } else {
+            // UPDATE, never REPLACE, for a row that already exists.
+            //
+            // `insertProtocol` is `@Insert(onConflict = REPLACE)`, and SQLite implements
+            // REPLACE as DELETE followed by INSERT. `protocol_stages.protocolId` carries
+            // `onDelete = CASCADE`, so every save of an existing protocol was deleting the
+            // row and taking **every stage of that protocol with it**.
+            //
+            // Found on a device, not by reading: creating a protocol wrote stage rows
+            // with ids 7, 8 and 9, then saving one grow-wide target on the protocol row
+            // cascaded them away. `sqlite_sequence.protocol_stages` read 9 with three
+            // rows left. The stage schedule the card was still displaying did not exist.
+            //
+            // `ProtocolEditorDialog` used to get away with this because it called
+            // `saveStages` immediately afterwards and rebuilt the schedule; the targets
+            // surfaces write only the protocol row, so nothing rebuilt it.
+            protocolRepo.updateProtocol(protocol)
+            protocol.id
+        }
 
     /**
      * Saves a protocol's stage schedule without touching each stage's band.
