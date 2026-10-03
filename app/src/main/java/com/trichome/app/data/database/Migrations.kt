@@ -215,3 +215,116 @@ val MIGRATION_2_3: Migration = object : Migration(2, 3) {
         )
     }
 }
+
+/**
+ * One column added to `protocols` by [MIGRATION_3_4].
+ *
+ * [sqlType] is the SQLite column type as Room spells it in the exported schema,
+ * and [addColumnStatement] is the exact statement the migration executes. Both
+ * are derived here rather than inlined in [MIGRATION_3_4], so the migration and
+ * the test that audits it read the same string instead of two copies of it.
+ */
+data class ProtocolColumnAddition(
+    val columnName: String,
+    val sqlType: String
+) {
+    /**
+     * The `ALTER TABLE` that adds this column.
+     *
+     * `DEFAULT NULL` is written out rather than left implicit so the statement
+     * and the entity's `@ColumnInfo(defaultValue = "NULL")` are byte-identical
+     * in what they declare. Room compares an entity column's declared default
+     * against `PRAGMA table_info` at open time, and a statement that added the
+     * column with no `DEFAULT` clause at all would leave the two disagreeing.
+     */
+    val addColumnStatement: String =
+        "ALTER TABLE `protocols` ADD COLUMN `$columnName` $sqlType DEFAULT NULL"
+}
+
+/**
+ * Every column [MIGRATION_3_4] adds to `protocols`, in the order it adds them.
+ *
+ * This list is the whole migration. There is no second place where a v4 column
+ * is named, which is what lets `ProtocolMigrationContractTest` prove that the
+ * entity and the migration agree: a column added to [Protocol] and forgotten
+ * here is a mismatch between the exported schema and the live table, and Room
+ * refuses to open on exactly that.
+ *
+ * All fourteen are nullable with a null default, which is the whole reason this
+ * is fourteen `ADD COLUMN` statements and not a table rebuild — see
+ * [MIGRATION_3_4].
+ */
+val PROTOCOL_V4_ADDED_COLUMNS: List<ProtocolColumnAddition> = listOf(
+    // Declared bands, stored as TEXT by GrowRangeConverters.
+    ProtocolColumnAddition("vpdBand", "TEXT"),
+    ProtocolColumnAddition("phRange", "TEXT"),
+    ProtocolColumnAddition("ecRange", "TEXT"),
+    // Light-period climate.
+    ProtocolColumnAddition("lightTempCelsius", "REAL"),
+    ProtocolColumnAddition("lightHumidityPercent", "REAL"),
+    // Dark-period climate.
+    ProtocolColumnAddition("darkTempCelsius", "REAL"),
+    ProtocolColumnAddition("darkHumidityPercent", "REAL"),
+    // Light intensity.
+    ProtocolColumnAddition("ppfd", "REAL"),
+    ProtocolColumnAddition("dli", "REAL"),
+    // Fixture and growing medium.
+    ProtocolColumnAddition("lightType", "TEXT"),
+    ProtocolColumnAddition("lampPowerWatts", "REAL"),
+    ProtocolColumnAddition("substrateType", "TEXT"),
+    ProtocolColumnAddition("wateringStrategy", "TEXT"),
+    // Grower's own notes.
+    ProtocolColumnAddition("observations", "TEXT")
+)
+
+/**
+ * The statements [MIGRATION_3_4] runs, in order.
+ *
+ * Exposed so the test can assert what the migration does — fourteen additions
+ * and nothing else — without reflecting on the `Migration` instance, which
+ * would only prove that an object exists.
+ */
+val PROTOCOL_V4_STATEMENTS: List<String> =
+    PROTOCOL_V4_ADDED_COLUMNS.map { it.addColumnStatement }
+
+/**
+ * Explicit migration from schema v3 to v4.
+ *
+ * v4 (F10a): `protocols` gains the extended grow fields — declared pH / EC / VPD
+ * bands, light and dark climate, PPFD and DLI, fixture and medium, and the
+ * grower's own agronomic observations.
+ *
+ * ## Why this is fourteen `ADD COLUMN`s and not a table rebuild
+ *
+ * [MIGRATION_2_3] had to rebuild `super_cycle_configs`, because a column had to
+ * *become* nullable and SQLite cannot drop a `NOT NULL` in place. Nothing here
+ * does. Every v4 column is new, nullable, with a null default, and adding a
+ * nullable column is the one schema change SQLite performs in place. So this
+ * migration is fourteen `ALTER TABLE protocols ADD COLUMN` statements and stops.
+ *
+ * ## Why the rows are never touched
+ *
+ * There is no `DROP`, no `DELETE`, no `UPDATE` and no table rebuild in this
+ * migration. An existing `protocols` row keeps every one of its original
+ * columns — `name`, `lightHours`, `darkHours`, `presetType`, `cycleStartAt`,
+ * `isActive`, `plantId` — byte for byte, because not one statement here can
+ * touch them.
+ *
+ * The new columns read back as NULL on that row, which is the correct outcome
+ * and not an absence of data: a protocol created before v4 has no declared pH
+ * band, and the screen says "Sin definir" rather than inventing one. Fabricating
+ * a plausible default here would be the worst available outcome, because it
+ * would be indistinguishable from a band the grower actually typed.
+ *
+ * ## What this migration does not do
+ *
+ * It does not touch `protocol_stages` or `stage_entries`. A per-stage VPD band
+ * is real agronomy and it belongs on the stage row; adding it here, to a table
+ * with one row per protocol, would create a column no query can populate. That
+ * is the next schema phase, and it needs its own migration and its own test.
+ */
+val MIGRATION_3_4: Migration = object : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        PROTOCOL_V4_STATEMENTS.forEach { statement -> db.execSQL(statement) }
+    }
+}

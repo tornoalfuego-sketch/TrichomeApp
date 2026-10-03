@@ -29,6 +29,7 @@ import com.trichome.app.viewmodel.ProtocolViewModel
 import com.trichome.app.viewmodel.appViewModel
 import kotlinx.coroutines.launch
 import com.trichome.app.ui.theme.LocalTertiaryText
+import com.trichome.app.ui.theme.LocalMetricValue
 
 /**
  * Protocol block editor. Each protocol is a header (name, photoperiod) plus an
@@ -237,6 +238,45 @@ private fun ProtocolCard(
                 style = MaterialTheme.typography.bodySmall,
                 color = LocalTertiaryText.current
             )
+
+            Spacer(Modifier.height(12.dp))
+
+            // Extended agronomic fields. Labels, units and the empty state come
+            // from model/ProtocolExtendedFields, so a field the grower has not
+            // filled in reads "Sin definir" and never a fabricated number.
+            extendedFieldBlocks(protocol).forEach { group ->
+                Text(
+                    group.titleEs,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = LocalTertiaryText.current
+                )
+                Spacer(Modifier.height(2.dp))
+                group.rows.forEach { row ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            row.labelEs,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f)
+                        )
+                        // The number takes the metric register; the unit and the
+                        // grower's own words stay in the prose face. Absent when
+                        // there is no number, which is what "Sin definir" means.
+                        row.metricEs?.let { metric ->
+                            Text(metric, style = LocalMetricValue.current)
+                            Spacer(Modifier.width(6.dp))
+                        }
+                        Text(
+                            row.detailEs,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = LocalTertiaryText.current
+                        )
+                    }
+                }
+                Spacer(Modifier.height(6.dp))
+            }
         }
     }
 }
