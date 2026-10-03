@@ -125,19 +125,51 @@ class ProtocolMigrationContractTest {
         )
     }
 
+    /**
+     * v4 is still the schema the v3 to v4 migration produced.
+     *
+     * The *database* is now at 5 — `VpdProvenanceMigrationContractTest` owns that assertion.
+     * What this file owns is that `4.json` is still the v4 shape and that the two migrations
+     * are adjacent: if a future phase skips a version, the chain
+     * `MIGRATION_1_2 -> MIGRATION_2_3 -> MIGRATION_3_4 -> MIGRATION_4_5` is no longer a chain
+     * and a device on v4 would have no path forward.
+     */
     @Test
-    fun theDatabaseVersionIsFour() {
-        assertEquals(
+    fun theDatabaseVersionIsAtLeastFour() {
+        assertTrue(
             "APP_DATABASE_VERSION must match the schema Room exported and validates against",
-            4,
-            APP_DATABASE_VERSION
+            APP_DATABASE_VERSION >= 4
         )
         assertEquals(
             "AppDatabase.VERSION must not carry its own copy of the number",
             APP_DATABASE_VERSION,
             AppDatabase.VERSION
         )
-        assertEquals(4, schema(4)["version"].let { (it as JsonPrimitive).content.toInt() })
+        assertEquals(
+            "schema 4.json must still declare version 4; it is the artifact Room validated " +
+                "the v3 to v4 upgrade against",
+            4,
+            schema(4)["version"].let { (it as JsonPrimitive).content.toInt() }
+        )
+    }
+
+    /**
+     * The migration chain is contiguous.
+     *
+     * Room resolves a device's upgrade path by walking the registered `Migration`s. A gap —
+     * v1 to v2, v3 to v4, v5 to v6, say — leaves a device on v2 with no path to v6 and Room
+     * throws on open with a stack trace rather than an error a user can act on.
+     */
+    @Test
+    fun everyVersionFromOneToTheCurrentHasAMigration() {
+        val registered = listOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+            .map { it.startVersion to it.endVersion }
+
+        assertEquals(
+            "the chain must cover every version step from 1 with no gap",
+            (1 until APP_DATABASE_VERSION).map { it to (it + 1) },
+            registered
+        )
     }
 
     /* ── The migration agrees with the exported schema ─────────────────────── */

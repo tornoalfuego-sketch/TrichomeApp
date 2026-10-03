@@ -27,6 +27,7 @@ import com.trichome.app.ui.screens.settings.SettingsScreen
 import com.trichome.app.ui.screens.tent.TentListScreen
 import com.trichome.app.ui.screens.terpenes.TerpeneDetailScreen
 import com.trichome.app.ui.screens.terpenes.TerpenesScreen
+import com.trichome.app.ui.screens.vpd.VpdHistoryScreen
 import com.trichome.app.ui.theme.TrichomeThemeState
 
 /**
@@ -42,7 +43,7 @@ val DECLARED_ROUTES: Set<String> = setOf(
     "home", "tents", "journal", "diagnosis", "settings",
     "calendar", "charts", "terpenes", "breeding",
     PLANT_ID_ROUTE, PROTOCOL_ID_ROUTE, SUPER_CYCLE_ID_ROUTE, JOURNAL_ID_ROUTE,
-    TERPENE_ID_ROUTE, ENTOURAGE_ROUTE
+    TERPENE_ID_ROUTE, VPD_ID_ROUTE, ENTOURAGE_ROUTE
 )
 
 /** Argument name shared by every plant-scoped route. */
@@ -56,6 +57,15 @@ const val PROTOCOL_ID_ROUTE: String = "protocol/{$PLANT_ID_ARG}"
 const val SUPER_CYCLE_ID_ROUTE: String = "super_cycle/{$PLANT_ID_ARG}"
 const val JOURNAL_ID_ROUTE: String = "journal/{$PLANT_ID_ARG}"
 const val TERPENE_ID_ROUTE: String = "terpene/{$TERPENE_ID_ARG}"
+
+/**
+ * The plant's VPD history and calculator.
+ *
+ * Plant-scoped and long-typed for the same reason the other three are: an untyped
+ * `{plantId}` path argument arrives as a String and `getLong` yields 0, which is the defect
+ * this file's own comment documents for four screens already.
+ */
+const val VPD_ID_ROUTE: String = "vpd/{$PLANT_ID_ARG}"
 
 /**
  * Reads a `Long` path argument, tolerating a value that arrived as a String.
@@ -142,6 +152,12 @@ fun AppNavigation(
             arguments = listOf(navArgument(PLANT_ID_ARG) { type = NavType.LongType })
         ) { backStackEntry ->
             JournalScreen(navController, themeState, backStackEntry.longArg(PLANT_ID_ARG))
+        }
+        composable(
+            route = VPD_ID_ROUTE,
+            arguments = listOf(navArgument(PLANT_ID_ARG) { type = NavType.LongType })
+        ) { backStackEntry ->
+            VpdHistoryScreen(backStackEntry.longArg(PLANT_ID_ARG), navController, themeState)
         }
         composable("calendar") {
             CalendarScreen(navController, themeState)

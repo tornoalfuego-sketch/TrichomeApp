@@ -11,6 +11,7 @@ import com.trichome.app.data.database.AppDatabase
 import com.trichome.app.data.database.MIGRATION_1_2
 import com.trichome.app.data.database.MIGRATION_2_3
 import com.trichome.app.data.database.MIGRATION_3_4
+import com.trichome.app.data.database.MIGRATION_4_5
 import com.trichome.app.data.model.GrowRange
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -34,6 +35,16 @@ class MigrationTest {
 
     private lateinit var context: Context
     private val dbName = "migration_test.db"
+
+    /**
+     * The v4 identity hash, copied from `app/schemas/.../4.json`.
+     *
+     * Declared here rather than inlined in the fixture so a schema export can be checked
+     * against it: if v5's hash changed and this string did not, the fixture is not the state a
+     * device is actually in, and every "the upgrade preserved the data" assertion below is
+     * measured against a starting point no device ever had.
+     */
+    private val V4_IDENTITY_HASH: String = "c079caf29c0f1b569fe480a04fcd7fc4"
 
     @Before
     fun setUp() {
@@ -603,6 +614,268 @@ class MigrationTest {
         }
         cursor.close()
         return found
+    }
+
+    /**
+     * Migration v4 -> v5: the VPD provenance columns.
+     *
+     * Together with `migrate3To4AddsTheExtendedFieldsAndRewritesNothing` this is the only
+     * proof in the project that runs a migration against real SQLite and then lets Room's
+     * `onValidateSchema` compare the result with the exported schema. If the migration and the
+     * entity disagreed about a column, this test fails on `openHelper.writableDatabase`, which
+     * is exactly the moment the user's own device would fail, before a screen draws.
+     *
+     * ## What it proves and what it cannot
+     *
+     * It proves the statements execute, the resulting table matches `5.json`, the existing
+     * rows keep every original value, and the new columns read back NULL rather than as a
+     * fabricated default.
+     *
+     * It cannot run without a device. **As of this commit it has never been executed** —
+     * `adb devices` returns empty in this environment, so the v4 -> v5 upgrade path is
+     * written and audited by `VpdProvenanceMigrationContractTest` but unproven on hardware.
+     *
+     * ## The fixture
+     *
+     * Two plants and three journal rows with *different* `vpd` values, two of them with no
+     * provenance. Three rows rather than one, because a migration that rewrote every row to
+     * the same value would pass a "a row survived" check.
+     */
+    @Test
+    fun migrate4To5AddsTheVpdProvenanceColumnsAndRewritesNothing() {
+        createVersion4Database()
+
+        val room: AppDatabase = Room.databaseBuilder(context, AppDatabase::class.java, dbName)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+            .build()
+        val db = room.openHelper.writableDatabase // triggers onUpgrade + validation
+
+        assertEquals(5, db.version)
+
+        // 1) Both columns are there, and both are nullable. A NOT NULL here would have failed
+        //    the upgrade on the rows the fixture already wrote.
+        val added = listOf("vpdSource", "vpdLeafOffset")
+        added.forEach { column ->
+            assertTrue("`$column` missing after migration", columnExists(db, "grow_events", column))
+            assertFalse(
+                "`$column` must be nullable: the existing row has no value for it",
+                columnIsNotNull(db, "grow_events", column)
+            )
+        }
+
+        // 2) The original 23 columns are untouched, in place, with the values the fixture
+        //    wrote. This is the zero-data-loss assertion: exact values, not "a row still
+        //    exists".
+        assertEquals(3, countRows(db, "grow_events"))
+        val original = db.query(
+            "SELECT id, plantId, eventType, timestamp, notes, temperature, humidity, vpd, " +
+                "isActive FROM grow_events ORDER BY id",
+            emptyArray()
+        )
+        assertTrue(original.moveToFirst())
+        assertEquals(1L, original.getLong(0))
+        assertEquals(11L, original.getLong(1))
+        assertEquals("IRRIGATION", original.getString(2))
+        assertEquals(1700000000000L, original.getLong(3))
+        assertEquals("riego inicial", original.getString(4))
+        assertEquals(21.5f, original.getFloat(5), 1e-6f)
+        assertEquals(58f, original.getFloat(6), 1e-6f)
+        assertEquals(0.62f, original.getFloat(7), 1e-6f)
+        assertEquals(1, original.getInt(8))
+
+        assertTrue(original.moveToNext())
+        assertEquals(2L, original.getLong(0))
+        assertEquals(11L, original.getLong(1))
+        assertEquals("VPD", original.getString(2))
+        assertEquals(1700086400000L, original.getLong(3))
+        assertTrue("the second row's notes are NULL in the fixture", original.isNull(4))
+        assertEquals(1.24f, original.getFloat(7), 1e-6f)
+
+        assertTrue(original.moveToNext())
+        assertEquals(3L, original.getLong(0))
+        assertEquals(12L, original.getLong(1))
+        assertEquals("VPD", original.getString(2))
+        assertEquals(1.31f, original.getFloat(7), 1e-6f)
+        assertFalse("the fixture had exactly three events", original.moveToNext())
+        original.close()
+
+        // 3) The new columns read back NULL, not as a plausible placeholder. Defaulting
+        //    `vpdSource` to 'MEASURED' would be the worst outcome available: every pre-v5
+        //    derived number would be published as a sensor reading.
+        val provenance = db.query(
+            "SELECT vpdSource, vpdLeafOffset FROM grow_events ORDER BY id",
+            emptyArray()
+        )
+        assertTrue(provenance.moveToFirst())
+        repeat(3) { index ->
+            assertTrue(
+                "row ${index + 1}: vpdSource must be NULL, got ${provenance.getString(0)}",
+                provenance.isNull(0)
+            )
+            assertTrue(
+                "row ${index + 1}: vpdLeafOffset must be NULL",
+                provenance.isNull(1)
+            )
+            if (index < 2) assertTrue(provenance.moveToNext())
+        }
+        provenance.close()
+
+        // 4) A row written after the migration round-trips through the same columns, which is
+        //    what lets the chart keep a measured and a calculated reading apart.
+        val logged = runBlocking { room.eventDao().insertEvent(eventAfterMigration()) }
+        val reread = db.query(
+            "SELECT vpd, vpdSource, vpdLeafOffset FROM grow_events WHERE id = ?",
+            arrayOf(logged.toString())
+        )
+        assertTrue(reread.moveToFirst())
+        assertEquals(0.94f, reread.getFloat(0), 1e-6f)
+        assertEquals("CALCULATED", reread.getString(1))
+        assertEquals(2.5f, reread.getFloat(2), 1e-6f)
+        reread.close()
+
+        // 5) The rest of the database is exactly as it was. The migration is two ADD COLUMNs
+        //    and touches nothing else.
+        assertEquals(1, countRows(db, "grow_tents"))
+        assertEquals(2, countRows(db, "plants"))
+        assertEquals(1, countRows(db, "protocols"))
+        assertEquals(2, countRows(db, "protocol_stages"))
+        assertEquals(1, countRows(db, "stage_entries"))
+        assertEquals(1, countRows(db, "super_cycle_configs"))
+
+        // 6) The VPD query the chart runs sees the pre-v5 rows and the new one, all of them,
+        //    and only rows that carry a VPD. The irrigation note is excluded, not plotted at
+        //    zero.
+        val history = runBlocking {
+            room.eventDao().getVpdHistory(11L, 1_600_000_000_000L, 1_900_000_000_000L)
+        }
+        assertEquals(2, history.size)
+        assertTrue(history.all { it.vpd != null })
+        assertEquals(
+            "a pre-v5 row must resolve to UNKNOWN, never to MEASURED",
+            listOf(null, "CALCULATED"),
+            history.sortedBy { it.id }.map { it.vpdSource }
+        )
+
+        // 7) And through the entity, which is what the app actually reads.
+        val events = runBlocking { room.eventDao().getEventsByPlantSnapshot(11L) }
+        assertEquals(2, events.size)
+        val preV5 = events.first { it.id == 1L }
+        assertEquals(0.62f, preV5.vpd!!, 1e-6f)
+        assertEquals(null, preV5.vpdSource)
+        assertEquals(null, preV5.vpdLeafOffset)
+
+        room.close()
+    }
+
+    /** The row `migrate4To5` writes after the upgrade, to prove the columns round-trip. */
+    private fun eventAfterMigration() = com.trichome.app.data.entity.GrowEvent(
+        id = 0L,
+        plantId = 11L,
+        eventType = "VPD",
+        timestamp = 1700172800000L,
+        notes = "calculado",
+        temperature = 25f,
+        humidity = 55f,
+        vpd = 0.94f,
+        vpdSource = "CALCULATED",
+        vpdLeafOffset = 2.5f
+    )
+
+    /**
+     * The v4 fixture: the full v4 layout, copied from `4.json`, with the real identity hash.
+     *
+     * Two plants and one protocol, so a migration that rewrote a row would be visible in the
+     * counts below.
+     */
+    private fun createVersion4Database() {
+        val factory = FrameworkSQLiteOpenHelperFactory()
+        val config = SupportSQLiteOpenHelper.Configuration.builder(context)
+            .name(dbName)
+            .callback(object : SupportSQLiteOpenHelper.Callback(4) {
+                override fun onCreate(db: SupportSQLiteDatabase) {
+                    val sql = db
+                    sql.execSQL("CREATE TABLE IF NOT EXISTS `grow_tents` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `location` TEXT NOT NULL, `capacity` INTEGER NOT NULL, `lightType` TEXT NOT NULL, `lightPowerWatts` INTEGER NOT NULL, `isActive` INTEGER NOT NULL)")
+                    sql.execSQL("CREATE TABLE IF NOT EXISTS `plants` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `tentId` INTEGER, `sortOrder` INTEGER NOT NULL, `growStartTimestamp` INTEGER NOT NULL, `currentStage` TEXT NOT NULL, `strain` TEXT NOT NULL, `notes` TEXT NOT NULL, `isActive` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, FOREIGN KEY(`tentId`) REFERENCES `grow_tents`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL)")
+                    sql.execSQL("CREATE INDEX IF NOT EXISTS `index_plants_tentId` ON `plants` (`tentId`)")
+                    // The v4 protocols layout: eight original columns plus F10a's fourteen.
+                    sql.execSQL("CREATE TABLE IF NOT EXISTS `protocols` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `plantId` INTEGER NOT NULL, `name` TEXT NOT NULL, `lightHours` INTEGER NOT NULL DEFAULT 18, `darkHours` INTEGER NOT NULL DEFAULT 6, `presetType` TEXT NOT NULL DEFAULT 'custom', `cycleStartAt` INTEGER NOT NULL DEFAULT 0, `isActive` INTEGER NOT NULL, `vpdBand` TEXT DEFAULT NULL, `phRange` TEXT DEFAULT NULL, `ecRange` TEXT DEFAULT NULL, `lightTempCelsius` REAL DEFAULT NULL, `lightHumidityPercent` REAL DEFAULT NULL, `darkTempCelsius` REAL DEFAULT NULL, `darkHumidityPercent` REAL DEFAULT NULL, `ppfd` REAL DEFAULT NULL, `dli` REAL DEFAULT NULL, `lightType` TEXT DEFAULT NULL, `lampPowerWatts` REAL DEFAULT NULL, `substrateType` TEXT DEFAULT NULL, `wateringStrategy` TEXT DEFAULT NULL, `observations` TEXT DEFAULT NULL)")
+                    sql.execSQL("CREATE TABLE IF NOT EXISTS `protocol_stages` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `protocolId` INTEGER NOT NULL, `stageName` TEXT NOT NULL, `durationDays` INTEGER NOT NULL, `recurrenceIntervalDays` INTEGER NOT NULL, `sortOrder` INTEGER NOT NULL, FOREIGN KEY(`protocolId`) REFERENCES `protocols`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)")
+                    sql.execSQL("CREATE INDEX IF NOT EXISTS `index_protocol_stages_protocolId` ON `protocol_stages` (`protocolId`)")
+                    sql.execSQL("CREATE TABLE IF NOT EXISTS `stage_entries` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `protocolId` INTEGER NOT NULL, `plantId` INTEGER NOT NULL, `stageName` TEXT NOT NULL, `enteredAt` INTEGER NOT NULL, `exitedAt` INTEGER)")
+                    // The v4 grow_events: 25 columns, `vpd` with no default.
+                    sql.execSQL("CREATE TABLE IF NOT EXISTS `grow_events` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `plantId` INTEGER NOT NULL, `groupId` TEXT, `eventType` TEXT NOT NULL, `timestamp` INTEGER NOT NULL, `notes` TEXT, `temperature` REAL, `humidity` REAL, `ph` REAL, `ec` REAL, `nutrientN` REAL, `nutrientP` REAL, `nutrientK` REAL, `amount` REAL, `height` REAL, `lampDistance` REAL, `trainingType` TEXT, `defoliationLevel` INTEGER, `vpd` REAL, `trichomeMaturity` TEXT, `diagnosisResult` TEXT, `diagnosisCertainty` REAL, `imagePath` TEXT, `isActive` INTEGER NOT NULL, FOREIGN KEY(`plantId`) REFERENCES `plants`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)")
+                    sql.execSQL("CREATE INDEX IF NOT EXISTS `index_grow_events_plantId` ON `grow_events` (`plantId`)")
+                    sql.execSQL("CREATE TABLE IF NOT EXISTS `super_cycle_configs` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `tentId` INTEGER, `plantId` INTEGER, `lightHours` INTEGER NOT NULL, `darkHours` INTEGER NOT NULL, `cycleStartAt` INTEGER NOT NULL, `presetType` TEXT NOT NULL)")
+                    sql.execSQL("CREATE INDEX IF NOT EXISTS `index_super_cycle_configs_tentId` ON `super_cycle_configs` (`tentId`)")
+                    sql.execSQL("CREATE TABLE IF NOT EXISTS `achievements` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `description` TEXT NOT NULL, `icon` TEXT NOT NULL, `xpReward` INTEGER NOT NULL, `isUnlocked` INTEGER NOT NULL)")
+                    sql.execSQL("CREATE TABLE IF NOT EXISTS `reminders` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `plantId` INTEGER, `title` TEXT NOT NULL, `message` TEXT NOT NULL, `recurrenceType` TEXT NOT NULL, `recurrenceIntervalDays` INTEGER NOT NULL, `reminderTime` INTEGER NOT NULL, `isActive` INTEGER NOT NULL)")
+                    sql.execSQL("CREATE TABLE IF NOT EXISTS `breeding_projects` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `motherId` TEXT NOT NULL, `fatherId` TEXT NOT NULL, `generation` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `status` TEXT NOT NULL)")
+                    sql.execSQL("CREATE TABLE IF NOT EXISTS `breeding_crosses` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `projectId` INTEGER NOT NULL, `parent1` TEXT NOT NULL, `parent2` TEXT NOT NULL, `phenotypeScore` REAL NOT NULL, `notes` TEXT NOT NULL, FOREIGN KEY(`projectId`) REFERENCES `breeding_projects`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)")
+                    sql.execSQL("CREATE INDEX IF NOT EXISTS `index_breeding_crosses_projectId` ON `breeding_crosses` (`projectId`)")
+
+                    // The v4 identity hash from app/schemas/.../4.json, so the starting state is
+                    // what a real device holds rather than a file Room has never validated.
+                    sql.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)")
+                    sql.execSQL("INSERT OR REPLACE INTO room_master_table (id, identity_hash) VALUES(42, '$V4_IDENTITY_HASH')")
+
+                    sql.execSQL(
+                        "INSERT INTO grow_tents (id, name, location, capacity, lightType, lightPowerWatts, isActive) " +
+                            "VALUES (4, 'Carpa 4', 'Sala', 4, 'LED', 600, 1)"
+                    )
+                    listOf(11L, 12L).forEachIndexed { index, plantId ->
+                        sql.execSQL(
+                            "INSERT INTO plants (id, name, tentId, sortOrder, growStartTimestamp, " +
+                                "currentStage, strain, notes, isActive, createdAt) VALUES " +
+                                "($plantId, 'Planta $plantId', 4, $index, 1700000000000, " +
+                                "'vegetative', 'Test', '', 1, 1700000000000)"
+                        )
+                    }
+                    sql.execSQL(
+                        "INSERT INTO protocols (id, plantId, name, lightHours, darkHours, presetType, cycleStartAt, isActive) " +
+                            "VALUES (1, 11, 'exterior', 18, 6, '18/6', 1700000000000, 1)"
+                    )
+                    sql.execSQL(
+                        "INSERT INTO protocol_stages (id, protocolId, stageName, durationDays, recurrenceIntervalDays, sortOrder) " +
+                            "VALUES (1, 1, 'Vegetativa', 35, 0, 0)"
+                    )
+                    sql.execSQL(
+                        "INSERT INTO protocol_stages (id, protocolId, stageName, durationDays, recurrenceIntervalDays, sortOrder) " +
+                            "VALUES (2, 1, 'Floración', 56, 0, 1)"
+                    )
+                    sql.execSQL(
+                        "INSERT INTO stage_entries (id, protocolId, plantId, stageName, enteredAt, exitedAt) " +
+                            "VALUES (1, 1, 11, 'Vegetativa', 1700000000000, NULL)"
+                    )
+                    sql.execSQL(
+                        "INSERT INTO super_cycle_configs (id, tentId, plantId, lightHours, darkHours, cycleStartAt, presetType) " +
+                            "VALUES (1, 4, 11, 18, 6, 1700000000000, '18/6')"
+                    )
+
+                    // Three journal rows with three different `vpd` values, so a migration that
+                    // rewrote them all to one value fails. Row 1 has no VPD recorded at all,
+                    // which is the "not a zero" case.
+                    sql.execSQL(
+                        "INSERT INTO grow_events (id, plantId, eventType, timestamp, notes, temperature, humidity, vpd, isActive) " +
+                            "VALUES (1, 11, 'IRRIGATION', 1700000000000, 'riego inicial', 21.5, 58.0, 0.62, 1)"
+                    )
+                    sql.execSQL(
+                        "INSERT INTO grow_events (id, plantId, eventType, timestamp, temperature, humidity, vpd, isActive) " +
+                            "VALUES (2, 11, 'VPD', 1700086400000, 26.0, 55.0, 1.24, 1)"
+                    )
+                    sql.execSQL(
+                        "INSERT INTO grow_events (id, plantId, eventType, timestamp, temperature, humidity, vpd, isActive) " +
+                            "VALUES (3, 12, 'VPD', 1700086400000, 27.0, 52.0, 1.31, 1)"
+                    )
+                }
+
+                override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
+                override fun onDowngrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
+            })
+            .build()
+
+        val helper = factory.create(config)
+        helper.writableDatabase.close()
+        helper.close()
     }
 
     private fun createVersion1Database() {

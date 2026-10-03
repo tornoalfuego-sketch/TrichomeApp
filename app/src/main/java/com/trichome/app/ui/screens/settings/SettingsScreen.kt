@@ -265,6 +265,9 @@ fun SettingsScreen(
             }
         }
 
+        /* ── Exportar datos ──────────────────────────────────────── */
+        ExportDataPanel(themeState = themeState)
+
         /* ── Sobre la app ────────────────────────────────────────── */
         SolidPanel(
             contentColor = scheme.onSurface

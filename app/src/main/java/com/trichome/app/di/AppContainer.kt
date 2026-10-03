@@ -2,6 +2,7 @@ package com.trichome.app.di
 
 import android.app.Application
 import com.trichome.app.data.database.AppDatabase
+import com.trichome.app.data.export.DataExportRepository
 import com.trichome.app.data.prefs.AppearanceSettingsRepository
 import com.trichome.app.data.prefs.BreedingProgressRepository
 import com.trichome.app.data.prefs.OnboardingRepository
@@ -37,6 +38,9 @@ interface AppContainer {
     val tentRepository: TentRepository
     val protocolRepository: ProtocolRepository
     val stageEntryRepository: StageEntryRepository
+
+    /** The two writes behind "Cambiar de fase" and "Finalizar cultivo". */
+    val growStageRepository: GrowStageRepository
     val eventRepository: EventRepository
     val superCycleRepository: SuperCycleRepository
     val achievementRepository: AchievementRepository
@@ -59,6 +63,16 @@ interface AppContainer {
 
     /** Short alias used by the diagnosis ViewModel. */
     val diagnosisContent: DiagnosisContentRepository
+
+    /**
+     * Builds and writes the JSON export.
+     *
+     * A repository rather than a service because it is data assembly with one IO step at
+     * the end, and the whole of it resolves through the same [database] the rest of the app
+     * uses. It is the only thing in this container that writes a file, and the only path
+     * that resolves a directory outside the app's own data.
+     */
+    val dataExportRepository: DataExportRepository
 }
 
 class DefaultAppContainer(app: Application) : AppContainer {
@@ -88,7 +102,28 @@ class DefaultAppContainer(app: Application) : AppContainer {
     override val protocolRepository: ProtocolRepository by lazy {
         ProtocolRepository(database.protocolDao(), database.protocolStageDao())
     }
-    override val stageEntryRepository: StageEntryRepository by lazy { StageEntryRepository(database.stageEntryDao()) }
+    override val stageEntryRepository: StageEntryRepository by lazy {
+        StageEntryRepository(database.stageEntryDao())
+    }
+
+    /**
+     * Crop stage control: the transition and the finalize writes.
+     *
+     * Takes the database rather than just its DAOs because both writes are transactions:
+     * a transition has to close the open entry, insert the next one and mirror
+     * `plants.currentStage` together, and three separate calls is exactly how a timeline
+     * ends up with no open stage or two of them.
+     */
+    override val growStageRepository: GrowStageRepository by lazy {
+        GrowStageRepository(
+            stageDao = database.stageEntryDao(),
+            plantDao = database.plantDao(),
+            eventDao = database.eventDao(),
+            protocolDao = database.protocolDao(),
+            protocolStageDao = database.protocolStageDao(),
+            database = database
+        )
+    }
     override val eventRepository: EventRepository by lazy { EventRepository(database.eventDao()) }
     override val superCycleRepository: SuperCycleRepository by lazy { SuperCycleRepository(database.superCycleDao(), database.plantDao()) }
     override val achievementRepository: AchievementRepository by lazy { AchievementRepository(database.achievementDao()) }
@@ -101,6 +136,21 @@ class DefaultAppContainer(app: Application) : AppContainer {
     override val entourageContentRepository: EntourageContentRepository by lazy { EntourageContentRepository(app) }
     override val diagnosisContent: DiagnosisContentRepository get() = diagnosisContentRepository
 
+    override val dataExportRepository: DataExportRepository by lazy {
+        DataExportRepository(
+            plantDao = database.plantDao(),
+            tentDao = database.tentDao(),
+            eventDao = database.eventDao(),
+            stageEntryDao = database.stageEntryDao(),
+            protocolDao = database.protocolDao(),
+            protocolStageDao = database.protocolStageDao(),
+            reminderDao = database.reminderDao(),
+            superCycleDao = database.superCycleDao(),
+            achievementDao = database.achievementDao(),
+            breedingDao = database.breedingDao()
+        )
+    }
+
     override val growRepository: GrowRepository by lazy {
         GrowRepository(
             plantRepository = plantRepository,
@@ -112,7 +162,8 @@ class DefaultAppContainer(app: Application) : AppContainer {
             achievementRepository = achievementRepository,
             reminderRepository = reminderRepository,
             breedingRepository = breedingRepository,
-            journalRepository = journalRepository
+            journalRepository = journalRepository,
+            growStageRepository = growStageRepository
         )
     }
 }

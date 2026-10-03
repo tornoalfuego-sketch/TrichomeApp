@@ -21,7 +21,17 @@ class GrowRepository(
     val achievementRepository: AchievementRepository,
     val reminderRepository: ReminderRepository,
     val breedingRepository: BreedingRepository,
-    val journalRepository: JournalRepository
+    val journalRepository: JournalRepository,
+    /**
+     * Stage transitions and finalization, as one unit.
+     *
+     * The transition is a close plus an insert plus a cache update, and all three have to
+     * land together — see `StageEntryRepository.applyTransition`. Exposing it here rather
+     * than leaving each screen to reach for `stageEntryRepository` is what stops a fourth
+     * caller from writing the new entry without closing the previous one, which is the one
+     * write in this app that silently corrupts the record of what happened to a plant.
+     */
+    val growStageRepository: GrowStageRepository
 ) {
 
     fun allPlants(): Flow<List<Plant>> = plantRepository.getAllPlants()

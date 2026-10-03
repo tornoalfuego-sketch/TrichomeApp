@@ -15,9 +15,13 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.trichome.app.data.entity.GrowEvent
 import com.trichome.app.data.entity.Plant
+import com.trichome.app.model.GrowStageCopy
+import com.trichome.app.model.GrowStagePlanner
 import com.trichome.app.model.Phase
 import com.trichome.app.model.PhotoperiodConfig
 import com.trichome.app.model.PlantCycleState
+import com.trichome.app.model.PlantFinalizationPlan
+import com.trichome.app.model.StageOptionSource
 import com.trichome.app.model.StageProgressEngine
 import com.trichome.app.model.SuperCycleEngine
 import com.trichome.app.model.SuperCycleResult
@@ -31,10 +35,25 @@ import com.trichome.app.ui.navigation.PROTOCOL_ID_ROUTE
 import com.trichome.app.ui.navigation.SUPER_CYCLE_ID_ROUTE
 import com.trichome.app.ui.navigation.JOURNAL_ID_ROUTE
 import com.trichome.app.ui.theme.TrichomeThemeState
+import com.trichome.app.viewmodel.GrowStageViewModel
 import com.trichome.app.viewmodel.PlantDetailUiState
 import com.trichome.app.viewmodel.PlantDetailViewModel
 import com.trichome.app.viewmodel.appViewModel
+import com.trichome.app.viewmodel.stageEntryDateLabelEs
+import com.trichome.app.viewmodel.stageLabelEs
 import kotlinx.coroutines.launch
+
+/**
+ * Whole days between two instants, floored.
+ *
+ * `StageProgressEngine.daysInGrow` is 1-based because a plant created today is on day one;
+ * a duration is not, and a stage entered today has lasted zero days rather than one. So this
+ * is a separate function rather than a reused one with an off-by-one adjustment at the call
+ * site — the off-by-one adjustment at the call site is the bug this codebase already fixed
+ * once, in `daysInGrow`.
+ */
+private fun daysBetween(fromMillis: Long, toMillis: Long): Long =
+    ((toMillis - fromMillis).coerceAtLeast(0L)) / 86_400_000L
 
 /**
  * Plant detail. `daysInGrow` uses [StageProgressEngine.daysInGrow] — created
@@ -80,6 +99,25 @@ fun PlantDetailScreen(
     var migrationState by remember { mutableStateOf<PlantCycleState?>(null) }
     var migrationError by remember { mutableStateOf<String?>(null) }
     val tents by vm.tents.collectAsState()
+
+    // ── Crop stage control ────────────────────────────────────────────
+    //
+    // Three actions, one panel, and the dialogs hoisted here because they need the plant and
+    // the ViewModel rather than the header content.
+    //
+    // Both flags are snapshot state, the same discipline as
+    // `rememberDestructiveConfirmation`: a plain `var` would not invalidate the composition
+    // and the dialog would not appear until something else forced a recomposition.
+    val stageVm = appViewModel { GrowStageViewModel(it) }
+    var changingStage by remember { mutableStateOf(false) }
+    var finalizing by remember { mutableStateOf(false) }
+    var finalizePlan by remember { mutableStateOf<PlantFinalizationPlan?>(null) }
+    var stageNotice by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(plantId) {
+        stageVm.load(plantId)
+        stageVm.observeTimeline(plantId)
+    }
 
     val deleteConfirmation = rememberDestructiveConfirmation<Plant>(
         title = { "Eliminar planta" },
@@ -226,6 +264,17 @@ fun PlantDetailScreen(
                         superCycleResult = vm.superCycleResult,
                         events = vm.events,
                         accent = accent,
+                        stageVm = stageVm,
+                        onChangeStage = { changingStage = true },
+                        onFinalize = {
+                            // The plan is resolved before the dialog opens so the counts
+                            // ("3 eventos de bitácora") are the real ones, not the zeros a
+                            // dialog rendered from an unresolved read would show.
+                            scope.launch {
+                                finalizePlan = stageVm.planFinalization(plantId)
+                                finalizing = finalizePlan != null
+                            }
+                        }
                     )
                 }
             }
@@ -275,6 +324,65 @@ fun PlantDetailScreen(
         }
     }
 
+    // ── Crop stage dialogs ───────────────────────────────────────────
+    //
+    // Both clear their flag *before* the write: the write recomposes, and a dialog still on
+    // screen for that frame is a second target for a double tap. A double-tapped stage
+    // change writes two entries; a double-tapped finalize is harmless but still wrong.
+    if (changingStage && plant != null) {
+        ChangeStageDialog(
+            options = stageVm.options,
+            currentStage = plant.currentStage,
+            sourceLabelEs = stageVm.options.firstOrNull()?.source?.labelEs
+                ?: StageOptionSource.LIFECYCLE.labelEs,
+            reasonEs = stageVm.lastPlan?.takeIf { !it.isApplied }?.reasonEs,
+            accent = accent,
+            onDismiss = { changingStage = false },
+            onConfirm = { option ->
+                changingStage = false
+                stageVm.changeStage(plant.id, option) { plan, ok ->
+                    stageNotice = when {
+                        plan == null -> null
+                        !ok && plan.isApplied ->
+                            "No se pudo guardar el cambio de etapa."
+                        !ok -> plan.reasonEs
+                        else -> GrowStageCopy.transitionAppliedEs(plan)
+                    }
+                }
+            }
+        )
+    }
+
+    finalizePlan?.takeIf { finalizing }?.let { plan ->
+        FinalizeGrowDialog(
+            bodyEs = GrowStagePlanner.finalizeDialogBodyEs(plan),
+            accent = accent,
+            onDismiss = { finalizing = false; finalizePlan = null },
+            onConfirm = {
+                finalizing = false
+                stageVm.finalizePlant(plan) { written, ok ->
+                    finalizePlan = null
+                    stageNotice = if (ok && written != null) {
+                        written.confirmationEs
+                    } else {
+                        "No se pudo finalizar el cultivo. No se ha borrado nada."
+                    }
+                }
+            }
+        )
+    }
+
+    stageNotice?.let { message ->
+        SolidPanel {
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(16.dp)
+            )
+        }
+    }
+
     if (editing && plant != null) {
         PlantEditDialog(
             plant = plant,
@@ -305,8 +413,12 @@ private fun PlantDetailContent(
     superCycleResult: SuperCycleResult?,
     events: List<GrowEvent>,
     accent: Color,
+    stageVm: GrowStageViewModel,
+    onChangeStage: () -> Unit,
+    onFinalize: () -> Unit
 ) {
     val plant = success.plant
+    val zone = remember { java.time.ZoneId.systemDefault() }
 
     // ── Header info ─────────────────────────────────────────────────────
     SolidPanel {
@@ -395,6 +507,41 @@ private fun PlantDetailContent(
                 )
             }
         }
+    }
+
+    // ── Crop stage control ───────────────────────────────────────────────
+    //
+    // The panel is built from the ViewModel's resolved state rather than from local
+    // strings, so the timeline wording, the archived banner and the transition confirmation
+    // all come from `GrowStageCopy` and `GrowStagePlanner` — which is what lets a JVM test
+    // assert that this screen authors no Spanish of its own.
+    SolidPanel {
+        GrowStagePanel(
+            currentStageLabelEs = stageLabelEs(plant.currentStage),
+            timelineLinesEs = stageVm.timeline.map { entry ->
+                if (entry.exitedAt == null) {
+                    GrowStageCopy.openEntryEs(
+                        stageName = entry.stageName,
+                        daysInStage = daysBetween(entry.enteredAt, System.currentTimeMillis())
+                    )
+                } else {
+                    GrowStageCopy.closedEntryEs(
+                        stageName = entry.stageName,
+                        enteredLabelEs = stageEntryDateLabelEs(entry.enteredAt, zone),
+                        exitedLabelEs = stageEntryDateLabelEs(entry.exitedAt, zone),
+                        daysInStage = daysBetween(entry.enteredAt, entry.exitedAt)
+                    )
+                }
+            },
+            timelineEmptyEs = GrowStageCopy.TIMELINE_EMPTY_ES,
+            timelineHintEs = GrowStageCopy.TIMELINE_HINT_ES,
+            archivedBannerEs = GrowStageCopy.ARCHIVED_BANNER_ES,
+            archivedChipEs = GrowStageCopy.ARCHIVED_CHIP_ES,
+            isArchived = !plant.isActive,
+            onChangeStage = onChangeStage,
+            onFinalize = onFinalize,
+            accent = accent
+        )
     }
 
     // ── Latest events ───────────────────────────────────────────────────

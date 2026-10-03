@@ -328,3 +328,123 @@ val MIGRATION_3_4: Migration = object : Migration(3, 4) {
         PROTOCOL_V4_STATEMENTS.forEach { statement -> db.execSQL(statement) }
     }
 }
+
+/**
+ * One column added to `grow_events` by [MIGRATION_4_5].
+ *
+ * [table] is a field rather than being derived from the class name, because the
+ * second migration in this file adds to a different table and the test that audits
+ * both has to be able to say which statement belongs to which table. Same shape as
+ * [ProtocolColumnAddition], which was extracted from its own migration for the same
+ * reason: one list the migration and the audit read, rather than two copies of the
+ * same strings that can drift.
+ */
+data class GrowEventColumnAddition(
+    val columnName: String,
+    val sqlType: String,
+    val table: String = "grow_events"
+) {
+    /**
+     * The `ALTER TABLE` that adds this column.
+     *
+     * `DEFAULT NULL` is written out rather than left implicit so the statement and the
+     * entity's `@ColumnInfo(defaultValue = "NULL")` are byte-identical in what they
+     * declare. Room compares a column's declared default against `PRAGMA
+     * table_info` at open time, and a statement that added the column with no
+     * `DEFAULT` clause at all would leave the two disagreeing — which is a crash on
+     * the user's next launch, before any screen draws.
+     */
+    val addColumnStatement: String =
+        "ALTER TABLE `$table` ADD COLUMN `$columnName` $sqlType DEFAULT NULL"
+}
+
+/**
+ * Every column [MIGRATION_4_5] adds to `grow_events`, in the order it adds them.
+ *
+ * ## Why the VPD history is NOT a new table
+ *
+ * `grow_events.vpd` has existed since `MIGRATION_1_2` and it already **is** the VPD
+ * history. The chart needs one number and one instant per reading, per plant, and
+ * that is exactly a query over this table:
+ *
+ * ```
+ * SELECT timestamp, vpd, vpdSource, vpdLeafOffset, temperature, humidity
+ * FROM grow_events
+ * WHERE plantId = :plantId AND vpd IS NOT NULL AND timestamp BETWEEN :from AND :to
+ * ORDER BY timestamp ASC
+ * ```
+ *
+ * `EventDao.watchVpdHistory` is that statement. Every column the chart plots or
+ * labels is already on the row: the value, the moment, and — after this migration —
+ * the provenance and the offset that produced it. A `vpd_history` table would hold a
+ * *copy* of the same reading under the same timestamp, and two tables holding one
+ * truth is the shape of the F1 boiling point and the F2 temperature models, both of
+ * which this project already paid for once.
+ *
+ * ## What the table genuinely could not answer
+ *
+ * Where the number came from. This screen logs two different quantities into one
+ * `REAL` column: a reading off the grower's own hygrometer, and a value the app
+ * derived from a temperature and a humidity they typed. Before v5 there was nowhere
+ * to record which, so a chart could not keep them apart — and plotting an offline
+ * estimate on the same axis as a logged reading with no distinction is the exact
+ * defect `EstimatedClimate` already documents, in a new place.
+ *
+ * So the migration adds the two columns that record the origin, and nothing else.
+ */
+val GROW_EVENT_V5_ADDED_COLUMNS: List<GrowEventColumnAddition> = listOf(
+    // "MEASURED" / "CALCULATED". NULL on every pre-v5 row, and NULL means the origin
+    // is UNKNOWN, never "measured": some pre-v5 numbers were typed by the grower and
+    // some were derived by an older build, and the column cannot tell which.
+    GrowEventColumnAddition("vpdSource", "TEXT"),
+    // The leaf-to-air offset a calculated VPD was produced with, so the number can be
+    // reproduced instead of trusted. Null for a measured reading.
+    GrowEventColumnAddition("vpdLeafOffset", "REAL")
+)
+
+/**
+ * The statements [MIGRATION_4_5] runs, in order.
+ *
+ * Exposed so the test can assert what the migration does — two additions and
+ * nothing else — without reflecting on the `Migration` instance, which would only
+ * prove that an object exists.
+ */
+val GROW_EVENT_V5_STATEMENTS: List<String> =
+    GROW_EVENT_V5_ADDED_COLUMNS.map { it.addColumnStatement }
+
+/**
+ * Explicit migration from schema v4 to v5.
+ *
+ * v4 (F10b): `grow_events` gains the VPD provenance columns — `vpdSource` and
+ * `vpdLeafOffset` — so a logged reading stays distinguishable from a calculated one.
+ *
+ * ## Why this is two `ADD COLUMN`s and nothing else
+ *
+ * Same reasoning as [MIGRATION_3_4]. Both columns are new, nullable, and default to
+ * NULL, and adding a nullable column is the one schema change SQLite performs in
+ * place. No table is rebuilt, no `NOT NULL` has to be dropped, so no row is
+ * copied through a temporary table and no id can be reassigned on the way.
+ *
+ * ## Why the rows are never touched
+ *
+ * There is no `DROP`, no `DELETE`, no `UPDATE` and no rebuild here. Every existing
+ * `grow_events` row keeps its 25 original columns byte for byte, because not one
+ * statement in this migration can reach them. The two new columns read back NULL on
+ * those rows, which is the correct outcome: a reading logged before v5 genuinely has
+ * no recorded origin, and `VpdProvenance.UNKNOWN` says so rather than guessing.
+ *
+ * Defaulting the new columns to `'MEASURED'` would be the worst outcome available —
+ * every pre-v5 derived number would be published as a sensor reading, which is the
+ * failure this whole column exists to prevent.
+ *
+ * ## What this migration does not do
+ *
+ * It adds no table. It does not add a per-stage VPD band to `protocol_stages`: real
+ * agronomy belongs there, but no screen in this phase reads one, and a column no
+ * query can populate is a column that describes a shape the data does not have.
+ */
+val MIGRATION_4_5: Migration = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        GROW_EVENT_V5_STATEMENTS.forEach { statement -> db.execSQL(statement) }
+    }
+}

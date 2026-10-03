@@ -45,6 +45,41 @@ class PlantRepository(private val dao: PlantDao) {
         dao.updatePlant(next.copy(sortOrder = plant.sortOrder))
         dao.updatePlant(plant.copy(sortOrder = next.sortOrder))
     }
+
+    /** A plant's journal row count lives on [EventRepository]; nothing here counts events. */
+
+    /**
+     * Archives a plant: `isActive = false`, nothing else.
+     *
+     * ## What "finalizar cultivo" writes, and what it must never write
+     *
+     * It writes **one column**: `plants.isActive`. That is the terminal state, and it is
+     * a state on the row rather than the row's absence.
+     *
+     * There is no `deletePlant` call anywhere on this path, and that is the whole
+     * design. `grow_events` carries `ON DELETE CASCADE` from `plants`, so deleting the
+     * plant would take the grower's entire journal with it — the one thing this app must
+     * never do, and the reason `PlantDeletionNotice` has to warn about it at all. Every
+     * other table keyed to the plant (`protocols`, `stage_entries`, `reminders`,
+     * `super_cycle_configs`) carries a `plantId` with no foreign key, so a delete would
+     * additionally leave those rows as orphans no screen could reach: the outcome the
+     * `getUnassignedPlants` defect is a documented example of.
+     *
+     * Archiving loses nothing, hides nothing, and is reversible in the data model even
+     * though the UI treats it as one-way.
+     */
+    suspend fun archivePlant(plantId: Long) = dao.setPlantActive(plantId, false)
+
+    /**
+     * Un-archives a plant. Not reachable from the UI.
+     *
+     * Present because the *data model* has to be able to, so "archived is terminal" is a
+     * product decision this phase made in the interface rather than an accident of there
+     * being no way back. `AGENTS.md` §11 asks for the loss budget to be provably zero, and
+     * an irreversible write with no inverse in the model is harder to argue about than
+     * one whose inverse simply has no button.
+     */
+    suspend fun setActive(plantId: Long, isActive: Boolean) = dao.setPlantActive(plantId, isActive)
 }
 
 class TentRepository(private val dao: GrowTentDao) {
@@ -53,6 +88,15 @@ class TentRepository(private val dao: GrowTentDao) {
     suspend fun insertTent(tent: GrowTent): Long = dao.insertTent(tent)
     suspend fun updateTent(tent: GrowTent) = dao.updateTent(tent)
     suspend fun deleteTent(tent: GrowTent) = dao.deleteTent(tent)
+
+    /**
+     * Tents as a snapshot.
+     *
+     * For the export picker, which reads once and closes. A `Flow` collected at every open
+     * would hold a collector for a dialog that is already gone, and `getAllTents` is observed
+     * for the screens that need a live list.
+     */
+    suspend fun getAllTentsSnapshot(): List<GrowTent> = dao.getAllTentsSnapshot()
 }
 
 class ProtocolRepository(
@@ -84,6 +128,25 @@ class StageEntryRepository(private val dao: StageEntryDao) {
     fun watchStageEntries(plantId: Long): Flow<List<StageEntry>> = dao.watchStageEntries(plantId)
     suspend fun insertStageEntry(entry: StageEntry): Long = dao.insertStageEntry(entry)
     suspend fun getLatestStageEntry(plantId: Long): StageEntry? = dao.getLatestStageEntry(plantId)
+
+    /** The whole timeline, oldest first, observed. */
+    fun watchStageTimeline(plantId: Long): Flow<List<StageEntry>> = dao.watchStageTimeline(plantId)
+
+    suspend fun countStageEntries(plantId: Long): Int = dao.countStageEntries(plantId)
+
+    /**
+     * Closes the plant's open entry at [exitedAt].
+     *
+     * The write behind a finalize. Kept on this repository, and separate from
+     * [GrowStageRepository.applyTransition], so archiving can close a stage entry while
+     * having no path at all to insert one — the guarantee that an archive never looks like
+     * a stage change is a structural property here, not a convention.
+     *
+     * @return the number of rows closed. `0` means the plant had no open entry, which is a
+     *   normal state.
+     */
+    suspend fun closeOpenEntries(plantId: Long, exitedAt: Long): Int =
+        dao.closeOpenStageEntries(plantId, exitedAt)
 }
 
 class EventRepository(private val dao: EventDao) {
@@ -108,6 +171,31 @@ class EventRepository(private val dao: EventDao) {
         dao.getEventsByTypeInRange(plantId, type, from, to)
 
     suspend fun getActiveEpochDays(): List<Long> = dao.getActiveEpochDays()
+
+    /**
+     * The plant's VPD history over a window, observed.
+     *
+     * The history is `grow_events.vpd` read directly — there is no separate table, and
+     * `MIGRATION_4_5` adds none. See [EventDao.watchVpdHistory] for the window's bounds.
+     */
+    fun watchVpdHistory(plantId: Long, from: Long, to: Long): Flow<List<GrowEvent>> =
+        dao.watchVpdHistory(plantId, from, to)
+
+    /** One-shot form of [watchVpdHistory], for the chart's first load. */
+    suspend fun getVpdHistory(plantId: Long, from: Long, to: Long): List<GrowEvent> =
+        dao.getVpdHistory(plantId, from, to)
+
+    /** The plant's events as a snapshot, for the exporter. */
+    suspend fun getEventsForExport(plantId: Long): List<GrowEvent> = dao.getEventsForExport(plantId)
+
+    /**
+     * How many journal rows a plant has.
+     *
+     * The finalize confirmation quotes it, so the grower sees how much history an archive is
+     * keeping rather than being asked to trust that it is. `COUNT(*)` on the plant's own rows
+     * rather than on the table.
+     */
+    suspend fun countEvents(plantId: Long): Int = dao.countEventsForPlant(plantId)
 }
 
 /**

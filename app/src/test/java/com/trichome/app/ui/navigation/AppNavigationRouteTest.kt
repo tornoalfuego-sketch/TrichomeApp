@@ -73,7 +73,7 @@ class AppNavigationRouteTest {
             "home", "tents", "journal", "diagnosis", "settings",
             "calendar", "charts", "terpenes", "breeding",
             PLANT_ID_ROUTE, PROTOCOL_ID_ROUTE, SUPER_CYCLE_ID_ROUTE,
-            JOURNAL_ID_ROUTE, TERPENE_ID_ROUTE, ENTOURAGE_ROUTE
+            JOURNAL_ID_ROUTE, TERPENE_ID_ROUTE, VPD_ID_ROUTE, ENTOURAGE_ROUTE
         )
         assertEquals(
             "DECLARED_ROUTES is out of sync with the graph",
@@ -90,7 +90,7 @@ class AppNavigationRouteTest {
         // interpolation, which a text scan would not resolve.
         val values = listOf(
             PLANT_ID_ROUTE, PROTOCOL_ID_ROUTE, SUPER_CYCLE_ID_ROUTE,
-            JOURNAL_ID_ROUTE, TERPENE_ID_ROUTE
+            JOURNAL_ID_ROUTE, TERPENE_ID_ROUTE, VPD_ID_ROUTE
         )
         assertEquals(
             "two route constants resolve to the same string",
@@ -112,7 +112,8 @@ class AppNavigationRouteTest {
             "PROTOCOL_ID_ROUTE" to PROTOCOL_ID_ROUTE,
             "SUPER_CYCLE_ID_ROUTE" to SUPER_CYCLE_ID_ROUTE,
             "JOURNAL_ID_ROUTE" to JOURNAL_ID_ROUTE,
-            "TERPENE_ID_ROUTE" to TERPENE_ID_ROUTE
+            "TERPENE_ID_ROUTE" to TERPENE_ID_ROUTE,
+            "VPD_ID_ROUTE" to VPD_ID_ROUTE
         ).forEach { (name, route) ->
             assertTrue(
                 "$name is declared as \"$route\" but no composable uses it: " +
@@ -142,7 +143,8 @@ class AppNavigationRouteTest {
             """navArgument\(\s*PLANT_ID_ARG\s*\)\s*\{\s*type\s*=\s*NavType\.LongType\s*}"""
         ).findAll(text).count()
         val longRoutes = listOf(
-            PLANT_ID_ROUTE, PROTOCOL_ID_ROUTE, SUPER_CYCLE_ID_ROUTE, JOURNAL_ID_ROUTE
+            PLANT_ID_ROUTE, PROTOCOL_ID_ROUTE, SUPER_CYCLE_ID_ROUTE, JOURNAL_ID_ROUTE,
+            VPD_ID_ROUTE
         )
         assertEquals(
             "every plant-scoped route must declare NavType.LongType, otherwise " +
