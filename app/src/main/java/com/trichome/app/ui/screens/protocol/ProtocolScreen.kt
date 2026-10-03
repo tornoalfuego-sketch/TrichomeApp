@@ -1,6 +1,7 @@
 package com.trichome.app.ui.screens.protocol
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -300,7 +301,17 @@ private fun FieldGroupBlock(group: ProtocolFieldGroup) {
     Spacer(Modifier.height(6.dp))
 }
 
-/** Dialog to create/edit a protocol and its ordered stage blocks. */
+/**
+ * Dialog to create/edit a protocol and its ordered stage blocks.
+ *
+ * `FlowRow` rather than `Row` because the four photoperiod chips do not fit on one
+ * line: "18/6", "12/12" and "24/0" are four characters each and "CUSTOM" is six, so
+ * the last chip absorbed the overflow and wrapped one letter per line — verified on a
+ * device at 1080x2340, where it read vertically as "CU ST O M". This is the same
+ * unweighted-`Row` defect that once clipped "Bitácora" on the plant screen; a chip
+ * that cannot say which preset it is has stopped being a control.
+ */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ProtocolEditorDialog(
     protocol: Protocol?,
@@ -364,8 +375,13 @@ private fun ProtocolEditorDialog(
                     singleLine = true
                 )
 
-                // Photoperiod presets
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                // Photoperiod presets. Wrapping, not a single line: see the KDoc on
+                // this dialog for why "custom" cannot share a row with the three
+                // numeric presets at the largest text size.
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
                     listOf("18/6", "12/12", "24/0", "custom").forEach { preset ->
                         FilterChip(
                             selected = presetType == preset,

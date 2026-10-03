@@ -1,6 +1,7 @@
 package com.trichome.app.ui.components
 
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -390,16 +391,29 @@ private fun PathBuilder.circle(cx: Float, cy: Float, r: Float) {
  * where the label beside it already carries the name; a `FilterChip` does not, so
  * this takes one.
  *
- * The tint comes from the caller. The stroke is drawn in black and recoloured by
- * `Icon`, which is what lets the figure follow the theme instead of fighting it —
- * one of the three reasons the emoji went.
+ * ## The tint is not optional, and this is the reason
+ *
+ * The stroke is authored in black (see `addStroke`). That is the right way to *store*
+ * a vector, but it does NOT mean the figure follows the theme on its own: Compose's
+ * `Icon` installs a `ColorFilter` only when `tint` is a real colour. With
+ * `tint = Color.Unspecified` it installs none, so every one of the 184 figures rendered
+ * as pure `#000000`.
+ *
+ * Measured on the dark palette that is `#000000` on a `#0D111C` chip — **1.11:1**,
+ * where the label beside it sat at **11.56:1**. WCAG 1.4.11 asks 3:1 for a non-text
+ * graphic, so the figures were drawn correctly and then made invisible.
+ *
+ * `LocalContentColor.current` is the default rather than `Color.Unspecified` so the
+ * untinted state is unrepresentable. Inside a `FilterChip` label that is the same
+ * colour as the label text, which is exactly what a figure next to a word should be.
+ * A caller may still pass an explicit tint, but it has to be a colour to be forgotten.
  */
 @Composable
 fun DiagnosisGlyphIcon(
     glyph: DiagnosisGlyph,
     contentDescription: String? = glyph.contentDescriptionEs,
     modifier: Modifier = Modifier,
-    tint: Color = Color.Unspecified
+    tint: Color = LocalContentColor.current
 ) {
     Icon(
         imageVector = DiagnosisGlyphVectors.vectorFor(glyph),

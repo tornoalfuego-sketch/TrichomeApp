@@ -191,24 +191,34 @@ fun PlantDetailScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Two lines, not one. Three Spanish labels plus an emoji in three
-                // equal columns is about 340dp each, and at the largest text size
-                // the user can pick a single line either clipped mid-word ("Bitác
-                // ora") or overflowed into its neighbour. Letting it wrap makes the
-                // row a little taller and the label whole, which is the trade the
-                // user asked for: the label has to be readable.
+                // One line, `labelMedium`, no emoji, and 8dp of horizontal content
+                // padding instead of Material's default 24dp. Measured on the device
+                // at 1080x2340: three equal columns give each button 105dp, and the
+                // default padding was eating **42dp of it** — forty percent of the
+                // button — leaving 63dp of text width, which "Protocolos" and
+                // "SuperCiclo" both exceed by about a character. Every arrangement
+                // tried before this was worse than the last: one line at `labelLarge`
+                // clipped the final "o" ("SuperCicl"), two lines broke the word in the
+                // middle ("SuperCicl" / "o", "Protocol" / "os"), and shrinking the type
+                // on its own left the words still a character too wide. The padding was
+                // the defect; the words are ten letters and they are staying whole.
+                // An emoji is decoration and this row has no space to spend on it —
+                // the sibling buttons on this same screen carry none either.
                 Button(
                     onClick = { navController.navigate(PROTOCOL_ID_ROUTE.replace("{${PLANT_ID_ARG}}", "$plantId")) },
-                    modifier = Modifier.weight(1f)
-                ) { Text("📋 Protocolos", maxLines = 2) }
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(horizontal = 8.dp)
+                ) { Text("Protocolos", maxLines = 1, style = MaterialTheme.typography.labelMedium) }
                 Button(
                     onClick = { navController.navigate(SUPER_CYCLE_ID_ROUTE.replace("{${PLANT_ID_ARG}}", "$plantId")) },
-                    modifier = Modifier.weight(1f)
-                ) { Text("☀️ SuperCiclo", maxLines = 2) }
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(horizontal = 8.dp)
+                ) { Text("SuperCiclo", maxLines = 1, style = MaterialTheme.typography.labelMedium) }
                 Button(
                     onClick = { navController.navigate(JOURNAL_ID_ROUTE.replace("{${PLANT_ID_ARG}}", "$plantId")) },
-                    modifier = Modifier.weight(1f)
-                ) { Text("📒 Bitácora", maxLines = 2) }
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(horizontal = 8.dp)
+                ) { Text("Bitácora", maxLines = 1, style = MaterialTheme.typography.labelMedium) }
             }
         }
     ) { padding ->
