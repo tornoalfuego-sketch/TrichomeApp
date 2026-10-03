@@ -115,12 +115,22 @@ class VpdProvenanceMigrationContractTest {
         )
     }
 
+    /**
+     * The database has moved past v5, and `5.json` is still v5.
+     *
+     * This file owns the v4 → v5 upgrade and the artefact it was validated against. The
+     * database is now at 6 — `StageVpdTargetMigrationContractTest` owns that assertion —
+     * so the two facts are asserted separately rather than by one number that goes stale
+     * whenever the next phase lands. `5.json` in particular must not be regenerated with
+     * a new `version`, or every assertion in this file would be comparing against an
+     * artefact that never existed.
+     */
     @Test
-    fun theDatabaseVersionIsFive() {
-        assertEquals(
-            "APP_DATABASE_VERSION must match the schema Room exported and validates against",
-            5,
-            APP_DATABASE_VERSION
+    fun theDatabaseHasMovedOnAndSchemaFiveIsStillFive() {
+        assertTrue(
+            "APP_DATABASE_VERSION must be at least 5; the v4 -> v5 path is what this " +
+                "file audits and it cannot have been renumbered",
+            APP_DATABASE_VERSION >= 5
         )
         assertEquals(
             "AppDatabase.VERSION must not carry its own copy of the number",
@@ -348,19 +358,19 @@ class VpdProvenanceMigrationContractTest {
     }
 
     /**
-     * The stage tables keep the shape F10a asserted.
+     * The stage tables keep their v4 shape **through v5**.
      *
-     * `ProtocolMigrationContractTest.theStageTablesAreUntouchedByThisPhase` pinned these
-     * between v3 and v4. A per-stage VPD band is real agronomy that belongs here, but no
-     * screen in this phase reads one, so adding it would create a column that describes a
-     * shape the data does not have.
+     * `ProtocolMigrationContractTest` pinned these between v3 and v4. A per-stage VPD band
+     * is real agronomy that belongs on `protocol_stages`, and it arrives with v6 — its own
+     * migration, audited by `StageVpdTargetMigrationContractTest`. This assertion is about
+     * v5 only: F10b was about `grow_events` provenance, so nothing here may have moved.
      */
     @Test
-    fun theStageTablesKeepTheirV4Shape() {
+    fun theStageTablesKeepTheirV4ShapeThroughV5() {
         listOf("protocol_stages", "stage_entries").forEach { table ->
             assertEquals(
-                "`$table` must not change in v5; a per-stage VPD band is its own migration " +
-                    "with its own screen",
+                "`$table` must not change in v5; the per-stage VPD band is a separate " +
+                    "migration with its own test",
                 entityFields(4, table),
                 entityFields(5, table)
             )

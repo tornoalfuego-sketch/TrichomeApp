@@ -1,6 +1,7 @@
 package com.trichome.app.model
 
 import com.trichome.app.data.entity.Protocol
+import com.trichome.app.data.entity.ProtocolStage
 import com.trichome.app.data.model.GrowRange
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -227,5 +228,140 @@ class ProtocolExtendedFieldsTest {
     fun anUnsetBandFormatsToNothingRatherThanToZero() {
         assertNull(ProtocolExtendedFields.formatRange(null, 1))
         assertNull(ProtocolExtendedFields.formatRange(null, 0))
+    }
+
+    /* ── Per-stage targets (schema v6) ───────────────────────────────────────
+     *
+     * The same "no number for an unset field" contract, one level down: a stage
+     * written before schema v6 has no `vpdTarget`, and the row it produces has to
+     * read "Sin definir" rather than `0,00 – 0,00`.
+     */
+
+    private fun stage(
+        name: String,
+        sortOrder: Int,
+        target: GrowRange? = null
+    ) = ProtocolStage(
+        protocolId = 1L,
+        stageName = name,
+        durationDays = 30,
+        sortOrder = sortOrder,
+        vpdTarget = target
+    )
+
+    @Test
+    fun aStageWithNoTargetReadsSinDefinirAndCarriesNoNumber() {
+        // The three stages a real protocol already holds. None of them has a target,
+        // and none of them may render a band.
+        val row = protocolStageTargetRow(stage("Vegetativa", sortOrder = 1))
+
+        assertEquals("Sin definir", row.detailEs)
+        assertNull(
+            "`metricEs` must be null: a formatted number here would be rendered in the " +
+                "metric register and read as a target the grower declared",
+            row.metricEs
+        )
+    }
+
+    @Test
+    fun noUnsetStageTargetRendersAPlaceholderBand() {
+        // Same rule as `noUnfilledFieldRendersAPlaceholderNumber`, asserted over the
+        // whole stage list rather than one row: a `0,00 – 0,00` anywhere in this block
+        // is the defect.
+        val rows = protocolStageTargetGroups(
+            listOf(stage("Germinación", 0), stage("Vegetativa", 1), stage("Floración", 2))
+        ).flatMap { it.rows }
+
+        assertEquals(3, rows.size)
+        rows.forEach { row ->
+            assertEquals("Sin definir", row.detailEs)
+            assertNull(row.metricEs)
+        }
+    }
+
+    @Test
+    fun aDeclaredStageTargetRendersAsABandWithItsUnit() {
+        val row = protocolStageTargetRow(
+            stage("Floración", sortOrder = 2, target = GrowRange(1.0f, 1.4f))
+        )
+
+        assertEquals("1,00 – 1,40", row.metricEs)
+        assertEquals("kPa", row.detailEs)
+    }
+
+    @Test
+    fun theStageLabelIsTheStageNameSoTheRowsCanBeToldApart() {
+        val rows = protocolStageTargetGroups(
+            listOf(
+                stage("Germinación", 0, GrowRange(0.4f, 0.7f)),
+                stage("Floración", 2, GrowRange(1.0f, 1.4f))
+            )
+        ).flatMap { it.rows }
+
+        assertEquals(listOf("Germinación", "Floración"), rows.map { it.labelEs })
+    }
+
+    @Test
+    fun stageRowsFollowSortOrderNotQueryOrder() {
+        val shuffled = listOf(
+            stage("Floración", 2, GrowRange(1.0f, 1.4f)),
+            stage("Germinación", 0, GrowRange(0.4f, 0.7f)),
+            stage("Vegetativa", 1)
+        )
+
+        assertEquals(
+            listOf("Germinación", "Vegetativa", "Floración"),
+            protocolStageTargetGroups(shuffled).flatMap { it.rows }.map { it.labelEs }
+        )
+    }
+
+    @Test
+    fun twoStagesSharingASortOrderStillRenderInAFixedOrder() {
+        // `sortedBy` is stable, so without the name tiebreak the order would be the
+        // order the query happened to produce.
+        val one = listOf(stage("Vegetativa", 1), stage("Floración", 1))
+        assertEquals(
+            protocolStageTargetGroups(one).flatMap { it.rows }.map { it.labelEs },
+            protocolStageTargetGroups(one.reversed()).flatMap { it.rows }.map { it.labelEs }
+        )
+    }
+
+    @Test
+    fun aProtocolWithNoStagesGetsNoStageBlockAtAll() {
+        // Not an empty group: the card already says "Sin bloques de etapa", and a
+        // heading with nothing under it is noise.
+        assertTrue(protocolStageTargetGroups(emptyList()).isEmpty())
+    }
+
+    @Test
+    fun theStageBlockSaysItIsATargetAndNotAMeasurement() {
+        // The copy that keeps the number honest. Without it a band on a stage card reads
+        // as what the room is doing, which nothing in this app can know.
+        val note = protocolStageTargetGroups(listOf(stage("Vegetativa", 0))).single().noteEs
+
+        assertEquals(ProtocolExtendedFields.ETAPA_VPD_NOTA_ES, note)
+        assertTrue(ProtocolExtendedFields.ETAPA_VPD_NOTA_ES.contains("no una medición"))
+        assertTrue(
+            "the sentence has to name the offline estimate, not merely deny a sensor",
+            ProtocolExtendedFields.ETAPA_VPD_NOTA_ES.contains("offline")
+        )
+    }
+
+    @Test
+    fun theGrowWideBlockCarriesNoNote() {
+        // Only the stage block needs one. A default means the three header groups do
+        // not all pass null at every call site, and it means a header group cannot
+        // acquire a sentence by accident.
+        protocolFieldGroups(filled()).forEach { group ->
+            assertNull("${group.titleEs} must not carry a note", group.noteEs)
+        }
+    }
+
+    @Test
+    fun aStageBuiltFromDefaultsDeclaresNoTarget() {
+        // The reason the column is nullable: a new stage has no opinion about VPD, and
+        // this is the same assertion the migration's null default rests on.
+        val fresh = ProtocolStage(protocolId = 1L, stageName = "Crecimiento", durationDays = 14)
+        assertNull(fresh.vpdTarget)
     }
 }

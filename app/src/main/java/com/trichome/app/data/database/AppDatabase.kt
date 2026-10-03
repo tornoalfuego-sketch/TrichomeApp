@@ -16,7 +16,7 @@ import com.trichome.app.data.entity.*
  * a member of the class it annotates. Bumping the schema means adding a
  * `Migration` and bumping this one value; nothing else carries a version.
  */
-const val APP_DATABASE_VERSION: Int = 5
+const val APP_DATABASE_VERSION: Int = 6
 
 @Database(
     entities = [
@@ -72,7 +72,13 @@ abstract class AppDatabase : RoomDatabase() {
                 AppDatabase::class.java,
                 "trichome_app.db"
             )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                .addMigrations(
+                    MIGRATION_1_2,
+                    MIGRATION_2_3,
+                    MIGRATION_3_4,
+                    MIGRATION_4_5,
+                    MIGRATION_5_6
+                )
                 .build()
         }
     }

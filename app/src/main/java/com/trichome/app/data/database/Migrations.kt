@@ -441,10 +441,115 @@ val GROW_EVENT_V5_STATEMENTS: List<String> =
  *
  * It adds no table. It does not add a per-stage VPD band to `protocol_stages`: real
  * agronomy belongs there, but no screen in this phase reads one, and a column no
- * query can populate is a column that describes a shape the data does not have.
+ * query can populate is a column that describes a shape the data does not have. That
+ * one arrives with [MIGRATION_5_6], which is also its own migration and its own test.
  */
 val MIGRATION_4_5: Migration = object : Migration(4, 5) {
     override fun migrate(db: SupportSQLiteDatabase) {
         GROW_EVENT_V5_STATEMENTS.forEach { statement -> db.execSQL(statement) }
+    }
+}
+
+/**
+ * One column added to `protocol_stages` by [MIGRATION_5_6].
+ *
+ * The third member of the same family, and deliberately a separate type rather than
+ * a shared one. [ProtocolColumnAddition] hardcodes `protocols` and
+ * [GrowEventColumnAddition] defaults to `grow_events`; one generic
+ * `ColumnAddition(name, type, table)` would read better and would also let a stage
+ * column be appended to `PROTOCOL_V4_ADDED_COLUMNS` by accident, which is precisely
+ * the drift `ProtocolMigrationContractTest` exists to catch. A per-table type makes
+ * the wrong list unrepresentable at the type level.
+ */
+data class ProtocolStageColumnAddition(
+    val columnName: String,
+    val sqlType: String,
+    val table: String = "protocol_stages"
+) {
+    /**
+     * The `ALTER TABLE` that adds this column.
+     *
+     * `DEFAULT NULL` written out, for the same reason and with the same force as
+     * [GrowEventColumnAddition.addColumnStatement]: Room compares an entity column's
+     * declared default against `PRAGMA table_info` at open time, so a column added
+     * with no `DEFAULT` clause leaves the two disagreeing and the app fails to open.
+     */
+    val addColumnStatement: String =
+        "ALTER TABLE `$table` ADD COLUMN `$columnName` $sqlType DEFAULT NULL"
+}
+
+/**
+ * Every column [MIGRATION_5_6] adds to `protocol_stages`, in the order it adds them.
+ *
+ * This list is the whole migration, so the migration and
+ * `StageVpdTargetMigrationContractTest` read the same strings rather than two copies
+ * that can drift.
+ *
+ * One column, and it is the debt [MIGRATION_3_4] and [MIGRATION_4_5] each named as
+ * out of scope: the per-stage VPD band. It is a [com.trichome.app.data.model.GrowRange],
+ * stored as TEXT by the same `GrowRangeConverters` the protocol header already uses —
+ * a second band type or a second converter pair would be a second representation of
+ * one declared band, and the encoding would then be the only thing telling them apart.
+ *
+ * Nullable with a null default, so the three stages a real protocol already holds read
+ * back as "no target" rather than as a fabricated `0.0`.
+ */
+val PROTOCOL_STAGE_V6_ADDED_COLUMNS: List<ProtocolStageColumnAddition> = listOf(
+    // The band's kPa bounds, as the stored TEXT form "low:high". NOT NULL is impossible:
+    // an ALTER TABLE ADD COLUMN that is NOT NULL and has no value fails the upgrade on
+    // every existing protocol_stages row, which is all of them.
+    ProtocolStageColumnAddition("vpdTarget", "TEXT")
+)
+
+/**
+ * The statements [MIGRATION_5_6] runs, in order.
+ *
+ * Read from the column list above rather than written out here, so an auditor can
+ * check the statements by reading the list the migration iterates and not a second
+ * transcription of it.
+ */
+val PROTOCOL_STAGE_V6_STATEMENTS: List<String> =
+    PROTOCOL_STAGE_V6_ADDED_COLUMNS.map { it.addColumnStatement }
+
+/**
+ * Explicit migration from schema v5 to v6.
+ *
+ * v6 (F12): `protocol_stages` gains `vpdTarget`, the per-stage VPD band. F10a put
+ * the grow-wide band on the `protocols` header and said in its own KDoc that a
+ * per-stage band belongs on the stage table; that debt is paid here.
+ *
+ * ## Why this is one `ADD COLUMN` and nothing else
+ *
+ * Same reasoning as [MIGRATION_4_5]. The column is new, nullable and defaults to
+ * NULL, and adding a nullable column is the one schema change SQLite performs in
+ * place. Nothing here forces a table rebuild:
+ *
+ *  - `protocol_stages` has a foreign key and an index, and neither is touched — no
+ *    `NOT NULL` is dropped, no column is renamed, no type changes, so no `CREATE
+ *    TABLE …_new` / `INSERT SELECT` / `DROP` / `RENAME` cycle is required. A rebuild
+ *    would copy every stage row through a temporary table and is the shape that
+ *    silently reassigns ids on the way.
+ *
+ * ## Why the rows are never touched
+ *
+ * There is no `DROP`, no `DELETE`, no `UPDATE` and no rebuild. The `stage_entries`
+ * rows that reference stages by *name*, not by id, are unaffected as well, so a
+ * stage transition recorded before the upgrade still resolves after it.
+ *
+ * The new column reads back NULL on every existing stage, which is the correct
+ * outcome and not a placeholder: those stages were written before the app could
+ * record a per-stage target, and `null` says so. A default of `0.0:0.0` would
+ * publish a band of zero as something the grower wrote.
+ *
+ * ## What this migration does not do
+ *
+ * It adds no stage temperature or humidity target. The `protocols` header already
+ * declares four of those (schema 4) and a second copy with no stated precedence is
+ * two sources of truth, which is the F1/F2 defect this project has already paid for.
+ * It adds no table and no index. And it adds no second band type.
+ */
+val MIGRATION_5_6: Migration = object : Migration(5, 6) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        PROTOCOL_STAGE_V6_STATEMENTS.forEach { statement -> db.execSQL(statement) }
     }
 }

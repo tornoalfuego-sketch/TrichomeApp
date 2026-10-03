@@ -16,7 +16,7 @@ di/                         AppContainer (manual DI root)
 data/
   ├── entity/               Room entities
   ├── dao/                  Room DAOs
-  ├── database/             AppDatabase (v2) + MIGRATION_1_2
+  ├── database/             AppDatabase (v6) + MIGRATION_1_2 … MIGRATION_5_6
   ├── repository/           repositories + pure engines (DiagnosisEngine, PhotoDiagnosisEngine) + asset content
   └── prefs/                DataStore preferences (appearance, terpene progression, onboarding)
 domain/
@@ -199,7 +199,16 @@ enforces the content rules: ≥150 terpenes, unique ids, no dangling `pairsWith`
 every condition carrying an action plan, and **every condition reachable from
 the symptom picker** through its `symptomWeights` map.
 
-- **Instrumentation** (`app/src/androidTest`): `MigrationTest` creates a real v1 database with raw SQL, runs `MIGRATION_1_2`, and validates the upgraded schema + preserved data through Room.
+- **Instrumentation** (`app/src/androidTest`): `MigrationTest` builds a real database at each
+  historical version from raw SQL, registers the **whole** migration chain, and lets Room's
+  `onValidateSchema` compare the upgraded table against the exported schema. One test per
+  version step, each with its own fixture seeded with that version's real identity hash.
+- **JVM migration audits** (`app/src/test/.../data/database/`): one contract test per migration
+  step (`ProtocolMigrationContractTest`, `VpdProvenanceMigrationContractTest`,
+  `StageVpdTargetMigrationContractTest`). Each compares the exported `N.json` against the
+  column list the migration actually executes, in **both** set directions, plus nullability,
+  declared default and affinity. These need no device, which is the point: the disagreement they
+  catch crashes on hardware only, before any screen draws.
 
 ## Asset generation
 

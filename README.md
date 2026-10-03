@@ -26,7 +26,7 @@ Gestión y diagnóstico inteligente de cultivos de cannabis — Android nativo e
 | Capa | Elección |
 | --- | --- |
 | UI | Jetpack Compose (Material 3) + Navigation Compose |
-| Persistencia | Room 2.6 (migración explícita v1→v2, `exportSchema = true`) |
+| Persistencia | Room 2.6 (migraciones explícitas v1→v6, `exportSchema = true`, sin `fallbackToDestructiveMigration`) |
 | Preferencias | DataStore Preferences (apariencia, progreso de terpenos, onboarding) |
 | Tareas en segundo plano | WorkManager (factory propia) + `AlarmManager` para recordatorios |
 | Imágenes | Coil, CameraX |

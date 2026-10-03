@@ -1,6 +1,10 @@
 # Data Model
 
-Room database **version 2** (`exportSchema = true`, schemas exported to `app/schemas/`).
+Room database **version 6** (`exportSchema = true`, schemas exported to `app/schemas/`).
+
+Every step from v1 to v6 has an explicit `Migration` in `data/database/Migrations.kt` and a test.
+`fallbackToDestructiveMigration()` is forbidden (`AGENTS.md` §11): the data-loss budget is zero,
+and an upgrade either preserves every row or the app does not open.
 
 ## Entities
 
@@ -8,10 +12,10 @@ Room database **version 2** (`exportSchema = true`, schemas exported to `app/sch
 | --- | --- | --- |
 | `plants` | `Plant` | FK `tentId → grow_tents.id` (`SET_NULL`: deleting a tent keeps the plant as "Sin carpa"). `sortOrder` for manual ordering inside a tent. |
 | `grow_tents` | `GrowTent` | Container for plants; intentionally FK-free (ownership lives on `Plant`). |
-| `protocols` | `Protocol` | Protocol header: name, photoperiod (`lightHours`, `darkHours`), `presetType`, `cycleStartAt`, `isActive`. |
-| `protocol_stages` | `ProtocolStage` | Ordered stage blocks of a protocol (FK `protocolId` → `protocols.id`, `CASCADE`), `sortOrder` for ordering, `durationDays`, optional `recurrenceIntervalDays`. |
+| `protocols` | `Protocol` | Protocol header: name, photoperiod (`lightHours`, `darkHours`), `presetType`, `cycleStartAt`, `isActive`, plus fourteen nullable agronomic **targets** from v4 (`vpdBand`, `phRange`, `ecRange`, light/dark temperature and humidity, `ppfd`, `dli`, fixture and substrate text, `observations`). All declared, none measured. |
+| `protocol_stages` | `ProtocolStage` | Ordered stage blocks of a protocol (FK `protocolId` → `protocols.id`, `CASCADE`), `sortOrder` for ordering, `durationDays`, optional `recurrenceIntervalDays`, and `vpdTarget` (v6): the VPD band the grower aims at **while the plant is in this stage**. |
 | `stage_entries` | `StageEntry` | Transition log: which plant entered which stage, when (`enteredAt`/`exitedAt`). |
-| `grow_events` | `GrowEvent` | Journal bitácora: 16 event types, nullable metric columns (temp/humidity/pH/EC/amount/height/VPD…), `groupId` for multi-plant registrations, `diagnosisResult`/`diagnosisCertainty`/`imagePath`. FK `plantId → plants.id` (`CASCADE`). |
+| `grow_events` | `GrowEvent` | Journal bitácora: 16 event types, nullable metric columns (temp/humidity/pH/EC/amount/height/VPD…), `groupId` for multi-plant registrations, `diagnosisResult`/`diagnosisCertainty`/`imagePath`, and from v5 the VPD provenance pair `vpdSource`/`vpdLeafOffset`. FK `plantId → plants.id` (`CASCADE`). |
 | `super_cycle_configs` | `SuperCycleConfig` | Per-plant SuperCycle photoperiod configuration. |
 | `achievements` | `Achievement` | Gamification achievements seeded at first launch. |
 | `reminders` | `Reminder` | Recurring reminders (`recurrenceIntervalDays`, `reminderTime` as millis-of-day). |
@@ -28,8 +32,49 @@ The migration is explicit, in code (`data/database/Migrations.kt`):
 
 No `createFromAsset`, no `fallbackToDestructiveMigration` — data is preserved. Covered by the instrumentation test `MigrationTest` (raw v1 baseline → open with Room + migration → validate).
 
-> **The schema is still v2.** Everything added in 1.0.1 lives outside Room, so
-> no `MIGRATION_2_3` was needed and no existing user data was touched.
+## Migration v2 → v3 (`MIGRATION_2_3`)
+
+`super_cycle_configs` becomes tent-scoped: a new table is built with `tentId`, every row is
+copied **without a `WHERE` clause**, and the orphan configs survive the move. `tentId` is
+nullable because two real rows resolve to a plant that no longer exists, and they were kept
+rather than dropped. The old `plantId` column stays, as provenance.
+
+## Migration v3 → v4 (`MIGRATION_3_4`)
+
+Fourteen nullable columns on `protocols`, one `ALTER TABLE … ADD COLUMN … DEFAULT NULL` each,
+declared once in `PROTOCOL_V4_ADDED_COLUMNS` and read by both the migration and its audit test.
+The photoperiod columns stay `NOT NULL` with their defaults; everything new describes what the
+grower *intends*, and a plausible-looking `phRange = 6.0:6.5` on a protocol nobody measured is
+the `EstimatedClimate` defect in a new place.
+
+## Migration v4 → v5 (`MIGRATION_4_5`)
+
+Two nullable columns on `grow_events`: `vpdSource` and `vpdLeafOffset`. They record **where a
+VPD number came from**, because `vpd` is a single `REAL` column holding both a hygrometer
+reading and a value this app derived. `NULL` on a pre-v5 row resolves to `UNKNOWN`, never to
+`MEASURED`: some of those numbers were typed and some were derived, and the column cannot tell.
+
+## Migration v5 → v6 (`MIGRATION_5_6`)
+
+One nullable column on `protocol_stages`: `vpdTarget`, the per-stage VPD band, stored as TEXT by
+the same `GrowRangeConverters` the header uses. **One band type, one encoding, one converter.**
+
+- **Why here and not on the header.** `protocols.vpdBand` is the band the grow is *run at*, a
+  property of the setup; a stage is where the environment actually changes, so the per-stage
+  refinement belongs to the stage. v4's own KDoc said so and declined to do it in that phase.
+- **Why a target and not a reading.** Every VPD this app knows is an offline estimate by
+  latitude or a calculation from two typed numbers. The column is named `vpdTarget` for the same
+  reason the climate card prints `≈`: a column called `vpd` on a stage would read as an
+  observation of the room.
+- **What was deliberately left out.** No stage temperature or humidity target. The header
+  already declares four of those, and a second copy with no stated precedence is two sources of
+  truth — the F1 boiling point and the F2 temperature models, both already paid for.
+- **Why `ADD COLUMN` sufficed.** A new nullable column is the one change SQLite performs in
+  place. Nothing is dropped, renamed or retyped, so the table's foreign key and its index are
+  untouched and no row is copied through a temporary table. The three stages a real protocol
+  already holds — `Germinación`, `Vegetativa`, `Floración` — come out the other side with their
+  `stageName`, `durationDays`, `recurrenceIntervalDays` and `sortOrder` byte for byte, and
+  `vpdTarget` NULL, which the card renders as "Sin definir" and the export writes as `null`.
 
 ## Supporting data
 

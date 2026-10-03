@@ -68,10 +68,17 @@ import java.util.Locale
 object DataExport {
 
     /**
-     * Version of the exported shape. Bumped whenever a field changes meaning, is removed,
-     * or changes type.
+     * Version of the exported shape.
+     *
+     * Bumped whenever a field changes meaning, is removed, or changes type — **and
+     * whenever a section is added or removed.** The last clause is what v2 is for:
+     * `protocolStages` gained `vpdTarget`, and a reader written against
+     * `schemaVersion: 1` has no way to notice a field appearing inside a section it
+     * already knows how to parse. "The fields I know are unchanged" is not the same
+     * claim as "the document says the same thing", and only the number carries the
+     * second one.
      */
-    const val SCHEMA_VERSION: Int = 1
+    const val SCHEMA_VERSION: Int = 2
 
     /** The `schema` value every export carries. */
     const val SCHEMA_ID: String = "trichome.export"
@@ -237,14 +244,24 @@ data class ExportProtocol(
     val observations: String?
 )
 
-/** A protocol block, as exported. */
+/**
+ * A protocol block, as exported.
+ *
+ * [vpdTarget] is the stage's own VPD band (schema 6), in the same stored `"low:high"`
+ * TEXT form the header's [ExportProtocol.vpdBand] uses — and it is `null` for a stage
+ * written before that column existed. The three stages a real protocol already holds were
+ * written before v6, so `null` here is the *expected* value for them and not a gap in the
+ * file: a `"0.0:0.0"` would publish a band of zero as something the grower declared.
+ */
 data class ExportProtocolStage(
     val id: Long,
     val protocolName: String,
     val stageName: String,
     val durationDays: Int,
     val recurrenceIntervalDays: Int,
-    val sortOrder: Int
+    val sortOrder: Int,
+    /** The stage's declared VPD band, or null. A target, never an observation. */
+    val vpdTarget: String?
 )
 
 /** A reminder, as exported. */
@@ -606,6 +623,11 @@ object DataExportJson {
                     putInt("durationDays", stage.durationDays)
                     putInt("recurrenceIntervalDays", stage.recurrenceIntervalDays)
                     putInt("sortOrder", stage.sortOrder)
+                    // Explicit null rather than an omitted key, for the same reason the
+                    // header's bands write one: "this stage has no declared target" is a
+                    // value, and a missing key would have to be guessed at between that
+                    // and "this build does not write the field".
+                    putNullable("vpdTarget", stage.vpdTarget)
                 })
             }
         })

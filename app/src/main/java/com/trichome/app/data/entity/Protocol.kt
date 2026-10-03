@@ -44,12 +44,12 @@ data class Protocol(
 
     // ── v4: declared agronomic targets (schema 4, MIGRATION_3_4) ──────────
     //
-    // Grow-wide VPD band. This is deliberately ONE band for the whole grow and
-    // not one per stage. Per-stage VPD belongs on `protocol_stages`, which this
-    // schema phase does not touch: a stage-level column added here would be
-    // written by no query and read by no screen — a field that lies about the
-    // shape of the data. What lives here is the band the grow is *run at*,
-    // which is a property of the setup and not of a phase of it.
+    // Grow-wide VPD band: the band the grow is *run at*, which is a property of
+    // the setup and not of a phase of it. A per-stage refinement lives on
+    // `protocol_stages.vpdTarget` (schema 6) and is a different thing: this is
+    // the envelope the whole grow stays inside, that one is what the current
+    // stage aims at. Both nullable, so "no opinion" is `null` at either level
+    // rather than a `0.0` band nobody typed.
     @ColumnInfo(defaultValue = "NULL") val vpdBand: GrowRange? = null,
     /** Nutrient solution pH band, 5.5-6.5 typical. */
     @ColumnInfo(defaultValue = "NULL") val phRange: GrowRange? = null,
@@ -81,6 +81,44 @@ data class Protocol(
 
 /**
  * Stage block inside a protocol. Ordered by [sortOrder].
+ *
+ * ## The v6 field: [vpdTarget]
+ *
+ * A stage is where a grow's environment actually changes. Vegetative is run
+ * wetter and cooler than flowering, and the grower's own protocol blocks are
+ * where that intent is written down — so the VPD target belongs here and not on
+ * the [Protocol] header, which is the band the whole grow is *run at*.
+ *
+ * ## Why it is a target and not a reading
+ *
+ * The name says `Target`, and that is load-bearing. Every VPD number this app
+ * knows is an offline estimate from latitude, altitude and season
+ * ([AmbientClimate]) or a calculation from a temperature and a humidity the
+ * grower typed — the climate card's own sentence says so. There is no sensor
+ * behind any of them. So a column on a stage named `vpd` would read as an
+ * observation of the room, which is exactly the `EstimatedClimate` defect one
+ * level down. This is the band the grower is aiming at while the plant is in
+ * this stage.
+ *
+ * ## Why there is no temperature or humidity target here
+ *
+ * The header already declares `lightTempCelsius`, `darkTempCelsius`,
+ * `lightHumidityPercent` and `darkHumidityPercent` (schema 4). A stage-level
+ * copy of them would be a second place the same fact is declared with no rule
+ * saying which wins, and two sources of truth is the defect this project has
+ * already paid for twice — F1's boiling point and F2's temperature models. So
+ * the stage adds the one quantity the header has no way to express per phase,
+ * and nothing else. If a screen later needs a stage temperature, the resolution
+ * has to be stated first; a column that describes a shape the data does not have
+ * is the thing `AGENTS.md` §11 forbids.
+ *
+ * ## Why it is nullable
+ *
+ * Same rule as the v4 columns and for the same reason. The three stages a real
+ * protocol already has — `Germinación`, `Vegetativa`, `Floración` — were
+ * written before this column existed, and `MIGRATION_5_6` leaves them NULL.
+ * `null` reads as [ProtocolExtendedFields.SIN_DEFINIR] and never as
+ * `0,00 – 0,00`, which would be a target the grower never chose.
  */
 @Entity(
     tableName = "protocol_stages",
@@ -94,13 +132,16 @@ data class Protocol(
     ],
     indices = [Index("protocolId")]
 )
+@TypeConverters(GrowRangeConverters::class)
 data class ProtocolStage(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val protocolId: Long,
     val stageName: String,
     val durationDays: Int,
     val recurrenceIntervalDays: Int = 0,
-    val sortOrder: Int = 0
+    val sortOrder: Int = 0,
+    // ── v6: the stage's own VPD target band (schema 6, MIGRATION_5_6) ──────
+    @ColumnInfo(defaultValue = "NULL") val vpdTarget: GrowRange? = null
 )
 
 /**

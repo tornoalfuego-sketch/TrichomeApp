@@ -12,6 +12,7 @@ import com.trichome.app.data.database.MIGRATION_1_2
 import com.trichome.app.data.database.MIGRATION_2_3
 import com.trichome.app.data.database.MIGRATION_3_4
 import com.trichome.app.data.database.MIGRATION_4_5
+import com.trichome.app.data.database.MIGRATION_5_6
 import com.trichome.app.data.model.GrowRange
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -29,12 +30,36 @@ import org.junit.runner.RunWith
  * Migration v1 -> v2 guaranteed by MIGRATION_1_2 with explicit schema:
  * the v1 baseline is created with raw SQL (mirrors the annotated v1 layout),
  * then Room opens the same file at v2 and validates all tables.
+ *
+ * ## Every test here registers the WHOLE chain, not just its own step
+ *
+ * `AppDatabase` is declared at the current version, so Room always asks for a path from
+ * the fixture's version all the way up to it. Registering only `MIGRATION_1_2` against a
+ * v6 target therefore fails on `openHelper.writableDatabase` with "A migration from 1 to 6
+ * was required but not found" — before a single assertion in the test runs, and for a
+ * reason that has nothing to do with the step being verified.
+ *
+ * That is why each test names the whole chain. The step under test is still the one that
+ * is asserted; the ones after it only bring the file up to a version Room can validate.
  */
 @RunWith(AndroidJUnit4::class)
 class MigrationTest {
 
     private lateinit var context: Context
     private val dbName = "migration_test.db"
+
+    /**
+     * The whole registered chain, in order.
+     *
+     * A val rather than a literal per test so a new migration has to be added in one place
+     * and cannot be forgotten in one of the five.
+     */
+    private val everyMigration = listOf(
+        MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6
+    )
+
+    /** The version Room validates against, which is the current one. */
+    private val currentVersion: Int = AppDatabase.VERSION
 
     /**
      * The v4 identity hash, copied from `app/schemas/.../4.json`.
@@ -45,6 +70,14 @@ class MigrationTest {
      * measured against a starting point no device ever had.
      */
     private val V4_IDENTITY_HASH: String = "c079caf29c0f1b569fe480a04fcd7fc4"
+
+    /**
+     * The v5 identity hash, copied from `app/schemas/.../5.json`.
+     *
+     * Same argument as [V4_IDENTITY_HASH], one version later: the v5 fixture has to be the
+     * state a device is in, including what Room recorded about the schema.
+     */
+    private val V5_IDENTITY_HASH: String = "bc5fe6dc6757e8213de49086a6e6f93e"
 
     @Before
     fun setUp() {
@@ -64,12 +97,12 @@ class MigrationTest {
 
         // 2) Open the same file with Room + explicit migration.
         val room: AppDatabase = Room.databaseBuilder(context, AppDatabase::class.java, dbName)
-            .addMigrations(MIGRATION_1_2)
+            .addMigrations(*everyMigration.toTypedArray())
             .build()
         val db = room.openHelper.writableDatabase // triggers onUpgrade
 
-        // 3) Version was bumped.
-        assertEquals(2, db.version)
+        // 3) Version was bumped — all the way to the current one, see the class KDoc.
+        assertEquals(currentVersion, db.version)
 
         // 4) Columns added by the migration.
         assertTrue(columnExists(db, "protocols", "lightHours"))
@@ -127,11 +160,11 @@ class MigrationTest {
         createVersion2Database()
 
         val room: AppDatabase = Room.databaseBuilder(context, AppDatabase::class.java, dbName)
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+            .addMigrations(*everyMigration.toTypedArray())
             .build()
         val db = room.openHelper.writableDatabase // triggers onUpgrade
 
-        assertEquals(3, db.version)
+        assertEquals(currentVersion, db.version)
 
         // The column is there and it is nullable, which is the whole point.
         assertTrue(columnExists(db, "super_cycle_configs", "tentId"))
@@ -320,11 +353,11 @@ class MigrationTest {
 
         // If opening throws, the migration and the exported schema disagree.
         val room: AppDatabase = Room.databaseBuilder(context, AppDatabase::class.java, dbName)
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+            .addMigrations(*everyMigration.toTypedArray())
             .build()
         val db = room.openHelper.writableDatabase // triggers onUpgrade + validation
 
-        assertEquals(4, db.version)
+        assertEquals(currentVersion, db.version)
 
         // 1) Every added column is there, and every one of them is nullable.
         //    A NOT NULL here would have failed the upgrade on the existing row.
@@ -407,10 +440,15 @@ class MigrationTest {
         assertEquals(0, countRows(db, "grow_events"))
         assertEquals(1, countRows(db, "super_cycle_configs"))
 
-        // 5) The stage tables kept their v3 shape: this phase does not touch
-        //    them, and a per-stage VPD band is a separate migration.
+        // 5) The stage table kept its v3 columns, and F10a's header targets did not leak
+        //    into it. Asserted at the current version, so the stage now also carries v6's
+        //    `vpdTarget` — which is its own column, on its own table, with its own test.
         assertFalse(columnExists(db, "protocol_stages", "vpdBand"))
         assertFalse(columnExists(db, "protocol_stages", "phRange"))
+        assertTrue(
+            "the per-stage VPD target arrives with v6, on the stage table",
+            columnExists(db, "protocol_stages", "vpdTarget")
+        )
         val stage = db.query(
             "SELECT stageName, durationDays FROM protocol_stages ORDER BY sortOrder",
             emptyArray()
@@ -646,11 +684,11 @@ class MigrationTest {
         createVersion4Database()
 
         val room: AppDatabase = Room.databaseBuilder(context, AppDatabase::class.java, dbName)
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+            .addMigrations(*everyMigration.toTypedArray())
             .build()
         val db = room.openHelper.writableDatabase // triggers onUpgrade + validation
 
-        assertEquals(5, db.version)
+        assertEquals(currentVersion, db.version)
 
         // 1) Both columns are there, and both are nullable. A NOT NULL here would have failed
         //    the upgrade on the rows the fixture already wrote.
@@ -854,6 +892,268 @@ class MigrationTest {
                     // Three journal rows with three different `vpd` values, so a migration that
                     // rewrote them all to one value fails. Row 1 has no VPD recorded at all,
                     // which is the "not a zero" case.
+                    sql.execSQL(
+                        "INSERT INTO grow_events (id, plantId, eventType, timestamp, notes, temperature, humidity, vpd, isActive) " +
+                            "VALUES (1, 11, 'IRRIGATION', 1700000000000, 'riego inicial', 21.5, 58.0, 0.62, 1)"
+                    )
+                    sql.execSQL(
+                        "INSERT INTO grow_events (id, plantId, eventType, timestamp, temperature, humidity, vpd, isActive) " +
+                            "VALUES (2, 11, 'VPD', 1700086400000, 26.0, 55.0, 1.24, 1)"
+                    )
+                    sql.execSQL(
+                        "INSERT INTO grow_events (id, plantId, eventType, timestamp, temperature, humidity, vpd, isActive) " +
+                            "VALUES (3, 12, 'VPD', 1700086400000, 27.0, 52.0, 1.31, 1)"
+                    )
+                }
+
+                override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
+                override fun onDowngrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
+            })
+            .build()
+
+        val helper = factory.create(config)
+        helper.writableDatabase.close()
+        helper.close()
+    }
+
+    /**
+     * Migration v5 -> v6: the per-stage VPD target band.
+     *
+     * F10a put the grow-wide band on the `protocols` header and said in its own KDoc that a
+     * per-stage band belongs on `protocol_stages`. This is that column.
+     *
+     * ## What it proves
+     *
+     * The statement executes against real SQLite, the resulting table matches `6.json` under
+     * Room's `onValidateSchema`, the six original stage columns keep their exact values, the
+     * new column reads back NULL on every pre-v6 row, and a band written after the upgrade
+     * round-trips through the same column. If the migration and the entity disagreed about a
+     * column, this test fails on `openHelper.writableDatabase` — which is exactly the moment
+     * the grower's own device would fail, before a screen draws.
+     *
+     * ## What it cannot
+     *
+     * It cannot run without a device, and **as of this commit it has never been executed** —
+     * `adb devices` is not available to the agent that wrote it. The v5 -> v6 upgrade path is
+     * written and audited by `StageVpdTargetMigrationContractTest`, which compares the
+     * migration against the exported schema and needs no hardware, but "the two sides agree"
+     * and "the statements run" are different claims and only one of them has been observed.
+     *
+     * ## The fixture
+     *
+     * **The three stages a real install already has** — `Germinación`, `Vegetativa`,
+     * `Floración` — with the durations and sort orders the app seeds, and none of them with a
+     * target. That is the exact state the grower's phone is in when this migration runs, and
+     * the assertion that matters most is that all three survive with those four columns
+     * untouched and a NULL where the new column is.
+     */
+    @Test
+    fun migrate5To6AddsTheStageVpdTargetAndRewritesNothing() {
+        createVersion5Database()
+
+        val room: AppDatabase = Room.databaseBuilder(context, AppDatabase::class.java, dbName)
+            .addMigrations(*everyMigration.toTypedArray())
+            .build()
+        val db = room.openHelper.writableDatabase // triggers onUpgrade + validation
+
+        assertEquals(currentVersion, db.version)
+
+        // 1) The column is there, it is nullable, and it is declared TEXT. A NOT NULL here
+        //    would have failed the upgrade on the three rows the fixture already wrote.
+        assertTrue("`vpdTarget` missing after migration", columnExists(db, "protocol_stages", "vpdTarget"))
+        assertFalse(
+            "`vpdTarget` must be nullable: the existing rows have no value for it",
+            columnIsNotNull(db, "protocol_stages", "vpdTarget")
+        )
+
+        // 2) The original six are untouched, in place, with the values the fixture wrote.
+        //    This is the zero-data-loss assertion: exact values, not "a row still exists".
+        assertEquals(3, countRows(db, "protocol_stages"))
+        val original = db.query(
+            "SELECT id, protocolId, stageName, durationDays, recurrenceIntervalDays, sortOrder " +
+                "FROM protocol_stages ORDER BY id",
+            emptyArray()
+        )
+        assertTrue(original.moveToFirst())
+        assertEquals(1L, original.getLong(0))
+        assertEquals(1L, original.getLong(1))
+        assertEquals("Germinación", original.getString(2))
+        assertEquals(7, original.getInt(3))
+        assertEquals(0, original.getInt(4))
+        assertEquals(0, original.getInt(5))
+
+        assertTrue(original.moveToNext())
+        assertEquals(2L, original.getLong(0))
+        assertEquals("Vegetativa", original.getString(2))
+        assertEquals(35, original.getInt(3))
+        assertEquals(1, original.getInt(5))
+
+        assertTrue(original.moveToNext())
+        assertEquals(3L, original.getLong(0))
+        assertEquals("Floración", original.getString(2))
+        assertEquals(56, original.getInt(3))
+        assertEquals(2, original.getInt(5))
+
+        assertFalse("the fixture had exactly three stages", original.moveToNext())
+        original.close()
+
+        // 3) The new column reads back NULL on every one of them. A fabricated `0.0:0.0`
+        //    would be indistinguishable from a band the grower typed, and it would be
+        //    rendered in the same metric face as one.
+        val targets = db.query(
+            "SELECT vpdTarget FROM protocol_stages ORDER BY id",
+            emptyArray()
+        )
+        repeat(3) { index ->
+            assertTrue(targets.moveToNext())
+            assertTrue(
+                "stage ${index + 1} must have no target yet, got ${targets.getString(0)}",
+                targets.isNull(0)
+            )
+        }
+        assertFalse(targets.moveToNext())
+        targets.close()
+
+        // 4) The rest of the database is exactly as it was. The migration is one ADD COLUMN
+        //    and touches nothing else — in particular not the journal, which F10b owns.
+        assertEquals(1, countRows(db, "grow_tents"))
+        assertEquals(2, countRows(db, "plants"))
+        assertEquals(1, countRows(db, "protocols"))
+        assertEquals(1, countRows(db, "stage_entries"))
+        assertEquals(3, countRows(db, "grow_events"))
+        assertEquals(1, countRows(db, "super_cycle_configs"))
+
+        // 5) F10b's provenance columns are still there and still NULL on the pre-v5 rows,
+        //    which is what keeps a pre-v5 VPD from reading as a sensor value after the
+        //    upgrade. An upgrade that reset them would be a data loss this project does not
+        //    negotiate.
+        val provenance = db.query(
+            "SELECT vpdSource FROM grow_events ORDER BY id",
+            emptyArray()
+        )
+        repeat(3) { index ->
+            assertTrue(provenance.moveToNext())
+            assertTrue("grow_events ${index + 1}: vpdSource must still be NULL", provenance.isNull(0))
+        }
+        provenance.close()
+
+        // 6) Through the DAO, which is what the app actually reads. Every declared target on
+        //    the stage maps back as null.
+        val stages = runBlocking { room.protocolStageDao().getStagesByProtocol(1L) }
+        assertEquals(3, stages.size)
+        assertEquals(
+            listOf("Germinación", "Vegetativa", "Floración"),
+            stages.sortedBy { it.sortOrder }.map { it.stageName }
+        )
+        assertEquals(listOf(7, 35, 56), stages.sortedBy { it.sortOrder }.map { it.durationDays })
+        stages.forEach { stage ->
+            assertNull(
+                "stage ${stage.stageName} had no target before v6 and must not have one now",
+                stage.vpdTarget
+            )
+        }
+
+        // 7) And a band written after the migration round-trips through the same column,
+        //    which is what the GrowRange converter is there for.
+        val withTarget = stages.first { it.stageName == "Floración" }
+            .copy(vpdTarget = GrowRange(1.0f, 1.4f))
+        runBlocking { room.protocolStageDao().updateStage(withTarget) }
+        val reread = runBlocking { room.protocolStageDao().getStagesByProtocol(1L) }
+        val flowering = reread.first { it.stageName == "Floración" }
+        assertEquals(1.0f, flowering.vpdTarget!!.low, 0f)
+        assertEquals(1.4f, flowering.vpdTarget!!.high, 0f)
+        assertEquals(
+            "the write must not disturb the columns the migration preserved",
+            "Floración",
+            flowering.stageName
+        )
+        assertEquals(56, flowering.durationDays)
+
+        room.close()
+    }
+
+    /**
+     * The v5 fixture: the full v5 layout, copied from `5.json`, with the real identity hash.
+     *
+     * `grow_events` carries the two F10b provenance columns and `protocol_stages` does **not**
+     * carry `vpdTarget` — that absence is the whole point of the fixture, because the
+     * `ADD COLUMN` has to be what puts it there.
+     *
+     * The three stages are the ones the app seeds for a new protocol, because those are the
+     * rows the grower's device is holding when this migration runs.
+     */
+    private fun createVersion5Database() {
+        val factory = FrameworkSQLiteOpenHelperFactory()
+        val config = SupportSQLiteOpenHelper.Configuration.builder(context)
+            .name(dbName)
+            .callback(object : SupportSQLiteOpenHelper.Callback(5) {
+                override fun onCreate(db: SupportSQLiteDatabase) {
+                    val sql = db
+                    sql.execSQL("CREATE TABLE IF NOT EXISTS `grow_tents` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `location` TEXT NOT NULL, `capacity` INTEGER NOT NULL, `lightType` TEXT NOT NULL, `lightPowerWatts` INTEGER NOT NULL, `isActive` INTEGER NOT NULL)")
+                    sql.execSQL("CREATE TABLE IF NOT EXISTS `plants` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `tentId` INTEGER, `sortOrder` INTEGER NOT NULL, `growStartTimestamp` INTEGER NOT NULL, `currentStage` TEXT NOT NULL, `strain` TEXT NOT NULL, `notes` TEXT NOT NULL, `isActive` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, FOREIGN KEY(`tentId`) REFERENCES `grow_tents`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL)")
+                    sql.execSQL("CREATE INDEX IF NOT EXISTS `index_plants_tentId` ON `plants` (`tentId`)")
+                    sql.execSQL("CREATE TABLE IF NOT EXISTS `protocols` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `plantId` INTEGER NOT NULL, `name` TEXT NOT NULL, `lightHours` INTEGER NOT NULL DEFAULT 18, `darkHours` INTEGER NOT NULL DEFAULT 6, `presetType` TEXT NOT NULL DEFAULT 'custom', `cycleStartAt` INTEGER NOT NULL DEFAULT 0, `isActive` INTEGER NOT NULL, `vpdBand` TEXT DEFAULT NULL, `phRange` TEXT DEFAULT NULL, `ecRange` TEXT DEFAULT NULL, `lightTempCelsius` REAL DEFAULT NULL, `lightHumidityPercent` REAL DEFAULT NULL, `darkTempCelsius` REAL DEFAULT NULL, `darkHumidityPercent` REAL DEFAULT NULL, `ppfd` REAL DEFAULT NULL, `dli` REAL DEFAULT NULL, `lightType` TEXT DEFAULT NULL, `lampPowerWatts` REAL DEFAULT NULL, `substrateType` TEXT DEFAULT NULL, `wateringStrategy` TEXT DEFAULT NULL, `observations` TEXT DEFAULT NULL)")
+                    // The v5 stage table: six columns. No `vpdTarget`.
+                    sql.execSQL("CREATE TABLE IF NOT EXISTS `protocol_stages` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `protocolId` INTEGER NOT NULL, `stageName` TEXT NOT NULL, `durationDays` INTEGER NOT NULL, `recurrenceIntervalDays` INTEGER NOT NULL, `sortOrder` INTEGER NOT NULL, FOREIGN KEY(`protocolId`) REFERENCES `protocols`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)")
+                    sql.execSQL("CREATE INDEX IF NOT EXISTS `index_protocol_stages_protocolId` ON `protocol_stages` (`protocolId`)")
+                    sql.execSQL("CREATE TABLE IF NOT EXISTS `stage_entries` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `protocolId` INTEGER NOT NULL, `plantId` INTEGER NOT NULL, `stageName` TEXT NOT NULL, `enteredAt` INTEGER NOT NULL, `exitedAt` INTEGER)")
+                    // The v5 grow_events: 27 columns, `vpd` still with no default.
+                    sql.execSQL("CREATE TABLE IF NOT EXISTS `grow_events` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `plantId` INTEGER NOT NULL, `groupId` TEXT, `eventType` TEXT NOT NULL, `timestamp` INTEGER NOT NULL, `notes` TEXT, `temperature` REAL, `humidity` REAL, `ph` REAL, `ec` REAL, `nutrientN` REAL, `nutrientP` REAL, `nutrientK` REAL, `amount` REAL, `height` REAL, `lampDistance` REAL, `trainingType` TEXT, `defoliationLevel` INTEGER, `vpd` REAL, `vpdSource` TEXT DEFAULT NULL, `vpdLeafOffset` REAL DEFAULT NULL, `trichomeMaturity` TEXT, `diagnosisResult` TEXT, `diagnosisCertainty` REAL, `imagePath` TEXT, `isActive` INTEGER NOT NULL, FOREIGN KEY(`plantId`) REFERENCES `plants`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)")
+                    sql.execSQL("CREATE INDEX IF NOT EXISTS `index_grow_events_plantId` ON `grow_events` (`plantId`)")
+                    sql.execSQL("CREATE TABLE IF NOT EXISTS `super_cycle_configs` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `tentId` INTEGER, `plantId` INTEGER, `lightHours` INTEGER NOT NULL, `darkHours` INTEGER NOT NULL, `cycleStartAt` INTEGER NOT NULL, `presetType` TEXT NOT NULL)")
+                    sql.execSQL("CREATE INDEX IF NOT EXISTS `index_super_cycle_configs_tentId` ON `super_cycle_configs` (`tentId`)")
+                    sql.execSQL("CREATE TABLE IF NOT EXISTS `achievements` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `description` TEXT NOT NULL, `icon` TEXT NOT NULL, `xpReward` INTEGER NOT NULL, `isUnlocked` INTEGER NOT NULL)")
+                    sql.execSQL("CREATE TABLE IF NOT EXISTS `reminders` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `plantId` INTEGER, `title` TEXT NOT NULL, `message` TEXT NOT NULL, `recurrenceType` TEXT NOT NULL, `recurrenceIntervalDays` INTEGER NOT NULL, `reminderTime` INTEGER NOT NULL, `isActive` INTEGER NOT NULL)")
+                    sql.execSQL("CREATE TABLE IF NOT EXISTS `breeding_projects` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `motherId` TEXT NOT NULL, `fatherId` TEXT NOT NULL, `generation` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `status` TEXT NOT NULL)")
+                    sql.execSQL("CREATE TABLE IF NOT EXISTS `breeding_crosses` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `projectId` INTEGER NOT NULL, `parent1` TEXT NOT NULL, `parent2` TEXT NOT NULL, `phenotypeScore` REAL NOT NULL, `notes` TEXT NOT NULL, FOREIGN KEY(`projectId`) REFERENCES `breeding_projects`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)")
+                    sql.execSQL("CREATE INDEX IF NOT EXISTS `index_breeding_crosses_projectId` ON `breeding_crosses` (`projectId`)")
+
+                    // The v5 identity hash from app/schemas/.../5.json, so the starting state is
+                    // what a real device holds rather than a file Room has never validated.
+                    sql.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)")
+                    sql.execSQL("INSERT OR REPLACE INTO room_master_table (id, identity_hash) VALUES(42, '$V5_IDENTITY_HASH')")
+
+                    sql.execSQL(
+                        "INSERT INTO grow_tents (id, name, location, capacity, lightType, lightPowerWatts, isActive) " +
+                            "VALUES (4, 'Carpa 4', 'Sala', 4, 'LED', 600, 1)"
+                    )
+                    listOf(11L, 12L).forEachIndexed { index, plantId ->
+                        sql.execSQL(
+                            "INSERT INTO plants (id, name, tentId, sortOrder, growStartTimestamp, " +
+                                "currentStage, strain, notes, isActive, createdAt) VALUES " +
+                                "($plantId, 'Planta $plantId', 4, $index, 1700000000000, " +
+                                "'vegetative', 'Test', '', 1, 1700000000000)"
+                        )
+                    }
+                    sql.execSQL(
+                        "INSERT INTO protocols (id, plantId, name, lightHours, darkHours, presetType, cycleStartAt, isActive) " +
+                            "VALUES (1, 11, 'exterior', 18, 6, '18/6', 1700000000000, 1)"
+                    )
+
+                    // The three stages a real protocol already has, with no target on any of
+                    // them. Three rather than one so a migration that collapsed them to a
+                    // single row would fail the count above.
+                    listOf(
+                        Triple("Germinación", 7, 0),
+                        Triple("Vegetativa", 35, 1),
+                        Triple("Floración", 56, 2)
+                    ).forEachIndexed { index, (name, days, order) ->
+                        sql.execSQL(
+                            "INSERT INTO protocol_stages (id, protocolId, stageName, durationDays, recurrenceIntervalDays, sortOrder) " +
+                                "VALUES (${index + 1}, 1, '$name', $days, 0, $order)"
+                        )
+                    }
+                    sql.execSQL(
+                        "INSERT INTO stage_entries (id, protocolId, plantId, stageName, enteredAt, exitedAt) " +
+                            "VALUES (1, 1, 11, 'Germinación', 1700000000000, NULL)"
+                    )
+                    sql.execSQL(
+                        "INSERT INTO super_cycle_configs (id, tentId, plantId, lightHours, darkHours, cycleStartAt, presetType) " +
+                            "VALUES (1, 4, 11, 18, 6, 1700000000000, '18/6')"
+                    )
+
+                    // Three journal rows, three different VPD values, none with a recorded
+                    // origin — the pre-v5 state F10b introduced UNKNOWN for.
                     sql.execSQL(
                         "INSERT INTO grow_events (id, plantId, eventType, timestamp, notes, temperature, humidity, vpd, isActive) " +
                             "VALUES (1, 11, 'IRRIGATION', 1700000000000, 'riego inicial', 21.5, 58.0, 0.62, 1)"

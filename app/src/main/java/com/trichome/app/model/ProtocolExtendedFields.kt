@@ -1,6 +1,7 @@
 package com.trichome.app.model
 
 import com.trichome.app.data.entity.Protocol
+import com.trichome.app.data.entity.ProtocolStage
 import com.trichome.app.data.model.GrowRange
 import java.util.Locale
 
@@ -56,6 +57,29 @@ object ProtocolExtendedFields {
     const val ETIQUETA_SUSTRATO: String = "Sustrato"
     const val ETIQUETA_RIEGO: String = "Estrategia de riego"
     const val ETIQUETA_OBSERVACIONES: String = "Observaciones agronómicas"
+
+    /* ── Per-stage targets ────────────────────────────────────────────────── */
+
+    /**
+     * Heading of the per-stage block on the protocol card.
+     *
+     * "Objetivo" and not "VPD": the stage band is the band the grower aims at, and
+     * the sentence under it says so. See [protocolStageTargetGroups].
+     */
+    const val GRUPO_ETAPAS: String = "Objetivo por etapa"
+
+    /**
+     * The sentence under the per-stage block.
+     *
+     * Says what the number is *not*, which is the only sentence that keeps it honest:
+     * nothing in this app reads a sensor, so a stage band and the room's actual
+     * deficit are two different quantities and a grower who confuses them will chase
+     * a reading the tent never produced.
+     */
+    const val ETAPA_VPD_NOTA_ES: String =
+        "Es el déficit que buscas mantener en cada etapa, no una medición. Esta app no " +
+            "lee ningún sensor: los valores que calcula son una estimación offline por " +
+            "latitud, altitud y estación."
 
     /* ── Units ─────────────────────────────────────────────────────────────── */
 
@@ -137,7 +161,16 @@ data class ProtocolFieldRow(
 /** A titled run of [ProtocolFieldRow]s, so the card reads as a sheet. */
 data class ProtocolFieldGroup(
     val titleEs: String,
-    val rows: List<ProtocolFieldRow>
+    val rows: List<ProtocolFieldRow>,
+    /**
+     * A sentence under the heading, or null for the groups that need none.
+     *
+     * Only the per-stage group carries one, and only because its numbers are the ones
+     * most likely to be misread as measurements. A default rather than a constructor
+     * argument so the groups that have no note do not all pass `null` at every call
+     * site.
+     */
+    val noteEs: String? = null
 )
 
 /**
@@ -286,4 +319,52 @@ private fun textRow(labelEs: String, value: String?): ProtocolFieldRow {
     } else {
         ProtocolFieldRow(labelEs, null, trimmed)
     }
+}
+
+/**
+ * One stage's own VPD target band, already resolved for display.
+ *
+ * The stage's name is the label, so a column of stages reads as a column of stages
+ * rather than as a list of identical "VPD objetivo" rows with nothing to tell them
+ * apart.
+ *
+ * ## Unset is a sentence, and never a number
+ *
+ * A stage whose [ProtocolStage.vpdTarget] is null returns [ProtocolExtendedFields.SIN_DEFINIR]
+ * in `detailEs` and **null** in `metricEs`. That is the property this whole function
+ * exists to hold: the three stages a real protocol already has were written before
+ * schema v6, and a band of `0,00 – 0,00` would be a target nobody chose, rendered in
+ * the same metric face as one they did.
+ */
+fun protocolStageTargetRow(stage: ProtocolStage): ProtocolFieldRow =
+    bandRow(
+        stage.stageName.trim(),
+        stage.vpdTarget,
+        ProtocolExtendedFields.UNIDAD_KPA,
+        ProtocolExtendedFields.DECIMALS_VPD
+    )
+
+/**
+ * The per-stage targets of a protocol, as one card block.
+ *
+ * **Empty list for an empty stage list.** Not a group with no rows. The difference is
+ * deliberate: an unset *field* is listed so the protocol says which targets it has no
+ * opinion about, but a protocol with no stages at all has nothing to have no opinion
+ * about, and the card already says "Sin bloques de etapa" above this point.
+ *
+ * Ordered by [ProtocolStage.sortOrder] and then by name, so two stages that share a
+ * sort order still render in one fixed order rather than in whatever order the query
+ * happened to produce.
+ */
+fun protocolStageTargetGroups(stages: List<ProtocolStage>): List<ProtocolFieldGroup> {
+    if (stages.isEmpty()) return emptyList()
+    return listOf(
+        ProtocolFieldGroup(
+            titleEs = ProtocolExtendedFields.GRUPO_ETAPAS,
+            rows = stages
+                .sortedWith(compareBy({ it.sortOrder }, { it.stageName }))
+                .map(::protocolStageTargetRow),
+            noteEs = ProtocolExtendedFields.ETAPA_VPD_NOTA_ES
+        )
+    )
 }

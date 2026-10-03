@@ -269,10 +269,61 @@ class DataExportTest {
     @Test
     fun anUnrecordedVpdOriginIsExportedAsUnknown() {
         // The leak a consumer of the file would suffer if this defaulted to MEASURED.
+        // The enum half of the claim; `ExportVpdProvenanceTest` proves the other half,
+        // which is the one that matters: that the *file* says UNKNOWN.
         assertEquals(
             "UNKNOWN",
             VpdProvenance.fromStorageKey(null).storageKey
         )
+    }
+
+    /* ── The per-stage VPD target (schema v6, export schemaVersion 2) ─────── */
+
+    @Test
+    fun theStageTargetIsWrittenInTheSameStoredFormAsTheHeaderBand() {
+        // One encoding for one declared band: `protocols.vpdBand` and
+        // `protocol_stages.vpdTarget` are both GrowRange values, so they are both
+        // written as "low:high". A second spelling would be a second reader.
+        val json = DataExportJson.render(
+            document(
+                protocolStages = listOf(
+                    protocolStage(1).copy(vpdTarget = "0.8:1.2"),
+                    protocolStage(2).copy(stageName = "Floración", vpdTarget = "1.0:1.4")
+                )
+            )
+        )
+        val rows = (Json.parseToJsonElement(json).jsonObject["protocolStages"] as JsonArray)
+            .map { it.jsonObject }
+
+        assertEquals("0.8:1.2", rows[0]["vpdTarget"]?.jsonPrimitive?.content)
+        assertEquals("1.0:1.4", rows[1]["vpdTarget"]?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun aStageWithNoTargetExportsAnExplicitNullRatherThanAZeroBand() {
+        // The three stages on a real device have no target. `"0.0:0.0"` would publish
+        // a band of zero as something the grower wrote, which is the same defect as
+        // defaulting a VPD's provenance to MEASURED.
+        val root = Json.parseToJsonElement(
+            DataExportJson.render(document(protocolStages = listOf(protocolStage(1))))
+        ).jsonObject
+        val exported = (root["protocolStages"] as JsonArray).first().jsonObject
+
+        assertTrue("the key must be present", exported.containsKey("vpdTarget"))
+        assertEquals("null", exported["vpdTarget"].toString())
+        assertFalse(
+            "no fabricated band anywhere in the file",
+            DataExportJson.render(document(protocolStages = listOf(protocolStage(1))))
+                .contains("0.0:0.0")
+        )
+    }
+
+    @Test
+    fun theSchemaVersionMovedWithTheStageField() {
+        // A section gaining a field is a format change a reader has to be able to see,
+        // so the number moves with it. Asserted rather than trusted, because the
+        // number is what a future reader checks first.
+        assertEquals(2, DataExport.SCHEMA_VERSION)
     }
 
     @Test
@@ -527,7 +578,8 @@ class DataExportTest {
         stageName = "Vegetativa",
         durationDays = 35,
         recurrenceIntervalDays = 0,
-        sortOrder = 0
+        sortOrder = 0,
+        vpdTarget = null
     )
 
     private fun reminder(id: Long) = ExportReminder(

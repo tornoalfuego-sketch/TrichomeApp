@@ -4,6 +4,7 @@ import com.trichome.app.data.entity.Protocol
 import com.trichome.app.data.entity.ProtocolStage
 import com.trichome.app.model.ProtocolFieldGroup
 import com.trichome.app.model.protocolFieldGroups
+import com.trichome.app.model.protocolStageTargetGroups
 
 /** Schedule a brand new protocol starts from. */
 val DEFAULT_PROTOCOL_BLOCKS: List<Pair<String, Int>> = listOf(
@@ -51,3 +52,15 @@ fun editorSeedKey(protocol: Protocol?): Long? = protocol?.id
  */
 fun extendedFieldBlocks(protocol: Protocol): List<ProtocolFieldGroup> =
     protocolFieldGroups(protocol)
+
+/**
+ * Each stage's own VPD target, as the second run of blocks on the card.
+ *
+ * Delegated for the same reason as [extendedFieldBlocks]: the label, the unit, the
+ * `0,80 – 1,20` formatting and the `Sin definir` empty state are all decisions with
+ * agronomy in them, and they belong in `model/` where a JVM test can reach them without
+ * a Compose runtime. Empty when the protocol has no stages, so the card does not print a
+ * heading with nothing under it.
+ */
+fun stageTargetBlocks(stages: List<ProtocolStage>): List<ProtocolFieldGroup> =
+    protocolStageTargetGroups(stages)

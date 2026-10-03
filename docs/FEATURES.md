@@ -31,6 +31,12 @@ V1.1.0 — menu completo de funcionalidades, agrupado por fase de desarrollo.
 - **Editar un protocolo ya no borra sus etapas.** El editor sembraba siempre un bloque por defecto de tres etapas y nunca leía las filas reales, así que guardar una edición sobrescribía el calendario completo.
 - Registro de transiciones de etapa (bitácora de `stage_entries`).
 - Progreso de etapa calculado por `StageProgressEngine` (días en etapa, % de avance global, días restantes).
+- **Objetivo de VPD por etapa** (`protocol_stages.vpdTarget`, esquema v6). Es la banda que el
+  cultivador apunta a **mientras la planta está en esa etapa**, y no una medición: no hay ningún
+  sensor detrás de ningún VPD de esta app, así que la columna se llama `vpdTarget` y no `vpd`.
+  Una etapa sin objetivo lee **"Sin definir"** en la tarjeta y sale como `null` en la
+  exportación, nunca como `0,00 – 0,00`. La banda general del protocolo sigue en
+  `protocols.vpdBand`: una es el rango del cultivo entero y la otra, la fase.
 
 ## Fase 4 — Motor SuperCycle
 

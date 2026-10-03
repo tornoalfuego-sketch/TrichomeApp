@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.trichome.app.data.entity.Protocol
 import com.trichome.app.data.entity.ProtocolStage
+import com.trichome.app.model.ProtocolFieldGroup
 import com.trichome.app.model.SuperCycleEngine
 import com.trichome.app.ui.components.accentButtonColors
 import com.trichome.app.ui.components.accentContentOn
@@ -241,44 +242,62 @@ private fun ProtocolCard(
 
             Spacer(Modifier.height(12.dp))
 
-            // Extended agronomic fields. Labels, units and the empty state come
-            // from model/ProtocolExtendedFields, so a field the grower has not
-            // filled in reads "Sin definir" and never a fabricated number.
-            extendedFieldBlocks(protocol).forEach { group ->
-                Text(
-                    group.titleEs,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = LocalTertiaryText.current
-                )
-                Spacer(Modifier.height(2.dp))
-                group.rows.forEach { row ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            row.labelEs,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.weight(1f)
-                        )
-                        // The number takes the metric register; the unit and the
-                        // grower's own words stay in the prose face. Absent when
-                        // there is no number, which is what "Sin definir" means.
-                        row.metricEs?.let { metric ->
-                            Text(metric, style = LocalMetricValue.current)
-                            Spacer(Modifier.width(6.dp))
-                        }
-                        Text(
-                            row.detailEs,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = LocalTertiaryText.current
-                        )
-                    }
-                }
-                Spacer(Modifier.height(6.dp))
-            }
+            // Extended agronomic fields, then the per-stage targets. Labels, units and
+            // the empty state come from model/ProtocolExtendedFields, so a field the
+            // grower has not filled in reads "Sin definir" and never a fabricated number.
+            extendedFieldBlocks(protocol).forEach { group -> FieldGroupBlock(group) }
+            stageTargetBlocks(blocks).forEach { group -> FieldGroupBlock(group) }
         }
     }
+}
+
+/**
+ * One titled group of labelled fields, as the protocol card renders them.
+ *
+ * Extracted rather than inlined so the card can print two runs of groups — the
+ * grow-wide targets and the per-stage ones — through one renderer. Two copies of this
+ * loop is how the metric register ends up applied to the header's numbers and not to
+ * the stage's.
+ *
+ * No scrollable of its own: the card is a row inside the screen's `LazyColumn`, and a
+ * second scroll owner on the same axis is the layout defect `ScrollOwnershipTest` names.
+ */
+@Composable
+private fun FieldGroupBlock(group: ProtocolFieldGroup) {
+    Text(
+        group.titleEs,
+        style = MaterialTheme.typography.titleSmall,
+        color = LocalTertiaryText.current
+    )
+    group.noteEs?.let { note ->
+        Text(note, style = MaterialTheme.typography.bodySmall, color = LocalTertiaryText.current)
+    }
+    Spacer(Modifier.height(2.dp))
+    group.rows.forEach { row ->
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                row.labelEs,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f)
+            )
+            // The number takes the metric register; the unit and the grower's own words
+            // stay in the prose face. Absent when there is no number, which is what
+            // "Sin definir" means.
+            row.metricEs?.let { metric ->
+                Text(metric, style = LocalMetricValue.current)
+                Spacer(Modifier.width(6.dp))
+            }
+            Text(
+                row.detailEs,
+                style = MaterialTheme.typography.bodySmall,
+                color = LocalTertiaryText.current
+            )
+        }
+    }
+    Spacer(Modifier.height(6.dp))
 }
 
 /** Dialog to create/edit a protocol and its ordered stage blocks. */

@@ -162,7 +162,9 @@ class ProtocolMigrationContractTest {
      */
     @Test
     fun everyVersionFromOneToTheCurrentHasAMigration() {
-        val registered = listOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+        val registered = listOf(
+            MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6
+        )
             .map { it.startVersion to it.endVersion }
 
         assertEquals(
@@ -357,20 +359,34 @@ class ProtocolMigrationContractTest {
         assertEquals(null, protocol.observations)
     }
 
+    /**
+     * The stage table gained exactly one column, and it is not one of F10a's.
+     *
+     * Was: `protocol_stages` keeps the six columns it always had. Now: schema v6 adds
+     * `vpdTarget` to it — the per-stage VPD band F10a's KDoc named as the correct home
+     * for one and declined to put on the header. `StageVpdTargetMigrationContractTest`
+     * owns that migration's audit; this assertion stays because the boundary still has to
+     * hold: no v4 column may leak into the stage table, and none has.
+     */
     @Test
-    fun theStageEntitiesAreNotRepointedAtProtocol() {
-        // Guards the reasoning behind the phase split: `protocol_stages` keeps
-        // exactly the columns it had, so this migration did not quietly widen
-        // its scope by changing the entity without migrating the table.
-        val stageColumns = entityFields(4, "protocol_stages").map {
-            (it.jsonObject["columnName"] as JsonPrimitive).content
-        }
+    fun theStageTableGainedOnlyItsOwnVpdTargetAndNoneOfF10asColumns() {
         assertEquals(
             listOf(
                 "id", "protocolId", "stageName",
-                "durationDays", "recurrenceIntervalDays", "sortOrder"
+                "durationDays", "recurrenceIntervalDays", "sortOrder", "vpdTarget"
             ),
-            stageColumns
+            entityFields(6, "protocol_stages").map {
+                (it.jsonObject["columnName"] as JsonPrimitive).content
+            }
         )
+        listOf("vpdBand", "phRange", "ecRange", "lightTempCelsius", "observations").forEach {
+            assertFalse(
+                "`protocol_stages.$it` is a header target; landing it here would be a second " +
+                    "place the same fact is declared",
+                entityFields(6, "protocol_stages").map {
+                    (it.jsonObject["columnName"] as JsonPrimitive).content
+                }.contains(it)
+            )
+        }
     }
 }

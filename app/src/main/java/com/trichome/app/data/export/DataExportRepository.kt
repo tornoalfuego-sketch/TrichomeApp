@@ -10,25 +10,12 @@ import com.trichome.app.data.dao.ProtocolStageDao
 import com.trichome.app.data.dao.ReminderDao
 import com.trichome.app.data.dao.StageEntryDao
 import com.trichome.app.data.dao.SuperCycleDao
-import com.trichome.app.data.entity.GrowTent
-import com.trichome.app.data.entity.Plant
 import com.trichome.app.model.DataExport
 import com.trichome.app.model.DataExportCopy
 import kotlinx.coroutines.flow.first
 import com.trichome.app.model.DataExportJson
-import com.trichome.app.model.ExportAchievement
 import com.trichome.app.model.ExportDocument
-import com.trichome.app.model.ExportEvent
-import com.trichome.app.model.ExportPlant
-import com.trichome.app.model.ExportProtocol
-import com.trichome.app.model.ExportProtocolStage
-import com.trichome.app.model.ExportReminder
 import com.trichome.app.model.ExportScope
-import com.trichome.app.model.ExportStageEntry
-import com.trichome.app.model.ExportSuperCycle
-import com.trichome.app.model.ExportTent
-import com.trichome.app.model.VpdProvenance
-import com.trichome.app.model.photoFileNameOf
 import java.io.File
 import java.io.IOException
 
@@ -47,7 +34,10 @@ import java.io.IOException
  * Everything with a decision in it lives above the last line and is covered by
  * `DataExportTest` and `ExportFileWriterTest`. This class is the assembly — it resolves
  * the scope, reads the rows, renders, and hands the bytes to the writer — and it is the
- * part that cannot be exercised without hardware.
+ * part that cannot be exercised without hardware. The row-to-export mappings it calls
+ * are `internal` in [ExportMappers.kt] rather than private here, so a JVM test can
+ * reach the decision that resolves a VPD's provenance without a `Context`; see that
+ * file's header for why that leak is deliberate and what it closed.
  *
  * ## Determinism across runs
  *
@@ -289,134 +279,3 @@ sealed interface ExportResult {
     /** Nothing was written. [reasonEs] says why, in Spanish, ready to display. */
     data class Failure(val reasonEs: String) : ExportResult
 }
-
-/* ── Entity to export mappings ────────────────────────────────────────────
- *
- * One place each, so the export's shape is decided here rather than at fourteen call
- * sites. Each is deliberately a `when`-free straight mapping: a field the export omits
- * is a field nobody can notice is missing, and the tests assert the rendered key order.
- */
-
-private fun GrowTent.toExport() = ExportTent(
-    id = id,
-    name = name,
-    location = location,
-    capacity = capacity,
-    lightType = lightType,
-    lightPowerWatts = lightPowerWatts,
-    isActive = isActive
-)
-
-private fun Plant.toExport(tentName: String?) = ExportPlant(
-    id = id,
-    name = name,
-    tentName = tentName,
-    sortOrder = sortOrder,
-    growStartAt = growStartTimestamp,
-    currentStage = currentStage,
-    strain = strain,
-    notes = notes,
-    isActive = isActive,
-    createdAt = createdAt
-)
-
-private fun com.trichome.app.data.entity.GrowEvent.toExport(plantName: String) = ExportEvent(
-    id = id,
-    plantName = plantName,
-    eventType = eventType,
-    timestamp = timestamp,
-    notes = notes,
-    temperature = temperature,
-    humidity = humidity,
-    ph = ph,
-    ec = ec,
-    amount = amount,
-    height = height,
-    lampDistance = lampDistance,
-    trainingType = trainingType,
-    defoliationLevel = defoliationLevel,
-    vpd = vpd,
-    // Null resolves to UNKNOWN rather than to "measured". A consumer of this file must
-    // not read an unrecorded origin as a sensor reading; see VpdProvenance.
-    vpdSource = VpdProvenance.fromStorageKey(vpdSource).storageKey,
-    vpdLeafOffset = vpdLeafOffset,
-    trichomeMaturity = trichomeMaturity,
-    diagnosisResult = diagnosisResult,
-    diagnosisCertainty = diagnosisCertainty,
-    isActive = isActive,
-    // The name, never the path.
-    photoName = photoFileNameOf(imagePath)
-)
-
-private fun com.trichome.app.data.entity.StageEntry.toExport(plantName: String) = ExportStageEntry(
-    id = id,
-    plantName = plantName,
-    stageName = stageName,
-    enteredAt = enteredAt,
-    exitedAt = exitedAt
-)
-
-private fun com.trichome.app.data.entity.Protocol.toExport(plantName: String) = ExportProtocol(
-    id = id,
-    plantName = plantName,
-    name = name,
-    lightHours = lightHours,
-    darkHours = darkHours,
-    presetType = presetType,
-    cycleStartAt = cycleStartAt,
-    isActive = isActive,
-    // The stored TEXT form of each band, verbatim. Re-encoding through `GrowRange` here
-    // would mean the export could disagree with the database, and a band the app can read
-    // but the file cannot is worse than the raw form.
-    vpdBand = vpdBandText(vpdBand),
-    phRange = vpdBandText(phRange),
-    ecRange = vpdBandText(ecRange),
-    lightTempCelsius = lightTempCelsius,
-    lightHumidityPercent = lightHumidityPercent,
-    darkTempCelsius = darkTempCelsius,
-    darkHumidityPercent = darkHumidityPercent,
-    ppfd = ppfd,
-    dli = dli,
-    lightType = lightType,
-    lampPowerWatts = lampPowerWatts,
-    substrateType = substrateType,
-    wateringStrategy = wateringStrategy,
-    observations = observations
-)
-
-private fun vpdBandText(range: com.trichome.app.data.model.GrowRange?): String? =
-    com.trichome.app.data.model.GrowRange.encode(range)
-
-private fun com.trichome.app.data.entity.ProtocolStage.toExport(protocolName: String) =
-    ExportProtocolStage(
-        id = id,
-        protocolName = protocolName,
-        stageName = stageName,
-        durationDays = durationDays,
-        recurrenceIntervalDays = recurrenceIntervalDays,
-        sortOrder = sortOrder
-    )
-
-private fun com.trichome.app.data.entity.Reminder.toExport(plantName: String?) = ExportReminder(
-    id = id,
-    plantName = plantName,
-    title = title,
-    message = message,
-    recurrenceType = recurrenceType,
-    recurrenceIntervalDays = recurrenceIntervalDays,
-    reminderTime = reminderTime,
-    isActive = isActive
-)
-
-private fun com.trichome.app.data.entity.SuperCycleConfig.toExport(
-    tentName: String?,
-    plantName: String?
-) = ExportSuperCycle(
-    id = id,
-    tentName = tentName,
-    plantName = plantName,
-    lightHours = lightHours,
-    darkHours = darkHours,
-    cycleStartAt = cycleStartAt,
-    presetType = presetType
-)

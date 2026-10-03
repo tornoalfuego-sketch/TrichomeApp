@@ -1,10 +1,17 @@
 # Exportación de datos
 
-**Formato:** JSON. **Versión del esquema:** 1 (`schemaVersion`). **Identificador:** `trichome.export`.
+**Formato:** JSON. **Versión del esquema:** 2 (`schemaVersion`). **Identificador:** `trichome.export`.
 
 Este documento describe el archivo que produce *Ajustes → Exportar Datos*. Es la
 especificación: el renderizador y este documento cambian juntos, y `DataExport.SCHEMA_VERSION`
 es lo que un lector futuro comprueba antes de confiar en un campo.
+
+> **Qué cambió en la versión 2.** `protocolStages` gana `vpdTarget`, el objetivo de VPD
+> propio de cada etapa (columna nueva del esquema de base de datos v6). El número de versión
+> sube aunque ningún campo haya cambiado de significado, porque un lector escrito contra
+> `schemaVersion: 1` no tiene forma de notar que apareció un campo dentro de una sección que
+> ya sabía leer. "Los campos que conozco no han cambiado" y "el documento dice lo mismo" no
+> son la misma afirmación, y solo el número lleva la segunda.
 
 ---
 
@@ -46,7 +53,7 @@ dos exportaciones nunca se pisan y sí se pueden comparar byte a byte.
 ```json
 {
   "schema": "trichome.export",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "scope": "TENT",
   "scopeLabelEs": "Una carpa entera",
   "generatedAt": 1753000000000,
@@ -94,7 +101,7 @@ se estableció" y "esta versión no lo escribe".
 `lampPowerWatts`, `substrateType`, `wateringStrategy`, `observations`
 
 **`protocolStages`** — `id`, `protocolName`, `stageName`, `durationDays`,
-`recurrenceIntervalDays`, `sortOrder`
+`recurrenceIntervalDays`, `sortOrder`, `vpdTarget` (null si la etapa no declara ninguno)
 
 **`reminders`** — `id`, `plantName` (null si el recordatorio no pertenece a una planta),
 `title`, `message`, `recurrenceType`, `recurrenceIntervalDays`, `reminderTime`, `isActive`
@@ -129,6 +136,26 @@ número derivado como si fuera una lectura de sensor, que es exactamente el defe
 Un valor `CALCULATED` **debe** traer `vpdLeafOffset`, que es la diferencia hoja-aire con la que
 se obtuvo. Sin él el número es un huérfano: no se puede reproducir, solo creer. Un valor
 `MEASURED` no lleva desplazamiento, porque una lectura de instrumental no lo tiene detrás.
+
+---
+
+## 4b. `vpdTarget`: un objetivo por etapa, no una medición
+
+`protocolStages[].vpdTarget` es la banda de VPD que el cultivador quiere mantener **mientras la
+planta está en esa etapa**, escrita en la misma forma almacenada que `protocols.vpdBand`
+(`"min:max"`, en kPa). Un objetivo de etapa y la banda general del protocolo son dos cosas
+distintas, y por eso tienen dos nombres: la general es el rango dentro del cual se lleva todo
+el cultivo, la de la etapa es a lo que se apunta en esa fase.
+
+`vpdTarget` **no** se llama `vpd`, y el nombre es lo que sostiene la honestidad del dato: no hay
+ningún sensor detrás de ningún VPD de esta app. Lo que calcula es una estimación offline por
+latitud, altitud y estación, o un cálculo con la temperatura y la humedad que el cultivador
+anotó. Un campo llamado `vpd` se leería como una observación de la sala, que es exactamente el
+defecto que la tarjeta de clima ya evita.
+
+`vpdTarget` es **`null`** en las etapas escritas antes del esquema v6, que son las que ya tiene
+un cultivo real. `null` es la respuesta correcta y no un hueco: un `"0.0:0.0"` publicaría una
+banda de cero como algo que el cultivador escribió.
 
 ---
 
@@ -183,12 +210,20 @@ proyecto, y Android no tiene un generador de PDF para contenido arbitrario. Un P
 
 - `DataExportTest` (JVM): determinismo byte a byte, orden de claves, las tres procedencias de
   VPD, la reduccion de la ruta de la foto a su nombre, la ausencia de internals de Room, el
-  escapado de comillas y saltos de linea, y los acentos espanoles.
+  escapado de comillas y saltos de linea, los acentos espanoles, y el `vpdTarget` por etapa
+  escrito en la misma forma que la banda general (y `null`, nunca `0.0:0.0`, cuando no hay).
+- `ExportVpdProvenanceTest` (JVM): el camino de la fila al archivo. Construye un `GrowEvent` con
+  `vpdSource` nulo, en blanco y desconocido, lo pasa por el mapeo real y por el renderizador, y
+  comprueba que el archivo dice `UNKNOWN` y jamas `MEASURED`. Es la prueba que faltaba: la de
+  `DataExportTest` solo afirmaba algo sobre el enum, no sobre el archivo.
 - `ExportFileWriterTest` (JVM): la escritura real sobre archivos reales, incluido el camino de
   fallo, que no deja ningun `.json` y borra el `.part`.
 - `VpdHistoryStructureTest` (JVM): el panel de exportacion escribe unicamente a traves de
   `ExportFileWriter`, y el dialogo limita su desplazamiento.
 
 Lo que **no** esta verificado: `DataExportRepository` necesita una base de datos real, asi que
-el camino desde las filas hasta el JSON esta cubierto por pruebas de modelo y de escritura pero
-**no se ha ejecutado nunca**. No hay dispositivo conectado (`adb devices` devuelve vacio).
+el camino desde las filas de Room hasta el JSON esta cubierto por pruebas de modelo, de mapeo y
+de escritura pero **no se ha ejecutado nunca**: este entorno no ejecuta pruebas instrumentadas.
+Tampoco se ha ejecutado `MigrationTest`, que es la unica prueba que hace correr una migracion
+contra SQLite de verdad y deja que `onValidateSchema` compare el resultado con el esquema
+exportado.
