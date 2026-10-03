@@ -36,10 +36,41 @@ data class SuperCycleForm(
     /** True once the user moved a slider or picked a preset. */
     val dirty: Boolean = false,
     /** `cycleStartAt` of the saved row, kept so an edit does not reset the clock. */
-    val savedCycleStartAt: Long? = null
+    val savedCycleStartAt: Long? = null,
+    /**
+     * The instant the grower chose in the anchor picker, or null while they have not.
+     *
+     * Deliberately a **separate** field from [savedCycleStartAt] rather than an
+     * overwrite of it. Two reasons, and both are the same reason:
+     *
+     *  1. **Cancelling has to be a no-op.** The picker writes here on confirm and
+     *     nothing else, so a cancel, a dismiss-by-tap and a rotation all leave
+     *     [savedCycleStartAt] exactly as the load found it. A picker that wrote the
+     *     field directly would need a second copy to restore, and the restore is the
+     *     part that gets forgotten.
+     *  2. **A late load must not clobber the choice.** `onLoaded` already has a branch
+     *     for an edit that arrived before the load resolved, and it deliberately adopts
+     *     the saved anchor. Doing that when the anchor is what was edited would silently
+     *     undo the grower's decision on the frame after they made it — the same defect
+     *     class as the slider race this file exists to prevent, wearing a different hat.
+     */
+    val chosenCycleStartAt: Long? = null
 ) {
     /** Save is only reachable with the loaded values already on screen. */
     val canSave: Boolean get() = loaded
+
+    /**
+     * The anchor the screen is currently showing: the grower's choice when there is one,
+     * otherwise the saved row's, otherwise null before the load resolves.
+     *
+     * The heatmap and the consequence preview both read this, so both are drawn against
+     * the same instant Save would write. A preview computed from the saved value while
+     * Save writes the chosen one is a preview of nothing.
+     */
+    val effectiveCycleStartAt: Long? get() = chosenCycleStartAt ?: savedCycleStartAt
+
+    /** True once the anchor picker has confirmed an instant. */
+    val anchorEdited: Boolean get() = chosenCycleStartAt != null
 
     /**
      * Folds a finished load into the form.
@@ -52,7 +83,14 @@ data class SuperCycleForm(
      */
     fun onLoaded(config: SuperCycleConfig?): SuperCycleForm =
         if (dirty) {
-            copy(loaded = true, savedCycleStartAt = config?.cycleStartAt ?: savedCycleStartAt)
+            copy(
+                loaded = true,
+                savedCycleStartAt = config?.cycleStartAt ?: savedCycleStartAt,
+                // The grower's anchor survives a late load. See
+                // [chosenCycleStartAt]: adopting the stored instant here would undo the
+                // choice on the frame after it was made.
+                chosenCycleStartAt = chosenCycleStartAt
+            )
         } else {
             SuperCycleForm(
                 lightHours = config?.lightHours ?: DEFAULT_LIGHT_HOURS,
@@ -63,6 +101,17 @@ data class SuperCycleForm(
                 savedCycleStartAt = config?.cycleStartAt
             )
         }
+
+    /**
+     * The anchor picker confirmed [millis].
+     *
+     * Marks the form dirty for the same reason moving a slider does: Save has to be the
+     * only writer, and it decides what it writes from this state. The stored value is not
+     * touched here, so cancelling in the dialog and reopening the screen shows the
+     * anchor that is actually saved.
+     */
+    fun withCycleStartAt(millis: Long): SuperCycleForm =
+        copy(chosenCycleStartAt = millis, dirty = true)
 
     fun withLightHours(hours: Int): SuperCycleForm =
         copy(
@@ -99,7 +148,10 @@ data class SuperCycleForm(
         else SuperCycleSaveRequest(
             lightHours = lightHours,
             darkHours = darkHours,
-            cycleStartAt = savedCycleStartAt ?: nowMillis,
+            // The chosen anchor first, then the saved one, then the instant of the
+            // request. The order is the whole point of [chosenCycleStartAt] being a
+            // separate field: this is the single place the anchor is decided.
+            cycleStartAt = effectiveCycleStartAt ?: nowMillis,
             presetType = presetType
         )
 

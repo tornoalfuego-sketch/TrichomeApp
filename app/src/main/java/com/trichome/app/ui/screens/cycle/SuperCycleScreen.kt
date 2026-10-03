@@ -10,17 +10,20 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.trichome.app.model.Phase
 import com.trichome.app.model.SuperCycleEngine
 import com.trichome.app.model.SuperCycleResult
+import com.trichome.app.model.SupercycleAnchorPicker
+import com.trichome.app.model.SupercycleScheduleBuilder
 import com.trichome.app.data.entity.SuperCycleConfig
 import com.trichome.app.ui.components.accentButtonColors
 import com.trichome.app.ui.components.AppTopBar
 import com.trichome.app.ui.components.SolidPanel
 import com.trichome.app.ui.components.SolidProgressRing
+import com.trichome.app.ui.components.SupercycleHeatmap
+import com.trichome.app.ui.theme.LocalTertiaryText
 import com.trichome.app.ui.theme.TrichomeThemeState
 import com.trichome.app.ui.theme.metricHeadline
 import com.trichome.app.ui.theme.metricValue
@@ -62,6 +65,10 @@ fun SuperCycleScreen(
     var form by remember { mutableStateOf(SuperCycleForm()) }
     var savedAt by remember { mutableStateOf<Long?>(null) }
     var showSaved by remember { mutableStateOf(false) }
+    // The picker is a sibling of the screen's own state, not a field of the form: the
+    // draft instant lives inside the dialog and only reaches `form` on confirm, so
+    // cancelling cannot reach the row at all.
+    var showAnchorPicker by remember { mutableStateOf(false) }
 
     LaunchedEffect(plantId) {
         form = SuperCycleForm().onLoaded(vm.load(plantId))
@@ -70,13 +77,20 @@ fun SuperCycleScreen(
     val lightHours = form.lightHours
     val darkHours = form.darkHours
     val selectedPreset = form.presetType
+    // One zone for the whole screen. Read from the system once and remembered, so the
+    // hour the picker shows and the hour the heatmap resolves against cannot disagree
+    // because the device crossed a timezone between two recompositions.
+    val zone = remember { java.time.ZoneId.systemDefault() }
+    // Captured once per screen rather than read per frame, for the same reason the
+    // picker captures it: a live `now` makes the heatmap's "now" marker crawl.
+    val nowMillis = remember { System.currentTimeMillis() }
 
     // Live update whenever sliders/presets change. Held back until the load
     // resolved, because before that the hours are defaults and the result card
     // would briefly advertise a 18/6 cycle the tent is not running.
-    LaunchedEffect(lightHours, darkHours, form.loaded) {
+    LaunchedEffect(lightHours, darkHours, form.loaded, form.chosenCycleStartAt) {
         if (!form.loaded) return@LaunchedEffect
-        val startAt = form.savedCycleStartAt ?: System.currentTimeMillis()
+        val startAt = form.effectiveCycleStartAt ?: System.currentTimeMillis()
         vm.liveUpdate(lightHours, darkHours, startAt)
     }
 
@@ -144,6 +158,65 @@ fun SuperCycleScreen(
                         steps = 23
                     )
 
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        "🗓️ Inicio del superciclo",
+                        style = MaterialTheme.typography.titleSmall
+                    )
+                    Text(
+                        "Es el instante desde el que se cuenta el superdía. " +
+                            "Cambiarlo renumera todos los superdías desde esa fecha.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(8.dp))
+
+                    // The stored anchor, readable without opening anything, and how far
+                    // it sits from today. `effectiveCycleStartAt` so this agrees with
+                    // what Save would write: previewing the saved value while Save writes
+                    // the chosen one is a preview of nothing.
+                    val anchor = form.effectiveCycleStartAt
+                    if (anchor != null) {
+                        SupercycleAnchorSummary(
+                            preview = SupercycleScheduleBuilder.anchorPreviewFor(
+                                cycleStartAt = anchor,
+                                lightHours = lightHours,
+                                darkHours = darkHours,
+                                nowMillis = nowMillis,
+                                zone = zone
+                            ),
+                            daysFromNowLabelEs = SupercycleAnchorPicker.daysFromNowLabelEs(
+                                anchorMillis = anchor,
+                                nowMillis = nowMillis
+                            )
+                        )
+                    } else {
+                        Text(
+                            "Todavía sin inicio guardado. Al guardar se usará la hora actual.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = { showAnchorPicker = true },
+                        enabled = form.loaded,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(SupercycleAnchorPicker.OPEN_ES)
+                    }
+                    // Disabled until the load resolved, for the same reason Save is:
+                    // before it, there is no stored anchor to edit and nothing the
+                    // grower has seen to edit it against.
+                    if (!form.loaded) {
+                        Text(
+                            "Cargando la configuración guardada…",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = LocalTertiaryText.current
+                        )
+                    }
+
                     Spacer(Modifier.height(8.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -163,6 +236,23 @@ fun SuperCycleScreen(
                         )
                     }
                 }
+            }
+
+            // ── The photoperiod as a picture of the real day ────────
+            //
+            // Beside the summary rather than under it, and only once the load resolved:
+            // before that the anchor is unknown, and a heatmap built from a default
+            // instant would draw a day of somebody else's cycle.
+            if (form.loaded) {
+                SupercycleHeatmap(
+                    schedule = SupercycleScheduleBuilder.scheduleFor(
+                        cycleStartAt = form.effectiveCycleStartAt ?: nowMillis,
+                        lightHours = lightHours,
+                        darkHours = darkHours,
+                        nowMillis = nowMillis,
+                        zone = zone
+                    )
+                )
             }
 
             // ── Live results ────────────────────────────────────────
@@ -243,6 +333,27 @@ fun SuperCycleScreen(
             }
         }
     }
+
+    // Mounted outside the scroll column so it is not a child of the screen's own
+    // layout: a dialog manages its own window and its own measurement, and the
+    // scroll owner has no business over it.
+    if (showAnchorPicker) {
+        val anchorForPicker = form.effectiveCycleStartAt ?: nowMillis
+        SupercycleAnchorPickerDialog(
+            currentAnchorMillis = anchorForPicker,
+            lightHours = lightHours,
+            darkHours = darkHours,
+            zone = zone,
+            accent = accent,
+            // Both exits are the same: nothing was written. The draft died with the
+            // dialog, so the form still holds whatever the last Save persisted.
+            onDismiss = { showAnchorPicker = false },
+            onConfirm = { millis ->
+                form = form.withCycleStartAt(millis)
+                showAnchorPicker = false
+            }
+        )
+    }
 }
 
 /**
@@ -291,10 +402,18 @@ private fun SuperCycleResultCard(
             Spacer(Modifier.height(12.dp))
 
             Row(verticalAlignment = Alignment.CenterVertically) {
+                // Scheme roles rather than the two literals this used to paint. Amber for
+                // light and violet for dark were the one place the supercycle screen
+                // bypassed the theme, so both fills and the ring's track were outside
+                // every contrast check in `TrichomeTheme`, and a grower on the SUNNY
+                // palette got amber on white. `secondaryContainer` and
+                // `surfaceVariant` carry the same distinction and are already verified
+                // against the surface of all four themes.
+                val scheme = MaterialTheme.colorScheme
                 SolidProgressRing(
                     percentage = progress,
                     size = 84,
-                    color = if (result.isLight) Color(0xFFFFD54F) else Color(0xFF7C4DFF)
+                    color = if (result.isLight) scheme.secondaryContainer else scheme.surfaceVariant
                 )
                 Spacer(Modifier.width(16.dp))
                 Column {

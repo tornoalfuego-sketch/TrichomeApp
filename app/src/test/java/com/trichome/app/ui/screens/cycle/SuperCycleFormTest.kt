@@ -178,6 +178,93 @@ class SuperCycleFormTest {
         assertEquals(0, form.withDarkHours(-5).darkHours)
     }
 
+    /* ── The anchor ───────────────────────────────────────────────────────── */
+
+    @Test
+    fun aResolvedLoadExposesTheStoredAnchorForEditing() {
+        // The picker has to open on the value that is actually saved, or the first thing
+        // the grower sees is not the thing Save would write.
+        val saved = config(cycleStartAt = 1_700_000_000_000L)
+        val form = SuperCycleForm().onLoaded(saved)
+
+        assertEquals(1_700_000_000_000L, form.effectiveCycleStartAt)
+        assertFalse("a load alone is not an anchor edit", form.anchorEdited)
+    }
+
+    @Test
+    fun anUnresolvedFormHasNoAnchorToShow() {
+        val form = SuperCycleForm()
+
+        assertNull(form.effectiveCycleStartAt)
+        assertFalse(form.anchorEdited)
+    }
+
+    @Test
+    fun confirmingThePickerWritesTheChosenInstantAndNotTheStoredOne() {
+        val saved = config(cycleStartAt = 1_700_000_000_000L)
+        val chosen = 1_799_999_999_000L
+
+        val request = SuperCycleForm().onLoaded(saved).withCycleStartAt(chosen).saveRequest(now)
+            ?: fail("a resolved load must produce a request")
+
+        assertEquals(chosen, request.cycleStartAt)
+    }
+
+    @Test
+    fun cancellingThePickerLeavesTheStoredAnchorAsTheOnlyOneInPlay() {
+        // Cancel writes nothing, so the form never learns a draft existed. There is no
+        // `withCycleStartAt` call to not make, which is why the picker keeps its draft in
+        // its own snapshot state.
+        val saved = config(cycleStartAt = 1_700_000_000_000L)
+        val form = SuperCycleForm().onLoaded(saved)
+
+        assertEquals(1_700_000_000_000L, form.savedCycleStartAt)
+        assertNull(form.chosenCycleStartAt)
+        assertEquals(1_700_000_000_000L, form.effectiveCycleStartAt)
+    }
+
+    @Test
+    fun aChosenAnchorSurvivesALateLoad() {
+        // The same defect class as the slider race, wearing a different hat. `onLoaded`
+        // deliberately adopts the stored anchor for an edit that arrived first; doing that
+        // when the anchor is what was edited would undo the choice on the frame after the
+        // grower made it.
+        val chosen = 1_799_999_999_000L
+        val reloaded = SuperCycleForm().withCycleStartAt(chosen)
+            .onLoaded(config(cycleStartAt = 1_700_000_000_000L))
+
+        assertTrue(reloaded.loaded)
+        assertEquals(chosen, reloaded.effectiveCycleStartAt)
+        assertEquals(1_700_000_000_000L, reloaded.savedCycleStartAt)
+    }
+
+    @Test
+    fun aLoadBeforeAnyAnchorChoiceStillAdoptsTheStoredInstant() {
+        val reloaded = SuperCycleForm()
+            .onLoaded(config(cycleStartAt = 1_700_000_000_000L))
+            .onLoaded(config(cycleStartAt = 1_600_000_000_000L))
+
+        assertEquals(1_600_000_000_000L, reloaded.effectiveCycleStartAt)
+    }
+
+    @Test
+    fun movingASliderDoesNotDisturbAChosenAnchor() {
+        val saved = config(cycleStartAt = 1_700_000_000_000L)
+        val form = SuperCycleForm().onLoaded(saved).withCycleStartAt(1_799_999_999_000L)
+            .withLightHours(20)
+
+        assertEquals(1_799_999_999_000L, form.effectiveCycleStartAt)
+        assertEquals(1_700_000_000_000L, form.savedCycleStartAt)
+    }
+
+    @Test
+    fun aFirstSaveOnATentWithNoConfigStillFallsBackToTheInstantOfTheRequest() {
+        val form = SuperCycleForm().onLoaded(null).withCycleStartAt(1_799_999_999_000L)
+        val request = form.saveRequest(now) ?: fail("expected a request")
+
+        assertEquals(1_799_999_999_000L, request.cycleStartAt)
+    }
+
     @Test
     fun theScreenHasNoSecondWriterOfTheHours() {
         // The state object is only a fix if the screen actually uses it. A
