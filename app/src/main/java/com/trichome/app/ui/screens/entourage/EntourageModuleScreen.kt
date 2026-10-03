@@ -107,6 +107,11 @@ fun EntourageModuleScreen(
     var labTerpenes by remember { mutableStateOf(emptySet<EntourageTerpene>()) }
     // F5: the chosen handling route, reset with the rest of the case state.
     var labRoute by remember { mutableStateOf<ProcessingMethod?>(null) }
+    // F11: the Lab catalogue filter. Kept beside the route rather than inside the
+    // section so the filter survives a tab switch and a grower coming back to the
+    // Lab finds their query still in the field.
+    var labCaseQuery by remember { mutableStateOf("") }
+    var labCaseMode by remember { mutableStateOf<LabMode?>(null) }
     var labResult by remember { mutableStateOf<LabResult?>(null) }
 
     // Quiz state. The lifecycle lives in the model machine; this only renders it.
@@ -274,6 +279,14 @@ fun EntourageModuleScreen(
                         onLabTerpenes = { labTerpenes = it },
                         route = labRoute,
                         onRoute = { labRoute = it },
+                        // F11: the catalogue filter. Held here for the same
+                        // reason `labRoute` is — the section resolves the filtered
+                        // list and reports back an index into it, so the screen
+                        // owns the raw index and the section owns the narrowing.
+                        caseQuery = labCaseQuery,
+                        onCaseQuery = { labCaseQuery = it },
+                        caseMode = labCaseMode,
+                        onCaseMode = { labCaseMode = it },
                         result = labResult,
                         onEvaluate = { case, selection ->
                             val solved = EntourageLab.solve(

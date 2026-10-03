@@ -143,7 +143,59 @@ enum class PharmacologicalProfile(
     ANSIOLYTIC("ANSIOLITICO", "Ansiolítico", "🫧"),
     ANALGESIC("ANALGESICO", "Analgésico", "🩹"),
     SEDATIVE("SEDANTE", "Sedante", "🌙"),
-    FOCUS("FOCO_CREATIVIDAD", "Foco y creatividad", "🎯");
+    FOCUS("FOCO_CREATIVIDAD", "Foco y creatividad", "🎯"),
+
+    /**
+     * F11: terpene-dominance cards. Composition targets, not indications.
+     *
+     * Each of these names a **terpene** the shipped catalog documents and asks
+     * for it to be the largest share of the profile. That is a statement about
+     * botany and chromatography, not about a disease, which is what lets the
+     * module reach twenty-one cards without becoming a list of indications.
+     * See `EntourageProfile` for why a card that read as an indication was not
+     * built.
+     */
+    MYRCENE_LEADING("DOMINANCIA_MIRCENO", "Dominancia de mirceno", "🌿"),
+    LIMONENE_LEADING("DOMINANCIA_LIMONENO", "Dominancia de limoneno", "🍋"),
+    LINALOOL_LEADING("DOMINANCIA_LINALOOL", "Dominancia de linalool", "🌸"),
+    ALPHA_PINENE_LEADING("DOMINANCIA_PINENO_ALFA", "Dominancia de pineno alfa", "🌲"),
+    BETA_PINENE_LEADING("DOMINANCIA_PINENO_BETA", "Dominancia de pineno beta", "🌲"),
+    OCIMENE_LEADING("DOMINANCIA_OCIMENO", "Dominancia de ocimeno", "🍃"),
+    TERPINOLENE_LEADING("DOMINANCIA_TERPINOLENO", "Dominancia de terpinoleno", "🌱"),
+    CAMPHENE_LEADING("DOMINANCIA_CAMFENO", "Dominancia de camfeno", "🪵"),
+    HUMULENE_LEADING("DOMINANCIA_HUMULENO", "Dominancia de humuleno", "🍺"),
+    CARYOPHYLLENE_LEADING("DOMINANCIA_CARIOFILENO", "Dominancia de cariofileno beta", "🌶"),
+
+    /**
+     * F11: the two family axes. Which **chemical family** the fraction leans on,
+     * with no single compound leading — which is exactly why these are two cards
+     * and not twenty.
+     */
+    MONOTERPENE_AXIS("EJE_MONOTERPENICO", "Eje monoterpénico", "🧪"),
+    SESQUITERPENE_AXIS("EJE_SESQUITERPENICO", "Eje sesquiterpénico", "🧪"),
+
+    /**
+     * F11: the two volatility axes, keyed on the measured boiling point F2 ships.
+     *
+     * Named for the boiling point rather than for "high volatility" because the
+     * relationship runs the other way: the high-boiling set is the *less*
+     * volatile one. A card named after volatility would have had to explain the
+     * inversion to every reader who understood the word.
+     */
+    HIGH_BOILING_POINT("PERFIL_EBULLICION_ALTO", "Perfil de punto de ebullición alto", "🔥"),
+    LOW_BOILING_POINT("PERFIL_EBULLICION_BAJO", "Perfil de punto de ebullición bajo", "❄"),
+
+    /**
+     * F11: the three cannabinoid-ratio cards.
+     *
+     * These measure the **relation between cannabinoids**, which is the one
+     * composition fact in this module that is measured rather than ranked. They
+     * say so: each card's `evidenceEs` is about the ratio being documented, and
+     * its `noteEs` says the ratio does not establish an effect in a person.
+     */
+    CBD_DOMINANT_RATIO("PROPORCION_CBD_DOMINANTE", "Proporción CBD dominante", "⚖"),
+    BALANCED_RATIO("PROPORCION_EQUILIBRADA", "Proporción equilibrada", "⚖"),
+    THC_DOMINANT_RATIO("PROPORCION_THC_DOMINANTE", "Proporción THC dominante", "⚖");
 
     companion object {
         private val byKey = entries.associateBy { it.key }
@@ -189,7 +241,34 @@ data class EntourageSynergy(
 
 /* ── Profiles ──────────────────────────────────────────────────────────── */
 
-/** A target profile loaded from the asset: the proportions it aims at. */
+/**
+ * A target profile loaded from the asset: the proportions it aims at.
+ *
+ * ## Why every card names a composition and not a condition
+ *
+ * F11 was asked for twenty-plus therapeutic profiles. What it built instead is
+ * twenty-one **composition cards**, and the difference is the whole decision:
+ *
+ *  - a card named for a terpene ("Dominancia de mirceno") or a boiling point
+ *    ("Perfil de punto de ebullición alto") states something the shipped catalog
+ *    can answer from chromatography;
+ *  - a card named for a condition states a therapeutic indication, which this
+ *    app has no standing to make, which no shipped data supports, and which the
+ *    module's own language guard is written to catch.
+ *
+ * The four cards F1 shipped — ansiolítico, analgésico, sedante, foco — were
+ * already perceptual rather than pathological, and they are kept unchanged. The
+ * seventeen new ones are all chemical. The gap is recorded in the task document
+ * rather than papered over, because the honest answer to "why not 20
+ * indications" is "because that list would be the one defect this module
+ * exists not to ship".
+ *
+ * @property evidenceEs how well the card's own claim is supported, in visible
+ *   Spanish. **Required, and dropped-and-recorded when absent** — see
+ *   `ProfileEvidence`. A composition card with no evidence line is a claim with
+ *   no stated limits, which is precisely what a health-adjacent screen must not
+ *   print.
+ */
 data class EntourageProfile(
     val key: PharmacologicalProfile,
     val labelEs: String,
@@ -199,10 +278,74 @@ data class EntourageProfile(
     /** Terpene to share. Sums to 1 across the profile in the asset. */
     val terpeneShares: Map<EntourageTerpene, Float>,
     /** The limits of the claim, in Spanish, shown with the profile. */
-    val noteEs: String
+    val noteEs: String,
+    /** F11: the evidence level. Never default; a card without one is dropped. */
+    val evidence: ProfileEvidence
 ) {
     /** The profile's lead terpene: the largest share, or null when empty. */
     val leadTerpene: EntourageTerpene? get() = terpeneShares.maxByOrNull { it.value }?.key
+}
+
+/**
+ * How well a profile card's own claim is supported.
+ *
+ * ## Exactly two levels, and no third
+ *
+ * The brief was explicit about this, and it is the right call: a health-adjacent
+ * app that can say "well documented" and "mixed evidence" cannot also say
+ * "probably fine". Two levels mean a card has to choose, and choosing between
+ * them requires asking what the evidence actually is.
+ *
+ * The [labelEs] strings are the ones [AgronomyEvidence] and
+ * [ProcessingEvidence] already use, deliberately: this is the same module speaking
+ * the same language about the same kind of question, and a reader who met
+ * "Evidencia mixta" on a terpene's agronomy is not being introduced to a new
+ * vocabulary.
+ *
+ * A **third** level is what F1 refused for the seven synergies, and the guard
+ * behind it — `EntourageAssetTest.theOutcomeLineIsLabelledAsDescribedAndNotAsAnEstablishedEffect`
+ * — is the reason a synonym here would have been worse than the two levels.
+ */
+enum class ProfileEvidence(val key: String, val labelEs: String) {
+    /** The composition fact itself is measured or textbook; nothing is claimed beyond it. */
+    BIEN_DOCUMENTADO("BIEN_DOCUMENTADO", "Bien documentado"),
+
+    /** Reported, with a credible direction and a magnitude or applicability that varies. */
+    MIXTO("MIXTO", "Evidencia mixta");
+
+    companion object {
+        /**
+         * The level named by an asset's `evidence_es`, or null when it names
+         * neither of the two.
+         *
+         * ## The level is the first clause, not the whole field
+         *
+         * The shipped cards write `"Bien documentado a nivel de caracterización
+         * química: la composición de la fracción monoterpénica…"`. The level is the
+         * opening clause and the rest is the basis for it, so this matches on the
+         * field **starting with** the level rather than on the field being equal to
+         * it — a rule that would have rejected all twenty-one cards for carrying
+         * the very explanation they exist to carry, and a rule that tried to pin
+         * down "where does the level end" would break on the first card whose
+         * basis contained an abbreviation.
+         *
+         * The exact key is accepted too, so a future build can write `"MIXTO"` and
+         * keep it machine-readable.
+         *
+         * Anything else is null, and the caller drops the card and records the
+         * key. That is the whole point: `ProfileEvidence` must never be a value
+         * the app invents for content that did not state one.
+         */
+        fun fromKey(value: String): ProfileEvidence? {
+            val text = value.trim()
+            return entries.firstOrNull {
+                it.key == text.uppercase() ||
+                    it.labelEs.equals(text, ignoreCase = true) ||
+                    text.startsWith(it.labelEs, ignoreCase = true) ||
+                    text.startsWith(it.key, ignoreCase = true)
+            }
+        }
+    }
 }
 
 /* ── Vaporisation ──────────────────────────────────────────────────────── */

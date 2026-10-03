@@ -1,6 +1,7 @@
 package com.trichome.app.model
 
 import com.trichome.app.data.repository.Terpene
+import kotlin.math.roundToInt
 
 /**
  * How close a reading is to the reference profile. The band is derived from the
@@ -14,7 +15,7 @@ enum class BlendQuality {
     /** The catalogue carries no abundance rating to score against. */
     NO_REFERENCE,
 
-    /** Scored, but far from the reference proportions. */
+    /** Scored, and far from the reference proportions. */
     DEBIL,
 
     /** Some of the proportions line up, most do not. */
@@ -24,7 +25,28 @@ enum class BlendQuality {
     FUERTE,
 
     /** The proportions are the reference proportions. */
-    EXACTO
+    EXACTO;
+
+    internal companion object {
+        /**
+         * The precision a result carries when nothing was scored.
+         *
+         * A default rather than a nullable field on purpose: the two "nothing to
+         * score" bands ([NO_SELECTION], [NO_REFERENCE]) both mean "there is no
+         * number here", and making that a third state the caller has to remember
+         * would be a way to print `0.000` under a panel that says "move a
+         * slider" — which is the exact defect this type was added to stop.
+         */
+        val EMPTY_PRECISION = BlendPrecision(
+            similarity = 0f,
+            distance = 1f,
+            compoundsCompared = 0,
+            similarityEs = "≈ —",
+            distanceEs = "≈ —",
+            evidenceEs = "≈ —",
+            isEmpty = true
+        )
+    }
 }
 
 /** One line of the "why" report: a compound and how far off it is. */
@@ -42,6 +64,73 @@ data class BlendNote(
 }
 
 /**
+ * How precise a mix is, stated as a distance rather than a verdict.
+ *
+ * ## What this is, in the module's own terms
+ *
+ * [BlendResult.percent] is a whole-number similarity. That number is useful and it
+ * throws away everything between the integers: a mix at 79.4 % and one at 79.9 %
+ * both read "79 %", and the difference between them is invisible. This type is
+ * the unrounded reading, and it exists for two reasons: the progression in
+ * `BlenderProgress` has to be able to see a difference the band cannot, and the
+ * screen has to be able to print a distance rather than an adjective.
+ *
+ * ## Every calculated value announces itself
+ *
+ * `distance` is derived, not measured: it is `1 - similarity` on a metric that
+ * compares two **normalised share vectors**, and no instrument in this app or any
+ * other produced those vectors — the player set them by dragging sliders. So the
+ * Spanish strings here carry `≈` and the readout says what was calculated, on the
+ * same rule `TerpeneVolatility`'s bands follow and for the same reason.
+ *
+ * ## A poor precision is a distance
+ *
+ * There is no band here, and that is deliberate. A band would have to be named
+ * ("débil", "pobre", "inadecuado") and every one of those names is a judgement
+ * about a selection the player made from their own lab analysis. The distance
+ * says the same thing without it: 0 is the reference, 1 is nothing in common.
+ */
+data class BlendPrecision(
+    /** Ruzicka similarity over the compared set, 0..1. Calculated. */
+    val similarity: Float,
+    /**
+     * `1 - similarity`, 0..1. Calculated.
+     *
+     * The **distance** from the reference profile. Zero is the reference
+     * distribution; one is a mix with nothing in common with it. It is the
+     * number the screen leads with next to the percentage, because a distance is
+     * answerable ("how far") where a similarity is not ("how much like").
+     */
+    val distance: Float,
+    /**
+     * How many compounds were actually compared.
+     *
+     * The odds of two random mixes agreeing fall as this grows, so the same 80 %
+     * over two compounds is much weaker evidence than over eight. Carried on the
+     * value rather than left to the UI so the count and the number it qualifies
+     * cannot drift apart.
+     */
+    val compoundsCompared: Int,
+    /** Similarity to three decimals, Spanish decimal comma, `≈`-marked. */
+    val similarityEs: String,
+    /** Distance to three decimals, Spanish decimal comma, `≈`-marked. */
+    val distanceEs: String,
+    /** `≈ ` + the compound count + what the count qualifies. */
+    val evidenceEs: String,
+    /** `true` when nothing was scored, so the caller shows guidance not a number. */
+    val isEmpty: Boolean
+) {
+    /**
+     * The distance as a whole percent, for a player-facing readout.
+     *
+     * Rounded, and marked `≈` by the caller through [distanceEs]. Kept separate
+     * from [distanceEs] so the coarse number and the precise one cannot be
+     * generated from different roundings.
+     */
+    val distancePercent: Int get() = (distance.coerceIn(0f, 1f) * 100f).roundToInt()
+}
+
+/**
  * The outcome of scoring a mix.
  *
  * @param percent the score, 0..100, rounded to a whole number.
@@ -50,6 +139,16 @@ data class BlendNote(
 data class BlendResult(
     val percent: Int,
     val quality: BlendQuality,
+    /**
+     * F11: the unrounded reading behind [percent].
+     *
+     * Always consistent with [percent] because it is computed by
+     * [precisionFor] from the same vectors [match] used — it is the same number,
+     * not a second opinion about it. A caller that wanted only the percentage
+     * keeps working unchanged; a caller that needs to see the difference between
+     * 79 and 80 reads this.
+     */
+    val precision: BlendPrecision = BlendQuality.EMPTY_PRECISION,
     /** The compounds the player pushed above their reference share. */
     val overRepresented: List<BlendNote> = emptyList(),
     /** The compounds the player pushed below their reference share. */
@@ -193,6 +292,9 @@ object TerpeneBlender {
         return BlendResult(
             percent = percent,
             quality = qualityFor(percent),
+            // The same vectors, so the rounded percentage and the unrounded
+            // precision can never describe two different comparisons.
+            precision = precisionFor(mix, catalog),
             overRepresented = notes.filter { it.delta > 0.02f }.sortedByDescending { it.delta },
             underRepresented = notes.filter { it.delta < -0.02f }.sortedBy { it.delta },
             userFamilySplit = familySplit(notes.map { it.userShare to it.family }),
@@ -239,6 +341,119 @@ object TerpeneBlender {
         percent >= 50 -> BlendQuality.PARCIAL
         else -> BlendQuality.DEBIL
     }
+
+    /* ── F11: precision ──────────────────────────────────────────────────── */
+
+    /** Above this many compounds, [BlendPrecision.evidenceEs] stops hedging. */
+    const val EVIDENCE_FLOOR_COMPOUNDS: Int = 3
+
+    /** The Spanish word for the calculation marker used on every derived number. */
+    private const val APPROX_ES = "≈"
+
+    /**
+     * The unrounded reading of a scored [mix].
+     *
+     * Reads the same vectors [match] builds and no others: the set `S` of ids
+     * that are both above zero and carry a richness rating, the player's
+     * renormalised shares over `S`, and the reference's renormalised shares over
+     * `S`. A precision computed over a different set would be a second opinion
+     * about the same mix, and the percentage and the distance would then be
+     * describing two different questions.
+     *
+     * Returns [BlendQuality.EMPTY_PRECISION] for a mix that cannot be scored —
+     * the catalogue carries no rating, or the player set nothing — so the caller
+     * renders guidance rather than `0.000`.
+     */
+    fun precisionFor(mix: Map<String, Float>, catalog: List<Terpene>): BlendPrecision {
+        val scored = comparableSet(mix, catalog)
+        if (scored == null) return BlendQuality.EMPTY_PRECISION
+
+        val weights = catalog.associate { it.id to richnessWeight(it.richness) }
+        val userTotal = scored.values.sum()
+        val referenceTotal = scored.keys.sumOf { weights.getValue(it).toDouble() }.toFloat()
+
+        val shared = scored.keys.sumOf { id ->
+            minOf(scored.getValue(id) / userTotal, weights.getValue(id) / referenceTotal).toDouble()
+        }
+        val union = scored.keys.sumOf { id ->
+            maxOf(scored.getValue(id) / userTotal, weights.getValue(id) / referenceTotal).toDouble()
+        }
+        // `union` is strictly positive: every share on both sides is positive, so
+        // every `max` term is positive. Division cannot reach zero here, and the
+        // guard is there so a future edit cannot make it.
+        if (union <= 0.0) return BlendQuality.EMPTY_PRECISION
+
+        val similarity = (shared / union).toFloat().coerceIn(0f, 1f)
+        val distance = (1f - similarity).coerceIn(0f, 1f)
+        return BlendPrecision(
+            similarity = similarity,
+            distance = distance,
+            compoundsCompared = scored.size,
+            similarityEs = "$APPROX_ES ${decimalEs(similarity, 3)}",
+            distanceEs = "$APPROX_ES ${decimalEs(distance, 3)}",
+            evidenceEs = evidenceEs(scored.size),
+            isEmpty = false
+        )
+    }
+
+    /**
+     * The ids both above zero in [mix] and carrying a richness rating, or null
+     * when there are none.
+     *
+     * Shared with [match] on purpose. The two functions score the same set and
+     * a private copy of this rule in each would be two definitions of "what is
+     * being compared", which is the one thing the number's meaning rests on.
+     */
+    private fun comparableSet(
+        mix: Map<String, Float>,
+        catalog: List<Terpene>
+    ): Map<String, Float>? {
+        val weights = catalog.associate { it.id to richnessWeight(it.richness) }
+        if (weights.values.none { it > 0f }) return null
+        val scored = mix.filter { (id, value) -> value > 0f && (weights[id] ?: 0f) > 0f }
+        return scored.ifEmpty { null }
+    }
+
+    /**
+     * The qualifier [BlendPrecision.evidenceEs] carries.
+     *
+     * States how many compounds the reading covers and nothing about how good it
+     * is. The old dialog line said a seven-compound result was "bastante
+     * sólido", which is a claim about the match's quality; the defensible claim
+     * is about its *size*, and that is what this says.
+     */
+    private fun evidenceEs(compounds: Int): String = when {
+        compounds < EVIDENCE_FLOOR_COMPOUNDS ->
+            "$APPROX_ES calculado sobre $compounds ${compoundWordEs(compounds)}; " +
+                "con menos de $EVIDENCE_FLOOR_COMPOUNDS el resultado puede ser casualidad"
+        compounds >= 6 ->
+            "$APPROX_ES calculado sobre $compounds ${compoundWordEs(compounds)}"
+        else ->
+            "$APPROX_ES calculado sobre $compounds ${compoundWordEs(compounds)}"
+    }
+
+    /** "1 compuesto" / "N compuestos", so the count reads as a sentence. */
+    private fun compoundWordEs(count: Int): String =
+        if (count == 1) "compuesto" else "compuestos"
+
+    /**
+     * A fixed-point decimal with a Spanish decimal comma.
+     *
+     * Half-up rather than `toString()`'s shortest-round-trip so the same value
+     * always prints the same number of digits: a readout that changes its decimal
+     * count as the player drags a slider is unreadable, and a distance of
+     * `0.09999999` is a rendering bug reported as a science one.
+     */
+    private fun decimalEs(value: Float, places: Int): String {
+        val factor = POWERS_OF_TEN[places]
+        val scaled = (value.toDouble() * factor + 0.5).toLong()
+        val whole = scaled / factor
+        val fraction = scaled % factor
+        val digits = fraction.toString().padStart(places, '0')
+        return "$whole,$digits"
+    }
+
+    private val POWERS_OF_TEN = intArrayOf(1, 10, 100, 1000, 10_000)
 
     /** Groups per-compound shares by family and normalises each side to 1. */
     private fun familySplit(

@@ -91,7 +91,12 @@ class EntourageAssetTest {
         val content = content()
 
         assertTrue("synergies", content.synergies.size >= 7)
-        assertEquals("all four target profiles", PharmacologicalProfile.entries.size, content.profiles.size)
+        assertEquals(
+            "every enum member has to ship a profile and every shipped profile a " +
+                "member, or the Lab can aim a case at a profile that does not exist",
+            PharmacologicalProfile.entries.size,
+            content.profiles.size
+        )
         assertTrue("quiz questions", content.questions.size == 16)
         assertTrue("lab cases", content.cases.size >= 4)
         assertTrue("a vaporisation row per terpene", content.vaporisation.size >= 10)

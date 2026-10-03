@@ -21,6 +21,7 @@ import com.trichome.app.model.HandlingGoal
 import com.trichome.app.model.LabAxis
 import com.trichome.app.model.LabMode
 import com.trichome.app.model.PharmacologicalProfile
+import com.trichome.app.model.ProfileEvidence
 import com.trichome.app.model.PreservationFactorKind
 import com.trichome.app.model.PreservationFactorNote
 import com.trichome.app.model.ProcessingEvidence
@@ -74,6 +75,16 @@ internal data class EntourageProfileAsset(
     val key: String = "",
     @SerialName("label_es") val labelEs: String = "",
     @SerialName("description_es") val descriptionEs: String = "",
+    /**
+     * F11: how well the card's own claim is supported. **Required.**
+     *
+     * Dropped-and-recorded rather than defaulted: a card that ships without an
+     * evidence line is a claim with no stated limits, and this module's standing
+     * rule is that an unresolvable key is reported rather than coerced to a
+     * default. See `ProfileEvidence` for why a card without one is a defect
+     * rather than a stylistic omission.
+     */
+    @SerialName("evidence_es") val evidenceEs: String = "",
     val cannabinoids: List<EntourageCannabinoidWeightAsset> = emptyList(),
     val terpenes: List<EntourageTerpeneShareAsset> = emptyList(),
     @SerialName("note_es") val noteEs: String = ""
@@ -363,8 +374,17 @@ internal fun EntourageBible.toContent(): EntourageContent {
 
     val profiles = profiles.mapNotNull { asset ->
         val key = PharmacologicalProfile.fromKey(asset.key)
+        // F11: the evidence level is resolved *before* the card is built, and a
+        // card without one is dropped with its key recorded. Defaulting here
+        // would put "Bien documentado" on a card that never said so, which is
+        // the exact defect `ProfileEvidence` exists to prevent — the app would
+        // be manufacturing a level for its own content.
+        val evidence = ProfileEvidence.fromKey(asset.evidenceEs)
         if (key == null) {
             unresolved += "profiles.${asset.key} -> unknown profile key"
+            null
+        } else if (evidence == null) {
+            unresolved += "profiles.${asset.key} -> no resolvable evidence level '${asset.evidenceEs}'"
             null
         } else {
             val weights = asset.cannabinoids.mapNotNull { entry ->
@@ -381,7 +401,8 @@ internal fun EntourageBible.toContent(): EntourageContent {
                 descriptionEs = asset.descriptionEs,
                 cannabinoidWeights = weights,
                 terpeneShares = shares,
-                noteEs = asset.noteEs
+                noteEs = asset.noteEs,
+                evidence = evidence
             )
         }
     }

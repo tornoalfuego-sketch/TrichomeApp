@@ -39,7 +39,8 @@ class EntouragePlannerTest {
             EntourageTerpene.LIMONENE to 0.15f,
             EntourageTerpene.TERPINOLENE to 0.10f
         ),
-        noteEs = "Nota de prueba"
+        noteEs = "Perfil de prueba, no una indicación médica.",
+        evidence = ProfileEvidence.MIXTO
     )
 
     private fun selection(vararg terpenes: EntourageTerpene, cannabinoids: Set<Cannabinoid> = emptySet()) =

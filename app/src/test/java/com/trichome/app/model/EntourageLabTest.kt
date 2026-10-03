@@ -29,7 +29,8 @@ class EntourageLabTest {
             EntourageTerpene.LIMONENE to 0.15f,
             EntourageTerpene.TERPINOLENE to 0.10f
         ),
-        noteEs = "Nota"
+        noteEs = "Perfil de prueba, no una indicación médica.",
+        evidence = ProfileEvidence.MIXTO
     )
 
     private val profiles = listOf(sedativeProfile)

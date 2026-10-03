@@ -8,16 +8,21 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.trichome.app.data.repository.Terpene
+import com.trichome.app.model.BlendPrecision
 import com.trichome.app.model.BlendQuality
 import com.trichome.app.model.BlendResult
+import com.trichome.app.model.BlenderProgress
+import com.trichome.app.model.Gamification
 import com.trichome.app.model.TerpeneBlender
 import com.trichome.app.model.TerpeneProgression
 import com.trichome.app.ui.components.SolidPanel
 import com.trichome.app.ui.components.accentTextButtonColors
+import com.trichome.app.ui.theme.LocalMetricHeadline
+import com.trichome.app.ui.theme.LocalMetricValue
 import com.trichome.app.ui.theme.TrichomeThemeState
+import kotlin.math.roundToInt
 
 /**
  * Master Blender: mix terpene percentages and see how the result compares to the
@@ -40,11 +45,29 @@ import com.trichome.app.ui.theme.TrichomeThemeState
  * is measured unbounded and can actually travel. The previous order clamped the
  * content and shipped a dialog that could not be scrolled at all; that was
  * verified on the device, not inferred.
+ *
+ * ## Progression (F11)
+ *
+ * The dialog does **not** write anything. It reads the player's total XP and the
+ * names already in the `achievements` table, renders what the current run would
+ * pay, and hands the rows to [onRecord]; the caller persists them through the
+ * existing repository. Two reasons for that split: a composable that writes to
+ * Room on every slider drag would pay for a comparison the player never
+ * committed to, and the identity guarantee for a badge row lives in SQL
+ * (`AchievementDao.insertAchievementIfAbsent`) rather than in anything this file
+ * could enforce.
+ *
+ * @param totalXp the player's current total, summed from the `achievements` table.
+ * @param awardedNames every name already in that table.
+ * @param onRecord the rows this run earned. Called once per deliberate press.
  */
 @Composable
 fun MasterBlenderDialog(
     catalog: List<Terpene>,
     themeState: TrichomeThemeState,
+    totalXp: Int = 0,
+    awardedNames: Set<String> = emptySet(),
+    onRecord: (List<com.trichome.app.model.EntourageReward>) -> Unit = {},
     onDismiss: () -> Unit
 ) {
     val scheme = themeState.colorScheme()
@@ -58,6 +81,18 @@ fun MasterBlenderDialog(
 
     var readings by remember(catalog) { mutableStateOf(emptyMap<String, Float>()) }
     val result = remember(readings, catalog) { TerpeneBlender.match(readings, catalog) }
+    // Recomputed on every slider move on purpose: it is a pure derivation of the
+    // score, and holding it in state would be a second copy of the number the
+    // report is already showing.
+    val pendingRewards = remember(result, totalXp) {
+        BlenderProgress.rewardsForRun(result.precision, totalXp, result.percent)
+    }
+    // The rows still missing, so a press on an already-recorded level does not
+    // re-attempt the write. This is the pre-filter; `NOT EXISTS` in the DAO is
+    // the guarantee.
+    val recordable = remember(pendingRewards, awardedNames) {
+        BlenderProgress.pending(pendingRewards, awardedNames)
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -137,6 +172,19 @@ fun MasterBlenderDialog(
                     Spacer(Modifier.height(12.dp))
                     SectionLabel("2 · Coincidencia con la referencia", scheme)
                     BlendReport(result, readings.size, themeState)
+
+                    Spacer(Modifier.height(12.dp))
+                    SectionLabel("3 · ${BlenderProgress.PRECISION_HEADING_ES}", scheme)
+                    PrecisionPanel(result.precision, totalXp, awardedNames, themeState)
+
+                    Spacer(Modifier.height(8.dp))
+                    TextButton(
+                        onClick = { onRecord(recordable) },
+                        enabled = recordable.isNotEmpty(),
+                        colors = accentTextButtonColors(scheme, scheme.primary)
+                    ) {
+                        Text(BlenderProgress.recordLabelEs(recordable.isNotEmpty()))
+                    }
 
                     Spacer(Modifier.height(8.dp))
                     Text(
@@ -235,15 +283,21 @@ private fun BlendReport(
                 )
 
                 else -> {
+                    // The headline metric role, not `headlineMedium` plus an
+                    // inline `FontWeight.Bold`: the percentage is a reading, and
+                    // v1.11.0 introduced the instrumented register for exactly
+                    // this. The inline override also fought the user's weight
+                    // choice, which the role respects.
                     Text(
                         "${result.percent}%",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = when (result.quality) {
-                            BlendQuality.EXACTO, BlendQuality.FUERTE -> scheme.primary
-                            BlendQuality.PARCIAL -> scheme.tertiary
-                            else -> scheme.error
-                        }
+                        style = LocalMetricHeadline.current,
+                        // F11: **not** `scheme.error`. It used to be, and that
+                        // was the one place on this screen where the UI called a
+                        // mix bad while the wording politely refused to. A score
+                        // is a distance; painting it as an error state is the
+                        // language the module exists not to use, expressed in a
+                        // colour instead of a sentence.
+                        color = scheme.onSurface
                     )
                     Text(
                         bandLabel(result.quality),
@@ -334,10 +388,135 @@ private fun bandLabel(quality: BlendQuality): String = when (quality) {
  * Chance agreement between two random mixes falls as more compounds are read,
  * so a match over two compounds is much weaker evidence than one over eight.
  * Saying so is the difference between a number and a claim.
+ *
+ * F11 removed the claim from the far end of this ladder. It used to read "el
+ * resultado es bastante sólido" at six compounds, which asserts a **quality** the
+ * metric cannot establish — a similarity index is not a confidence interval, and
+ * seven compounds agreeing does not make the reading solid, it makes it seven
+ * compounds. What is defensible at every rung is the size of the comparison, so
+ * that is all this says.
  */
 private fun coincidence(quality: BlendQuality, compoundsRead: Int): String = when {
     compoundsRead < 3 -> "Poca evidencia: con menos de 3 compuestos el resultado puede ser casualidad."
     quality == BlendQuality.DEBIL -> "Revisa las proporciones: el perfil está lejos del de referencia."
-    compoundsRead >= 6 -> "Basado en $compoundsRead compuestos, así que el resultado es bastante sólido."
+    compoundsRead >= 6 -> "Calculado sobre $compoundsRead compuestos. El resultado es más estable con más compuestos comparados."
     else -> "Basado en $compoundsRead compuestos."
+}
+
+/**
+ * The F11 panel: the unrounded distance, the XP this run pays, and the level
+ * history read off the `achievements` table.
+ *
+ * ## Nothing here is a judgement of the mix
+ *
+ * Every line is either a number the run produced or a number derived from the
+ * player's own total. There is no band, no adjective and no colour that says the
+ * selection was right — a mix two compounds out of the reference and a mix eight
+ * out both get a distance, and the distance is the answer.
+ *
+ * ## The level is the app's own
+ *
+ * [BlenderProgress] deliberately reads `Gamification.levelFromXp` rather than
+ * defining a blender ladder, so a player who registers a journal entry sees the
+ * same level move as one who mixed two profiles. The panel says so, because a
+ * screen that moved a number without saying what moves it is lying by omission.
+ */
+@Composable
+private fun PrecisionPanel(
+    precision: BlendPrecision,
+    totalXp: Int,
+    awardedNames: Set<String>,
+    themeState: TrichomeThemeState
+) {
+    val scheme = themeState.colorScheme()
+    val level = remember(totalXp) { Gamification.levelFromXp(totalXp) }
+    val history = remember(awardedNames) { BlenderProgress.historyEs(awardedNames) }
+    val runXp = remember(precision) {
+        if (precision.isEmpty) 0 else BlenderProgress.xpForRun(
+            (precision.similarity * 100f).roundToInt(),
+            precision.compoundsCompared
+        )
+    }
+
+    SolidPanel(contentColor = scheme.onSurface) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            if (precision.isEmpty) {
+                Text(
+                    BlenderProgress.PRECISION_EMPTY_ES,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = scheme.onSurfaceVariant
+                )
+            } else {
+                PrecisionRow(
+                    label = BlenderProgress.DISTANCE_LABEL_ES,
+                    value = precision.distanceEs,
+                    scheme = scheme
+                )
+                PrecisionRow(
+                    label = BlenderProgress.SIMILARITY_LABEL_ES,
+                    value = precision.similarityEs,
+                    scheme = scheme
+                )
+                Text(
+                    precision.evidenceEs,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = scheme.onSurfaceVariant
+                )
+            }
+
+            Spacer(Modifier.height(6.dp))
+
+            PrecisionRow(
+                label = BlenderProgress.LEVEL_LABEL_ES,
+                value = BlenderProgress.levelNameEs(level),
+                scheme = scheme
+            )
+            PrecisionRow(
+                label = BlenderProgress.XP_LABEL_ES,
+                value = BlenderProgress.xpLabelEs(runXp),
+                scheme = scheme
+            )
+            Text(
+                BlenderProgress.LEVEL_NOTE_ES,
+                style = MaterialTheme.typography.labelSmall,
+                color = scheme.onSurfaceVariant
+            )
+
+            Spacer(Modifier.height(4.dp))
+            Text(
+                BlenderProgress.HISTORY_HEADING_ES,
+                style = MaterialTheme.typography.labelMedium,
+                color = scheme.onSurfaceVariant
+            )
+            Text(
+                history,
+                style = MaterialTheme.typography.bodySmall,
+                color = scheme.onSurface
+            )
+        }
+    }
+}
+
+/** One `label · value` row, with the value in the metric register. */
+@Composable
+private fun PrecisionRow(
+    label: String,
+    value: String,
+    scheme: ColorScheme
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelSmall,
+            color = scheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f)
+        )
+        Text(value, style = LocalMetricValue.current, color = scheme.onSurface)
+    }
 }

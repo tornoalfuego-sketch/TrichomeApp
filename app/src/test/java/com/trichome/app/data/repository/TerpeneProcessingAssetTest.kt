@@ -781,7 +781,12 @@ class TerpeneProcessingAssetTest {
         val parsed = content()
 
         assertEquals("the measured bands are untouched", 10, parsed.vaporisation.size)
-        assertEquals("the profiles are untouched", 4, parsed.profiles.size)
+        assertEquals(
+            "the profile library is untouched: F11 grew it, so the guard is that " +
+                "the enum and the file still agree rather than a literal count",
+            com.trichome.app.model.PharmacologicalProfile.entries.size,
+            parsed.profiles.size
+        )
         assertEquals("the synergies are untouched", 7, parsed.synergies.size)
         // F5 grew the quiz, so the count is no longer the guard; the guard's real
         // intent is "F4 did not rewrite what F1 to F3 shipped", which survives by

@@ -58,6 +58,13 @@ fun EntourageBoosterSection(
         // The asset's own profiles, falling back to the enum's labels when the
         // catalog ships none: the picker has to be selectable before the
         // proportions are known, and an unanswerable screen is not an option.
+        //
+        // The placeholder row carries `ProfileEvidence.MIXTO` deliberately, and
+        // the reason is in that member's own KDoc: an evidence level that is
+        // *wrong* is worse than one that says nothing. This row ships no
+        // proportions at all, so the weakest of the two levels is the only
+        // truthful one — and the empty description and note keep it from
+        // reaching the planner as a target.
         if (library.profiles.isEmpty()) {
             PharmacologicalProfile.entries.map { key ->
                 EntourageProfile(
@@ -66,7 +73,8 @@ fun EntourageBoosterSection(
                     descriptionEs = "",
                     cannabinoidWeights = emptyMap(),
                     terpeneShares = emptyMap(),
-                    noteEs = ""
+                    noteEs = "",
+                    evidence = ProfileEvidence.MIXTO
                 )
             }
         } else {

@@ -21,16 +21,27 @@ class ModelPurityTest {
 
     private val files = listOf(
         "LunarEngine.kt",
+        "LunarTimeline.kt",
         "AmbientClimate.kt",
         "PlantMigrationPlan.kt",
         "Entourage.kt",
         "EntourageAchievement.kt",
+        "EntourageCaseSearch.kt",
         "TerpeneVolatility.kt",
         "TerpeneAgronomy.kt",
         "TerpeneProcessing.kt",
         "EntourageHandling.kt",
         "MetricType.kt",
-        "SupercycleSchedule.kt"
+        "SupercycleSchedule.kt",
+        // F11: the three new decision layers. Each is in `model/` for the reason
+        // the rest are -- so the behaviour is reachable without a device -- and
+        // each is a place a `Context` or a clock would quietly creep in. The
+        // glyph *drawing* is the one piece of F11 that is not here, and it lives in
+        // `ui/components/DiagnosisGlyphs.kt` precisely because `ImageVector` is a
+        // Compose type; `DiagnosisIcons.kt` holds only the assignment table.
+        "DiagnosisIcons.kt",
+        "DiagnosisSearch.kt",
+        "BlenderProgress.kt"
     )
 
     private fun codeOf(name: String): String {

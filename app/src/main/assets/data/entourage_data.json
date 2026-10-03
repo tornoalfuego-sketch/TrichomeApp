@@ -91,6 +91,7 @@
     {
       "key": "ANSIOLITICO",
       "label_es": "Ansiolítico",
+      "evidence_es": "Evidencia mixta. El CBD y el CBG están descritos en la literatura con mecanismos sobre CB2, 5-HT1A y TRPV1, pero los ensayos en personas que sostienen un efecto ansiolítico son escasos y heterogeneousos. Los terpenos que acompañan al perfil tienen evidencia preclínica.",
       "description_es": "Perfil orientado a bajar la ansiedad y la tensión sin carga sedante. Apunta a CBD y CBG con limoneno, linalool y pinenos.",
       "cannabinoids": [{ "cannabinoid": "CBD", "weight": 0.65 }, { "cannabinoid": "CBG", "weight": 0.35 }],
       "terpenes": [
@@ -105,6 +106,7 @@
     {
       "key": "ANALGESICO",
       "label_es": "Analgésico",
+      "evidence_es": "Evidencia mixta. La modulación de TRPV1 y TRPA1 por CBD y por el cariofileno beta está descrita en modelo animal, y la acción antiinflamatoria del cariofileno beta es el hallazgo más consistente. No hay confirmación en personas del efecto analgésico de la combinación.",
       "description_es": "Perfil orientado al dolor y a la inflamación, con la menor carga sedante posible. El cariofileno beta es el eje y el CBD la base.",
       "cannabinoids": [{ "cannabinoid": "CBD", "weight": 0.65 }, { "cannabinoid": "CBN", "weight": 0.20 }, { "cannabinoid": "THC", "weight": 0.15 }],
       "terpenes": [
@@ -119,6 +121,7 @@
     {
       "key": "SEDANTE",
       "label_es": "Sedante",
+      "evidence_es": "Evidencia mixta. El CBN tiene afinidad por CB1 diez a veinte veces menor que el THC y aparece como producto de degradación, no como componente de la planta. El efecto sedante de la combinación no está demostrado en personas.",
       "description_es": "Perfil orientado al descanso profundo y a la relajación muscular prolongada. Domina el mirceno, con apoyo de CBN y linalool.",
       "cannabinoids": [{ "cannabinoid": "CBN", "weight": 0.45 }, { "cannabinoid": "THC", "weight": 0.35 }, { "cannabinoid": "CBD", "weight": 0.20 }],
       "terpenes": [
@@ -133,6 +136,7 @@
     {
       "key": "FOCO_CREATIVIDAD",
       "label_es": "Foco y creatividad",
+      "evidence_es": "Evidencia mixta. El THCV es antagonista de CB1 y agonista parcial de CB2 con actividad medida en modelos animales; su efecto sobre el enfoque en personas está debatido en la literatura. Los pinenos y el limoneno que acompañan el perfil tienen evidencia preclínica.",
       "description_es": "Perfil orientado a la atención sostenida y a la producción con baja carga sedante. Domina el pineno, con limoneno y terpinoleno.",
       "cannabinoids": [{ "cannabinoid": "THC", "weight": 0.40 }, { "cannabinoid": "THCV", "weight": 0.30 }, { "cannabinoid": "CBD", "weight": 0.30 }],
       "terpenes": [
@@ -142,6 +146,264 @@
         { "terpene": "OCIMENE", "share": 0.15 }
       ],
       "note_es": "El efecto del THCV sobre el enfoque es objeto de debate en la literatura y la mayoría de los datos son preclínicos. El THC en dosis altas deteriora la memoria de trabajo: este perfil asume dosis bajas o moderadas."
+    },
+    {
+      "key": "DOMINANCIA_MIRCENO",
+      "label_es": "Dominancia de mirceno",
+      "description_es": "Un perfil cuya fracción terpénica está encabezado por el mirceno, seguido de limoneno y ocimeno. Es la composición de la fracción monoterpénica que la enciclopedia clasifica como más abundante en material de Cannabis.",
+      "evidence_es": "Bien documentado a nivel de caracterización química: la composición de la fracción monoterpénica y sesquiterpénica de Cannabis se analiza por cromatografía de gases. La evidencia de los efectos que se atribuyen a cada terpeno sobre CB1, CB2, TRPV1 y TRPA1 es preclínica.",
+      "cannabinoids": [{ "cannabinoid": "CBD", "weight": 0.60 }, { "cannabinoid": "THC", "weight": 0.40 }],
+      "terpenes": [
+        { "terpene": "MYRCENE", "share": 0.40 },
+        { "terpene": "LIMONENE", "share": 0.20 },
+        { "terpene": "OCIMENE", "share": 0.15 },
+        { "terpene": "LINALOOL", "share": 0.15 },
+        { "terpene": "ALPHA_PINENE", "share": 0.10 }
+      ],
+      "note_es": "El reparto de cannabinoids es el de referencia del catálogo y no describe una proporción concreta de un material. El objetivo de esta ficha es la fracción terpénica; la evidencia de los terpenos es preclínica y ninguna de estas proporciones es una indicación terapéutica."
+    },
+    {
+      "key": "DOMINANCIA_LIMONENO",
+      "label_es": "Dominancia de limoneno",
+      "description_es": "Un perfil encabezado por el limoneno, con ocimeno y mirceno detrás. El limoneno es el componente mayoritario de la fracción volátil de la planta junto al ocimeno.",
+      "evidence_es": "Bien documentado a nivel de caracterización química: la composición de la fracción monoterpénica y sesquiterpénica de Cannabis se analiza por cromatografía de gases. La evidencia de los efectos que se atribuyen a cada terpeno sobre CB1, CB2, TRPV1 y TRPA1 es preclínica.",
+      "cannabinoids": [{ "cannabinoid": "CBD", "weight": 0.60 }, { "cannabinoid": "THC", "weight": 0.40 }],
+      "terpenes": [
+        { "terpene": "LIMONENE", "share": 0.40 },
+        { "terpene": "OCIMENE", "share": 0.20 },
+        { "terpene": "MYRCENE", "share": 0.15 },
+        { "terpene": "ALPHA_PINENE", "share": 0.15 },
+        { "terpene": "TERPINOLENE", "share": 0.10 }
+      ],
+      "note_es": "El reparto de cannabinoids es el de referencia del catálogo y no describe una proporción concreta de un material. El objetivo de esta ficha es la fracción terpénica; la evidencia de los terpenos es preclínica y ninguna de estas proporciones es una indicación terapéutica."
+    },
+    {
+      "key": "DOMINANCIA_LINALOOL",
+      "label_es": "Dominancia de linalool",
+      "description_es": "Un perfil encabezado por el linalool, que la enciclopedia clasifica con el nivel de riqueza más alto de su escala. Es un terpeno floral, distinto del perfil cítrico del limoneno.",
+      "evidence_es": "Bien documentado a nivel de caracterización química: la composición de la fracción monoterpénica y sesquiterpénica de Cannabis se analiza por cromatografía de gases. La evidencia de los efectos que se atribuyen a cada terpeno sobre CB1, CB2, TRPV1 y TRPA1 es preclínica.",
+      "cannabinoids": [{ "cannabinoid": "CBD", "weight": 0.60 }, { "cannabinoid": "THC", "weight": 0.40 }],
+      "terpenes": [
+        { "terpene": "LINALOOL", "share": 0.42 },
+        { "terpene": "MYRCENE", "share": 0.22 },
+        { "terpene": "LIMONENE", "share": 0.14 },
+        { "terpene": "TERPINOLENE", "share": 0.12 },
+        { "terpene": "ALPHA_PINENE", "share": 0.10 }
+      ],
+      "note_es": "El reparto de cannabinoids es el de referencia del catálogo y no describe una proporción concreta de un material. El objetivo de esta ficha es la fracción terpénica; la evidencia de los terpenos es preclínica y ninguna de estas proporciones es una indicación terapéutica."
+    },
+    {
+      "key": "DOMINANCIA_PINENO_ALFA",
+      "label_es": "Dominancia de pineno alfa",
+      "description_es": "Un perfil encabezado por el alfa-pineno, con el beta-pineno detrás. Es un perfil resinoso y fresco; los dos isómeros no son intercambiables y la enciclopedia los trata por separado.",
+      "evidence_es": "Bien documentado a nivel de caracterización química: la composición de la fracción monoterpénica y sesquiterpénica de Cannabis se analiza por cromatografía de gases. La evidencia de los efectos que se atribuyen a cada terpeno sobre CB1, CB2, TRPV1 y TRPA1 es preclínica.",
+      "cannabinoids": [{ "cannabinoid": "CBD", "weight": 0.60 }, { "cannabinoid": "THC", "weight": 0.40 }],
+      "terpenes": [
+        { "terpene": "ALPHA_PINENE", "share": 0.42 },
+        { "terpene": "BETA_PINENE", "share": 0.20 },
+        { "terpene": "LIMONENE", "share": 0.16 },
+        { "terpene": "CAMPHENE", "share": 0.12 },
+        { "terpene": "MYRCENE", "share": 0.10 }
+      ],
+      "note_es": "El reparto de cannabinoids es el de referencia del catálogo y no describe una proporción concreta de un material. El objetivo de esta ficha es la fracción terpénica; la evidencia de los terpenos es preclínica y ninguna de estas proporciones es una indicación terapéutica."
+    },
+    {
+      "key": "DOMINANCIA_PINENO_BETA",
+      "label_es": "Dominancia de pineno beta",
+      "description_es": "Un perfil encabezado por el beta-pineno, con el alfa-pineno detrás. El beta-pineno hierve 10 °C por encima del alfa-pineno, así que ambos cambian de comportamiento a temperatura de procesado distinta.",
+      "evidence_es": "Bien documentado a nivel de caracterización química: la composición de la fracción monoterpénica y sesquiterpénica de Cannabis se analiza por cromatografía de gases. La evidencia de los efectos que se atribuyen a cada terpeno sobre CB1, CB2, TRPV1 y TRPA1 es preclínica.",
+      "cannabinoids": [{ "cannabinoid": "CBD", "weight": 0.60 }, { "cannabinoid": "THC", "weight": 0.40 }],
+      "terpenes": [
+        { "terpene": "BETA_PINENE", "share": 0.40 },
+        { "terpene": "ALPHA_PINENE", "share": 0.22 },
+        { "terpene": "CAMPHENE", "share": 0.16 },
+        { "terpene": "LIMONENE", "share": 0.12 },
+        { "terpene": "MYRCENE", "share": 0.10 }
+      ],
+      "note_es": "El reparto de cannabinoids es el de referencia del catálogo y no describe una proporción concreta de un material. El objetivo de esta ficha es la fracción terpénica; la evidencia de los terpenos es preclínica y ninguna de estas proporciones es una indicación terapéutica."
+    },
+    {
+      "key": "DOMINANCIA_OCIMENO",
+      "label_es": "Dominancia de ocimeno",
+      "description_es": "Un perfil encabezado por el ocimeno, seguido de limoneno y mirceno. El ocimeno se encuentra a menudo junto al limoneno, con el que comparte la fracción volátil de mayor peso.",
+      "evidence_es": "Bien documentado a nivel de caracterización química: la composición de la fracción monoterpénica y sesquiterpénica de Cannabis se analiza por cromatografía de gases. La evidencia de los efectos que se atribuyen a cada terpeno sobre CB1, CB2, TRPV1 y TRPA1 es preclínica.",
+      "cannabinoids": [{ "cannabinoid": "CBD", "weight": 0.60 }, { "cannabinoid": "THC", "weight": 0.40 }],
+      "terpenes": [
+        { "terpene": "OCIMENE", "share": 0.40 },
+        { "terpene": "LIMONENE", "share": 0.22 },
+        { "terpene": "MYRCENE", "share": 0.18 },
+        { "terpene": "LINALOOL", "share": 0.12 },
+        { "terpene": "TERPINOLENE", "share": 0.08 }
+      ],
+      "note_es": "El reparto de cannabinoids es el de referencia del catálogo y no describe una proporción concreta de un material. El objetivo de esta ficha es la fracción terpénica; la evidencia de los terpenos es preclínica y ninguna de estas proporciones es una indicación terapéutica."
+    },
+    {
+      "key": "DOMINANCIA_TERPINOLENO",
+      "label_es": "Dominancia de terpinoleno",
+      "description_es": "Un perfil encabezado por el terpinoleno, que la enciclopedia clasifica con riqueza media. Es una ficha de composición, no de efecto: el terpinoleno aparece en muchas mezclas sin liderar ninguna.",
+      "evidence_es": "Bien documentado a nivel de caracterización química: la composición de la fracción monoterpénica y sesquiterpénica de Cannabis se analiza por cromatografía de gases. La evidencia de los efectos que se atribuyen a cada terpeno sobre CB1, CB2, TRPV1 y TRPA1 es preclínica.",
+      "cannabinoids": [{ "cannabinoid": "CBD", "weight": 0.60 }, { "cannabinoid": "THC", "weight": 0.40 }],
+      "terpenes": [
+        { "terpene": "TERPINOLENE", "share": 0.34 },
+        { "terpene": "LIMONENE", "share": 0.22 },
+        { "terpene": "OCIMENE", "share": 0.18 },
+        { "terpene": "ALPHA_PINENE", "share": 0.14 },
+        { "terpene": "CAMPHENE", "share": 0.12 }
+      ],
+      "note_es": "El reparto de cannabinoids es el de referencia del catálogo y no describe una proporción concreta de un material. El objetivo de esta ficha es la fracción terpénica; la evidencia de los terpenos es preclínica y ninguna de estas proporciones es una indicación terapéutica."
+    },
+    {
+      "key": "DOMINANCIA_CAMFENO",
+      "label_es": "Dominancia de camfeno",
+      "description_es": "Un perfil encabezado por el camfeno, con los pinenos detrás. El camfeno es el terpeno de punto de ebullición más bajo de los diez que documenta el módulo, y eso condiciona su procesado más que su descripción.",
+      "evidence_es": "Bien documentado a nivel de caracterización química: la composición de la fracción monoterpénica y sesquiterpénica de Cannabis se analiza por cromatografía de gases. La evidencia de los efectos que se atribuyen a cada terpeno sobre CB1, CB2, TRPV1 y TRPA1 es preclínica.",
+      "cannabinoids": [{ "cannabinoid": "CBD", "weight": 0.60 }, { "cannabinoid": "THC", "weight": 0.40 }],
+      "terpenes": [
+        { "terpene": "CAMPHENE", "share": 0.34 },
+        { "terpene": "ALPHA_PINENE", "share": 0.24 },
+        { "terpene": "BETA_PINENE", "share": 0.18 },
+        { "terpene": "LIMONENE", "share": 0.14 },
+        { "terpene": "MYRCENE", "share": 0.10 }
+      ],
+      "note_es": "El reparto de cannabinoids es el de referencia del catálogo y no describe una proporción concreta de un material. El objetivo de esta ficha es la fracción terpénica; la evidencia de los terpenos es preclínica y ninguna de estas proporciones es una indicación terapéutica."
+    },
+    {
+      "key": "DOMINANCIA_HUMULENO",
+      "label_es": "Dominancia de humuleno",
+      "description_es": "Un perfil encabezado por el alfa-humuleno, un sesquiterpeno. Con el cariofileno beta forma el par sesquiterpénico que el módulo documenta, y como ellos hierve muy por encima de cualquier monoterpeno.",
+      "evidence_es": "Bien documentado a nivel de caracterización química: la composición de la fracción monoterpénica y sesquiterpénica de Cannabis se analiza por cromatografía de gases. La evidencia de los efectos que se atribuyen a cada terpeno sobre CB1, CB2, TRPV1 y TRPA1 es preclínica.",
+      "cannabinoids": [{ "cannabinoid": "CBD", "weight": 0.60 }, { "cannabinoid": "THC", "weight": 0.40 }],
+      "terpenes": [
+        { "terpene": "HUMULENE", "share": 0.40 },
+        { "terpene": "BETA_CARYOPHYLLENE", "share": 0.22 },
+        { "terpene": "OCIMENE", "share": 0.16 },
+        { "terpene": "MYRCENE", "share": 0.12 },
+        { "terpene": "LIMONENE", "share": 0.10 }
+      ],
+      "note_es": "El reparto de cannabinoids es el de referencia del catálogo y no describe una proporción concreta de un material. El objetivo de esta ficha es la fracción terpénica; la evidencia de los terpenos es preclínica y ninguna de estas proporciones es una indicación terapéutica."
+    },
+    {
+      "key": "DOMINANCIA_CARIOFILENO",
+      "label_es": "Dominancia de cariofileno beta",
+      "description_es": "Un perfil encabezado por el cariofileno beta, el único sesquiterpeno de esta lista cuyo punto de ebullición está solo unos grados por encima del humuleno y muy por encima de todos los monoterpenos.",
+      "evidence_es": "Bien documentado a nivel de caracterización química: la composición de la fracción monoterpénica y sesquiterpénica de Cannabis se analiza por cromatografía de gases. La evidencia de los efectos que se atribuyen a cada terpeno sobre CB1, CB2, TRPV1 y TRPA1 es preclínica.",
+      "cannabinoids": [{ "cannabinoid": "CBD", "weight": 0.60 }, { "cannabinoid": "THC", "weight": 0.40 }],
+      "terpenes": [
+        { "terpene": "BETA_CARYOPHYLLENE", "share": 0.42 },
+        { "terpene": "HUMULENE", "share": 0.24 },
+        { "terpene": "OCIMENE", "share": 0.14 },
+        { "terpene": "MYRCENE", "share": 0.10 },
+        { "terpene": "LIMONENE", "share": 0.10 }
+      ],
+      "note_es": "El reparto de cannabinoids es el de referencia del catálogo y no describe una proporción concreta de un material. El objetivo de esta ficha es la fracción terpénica; la evidencia de los terpenos es preclínica y ninguna de estas proporciones es una indicación terapéutica."
+    },
+    {
+      "key": "EJE_MONOTERPENICO",
+      "label_es": "Eje monoterpénico",
+      "description_es": "Un perfil repartido entre los ocho monoterpenos que documenta el módulo, sin que ninguno domine. Es la composición de referencia de la fracción volátil antes de que una ruta de procesado selectiva la concentre.",
+      "evidence_es": "Bien documentado a nivel de caracterización química: la composición de la fracción monoterpénica y sesquiterpénica de Cannabis se analiza por cromatografía de gases. La evidencia de los efectos que se atribuyen a cada terpeno sobre CB1, CB2, TRPV1 y TRPA1 es preclínica.",
+      "cannabinoids": [{ "cannabinoid": "CBD", "weight": 0.60 }, { "cannabinoid": "THC", "weight": 0.40 }],
+      "terpenes": [
+        { "terpene": "LIMONENE", "share": 0.18 },
+        { "terpene": "MYRCENE", "share": 0.16 },
+        { "terpene": "OCIMENE", "share": 0.14 },
+        { "terpene": "ALPHA_PINENE", "share": 0.12 },
+        { "terpene": "BETA_PINENE", "share": 0.12 },
+        { "terpene": "LINALOOL", "share": 0.10 },
+        { "terpene": "TERPINOLENE", "share": 0.09 },
+        { "terpene": "CAMPHENE", "share": 0.09 }
+      ],
+      "note_es": "El reparto de cannabinoids es el de referencia del catálogo y no describe una proporción concreta de un material. El objetivo de esta ficha es la fracción terpénica; la evidencia de los terpenos es preclínica y ninguna de estas proporciones es una indicación terapéutica."
+    },
+    {
+      "key": "EJE_SESQUITERPENICO",
+      "label_es": "Eje sesquiterpénico",
+      "description_es": "Un perfil donde el par sesquiterpénico del módulo, cariofileno beta y humuleno, reúne la mayor parte de la fracción. A diferencia del eje monoterpénico, estos dos compuestos se individúan poco en un análisis de rutinaria.",
+      "evidence_es": "Bien documentado a nivel de caracterización química: la composición de la fracción monoterpénica y sesquiterpénica de Cannabis se analiza por cromatografía de gases. La evidencia de los efectos que se atribuyen a cada terpeno sobre CB1, CB2, TRPV1 y TRPA1 es preclínica.",
+      "cannabinoids": [{ "cannabinoid": "CBD", "weight": 0.60 }, { "cannabinoid": "THC", "weight": 0.40 }],
+      "terpenes": [
+        { "terpene": "BETA_CARYOPHYLLENE", "share": 0.50 },
+        { "terpene": "HUMULENE", "share": 0.25 },
+        { "terpene": "MYRCENE", "share": 0.10 },
+        { "terpene": "OCIMENE", "share": 0.10 },
+        { "terpene": "LIMONENE", "share": 0.05 }
+      ],
+      "note_es": "El reparto de cannabinoids es el de referencia del catálogo y no describe una proporción concreta de un material. El objetivo de esta ficha es la fracción terpénica; la evidencia de los terpenos es preclínica y ninguna de estas proporciones es una indicación terapéutica."
+    },
+    {
+      "key": "PERFIL_EBULLICION_ALTO",
+      "label_es": "Perfil de punto de ebullición alto",
+      "description_es": "Un perfil concentrado en los terpenos de punto de ebullición alto: los dos sesquiterpenos y el linalool, que hierven entre 198 y 262 °C. Sobreviven a un proceso con calor donde la fracción monoterpénica se va.",
+      "evidence_es": "Bien documentado a nivel de caracterización química: la composición de la fracción monoterpénica y sesquiterpénica de Cannabis se analiza por cromatografía de gases. La evidencia de los efectos que se atribuyen a cada terpeno sobre CB1, CB2, TRPV1 y TRPA1 es preclínica.",
+      "cannabinoids": [{ "cannabinoid": "CBD", "weight": 0.60 }, { "cannabinoid": "THC", "weight": 0.40 }],
+      "terpenes": [
+        { "terpene": "BETA_CARYOPHYLLENE", "share": 0.40 },
+        { "terpene": "HUMULENE", "share": 0.24 },
+        { "terpene": "LINALOOL", "share": 0.16 },
+        { "terpene": "TERPINOLENE", "share": 0.12 },
+        { "terpene": "BETA_PINENE", "share": 0.08 }
+      ],
+      "note_es": "El reparto de cannabinoids es el de referencia del catálogo y no describe una proporción concreta de un material. El objetivo de esta ficha es la fracción terpénica; la evidencia de los terpenos es preclínica y ninguna de estas proporciones es una indicación terapéutica."
+    },
+    {
+      "key": "PERFIL_EBULLICION_BAJO",
+      "label_es": "Perfil de punto de ebullición bajo",
+      "description_es": "Un perfil concentrado en los terpenos de punto de ebullición bajo: camfeno, pinenos, mirceno, ocimeno y limoneno, entre 156 y 176 °C. Son los primeros en irse en cualquier ruta que aporta calor o evapore.",
+      "evidence_es": "Bien documentado a nivel de caracterización química: la composición de la fracción monoterpénica y sesquiterpénica de Cannabis se analiza por cromatografía de gases. La evidencia de los efectos que se atribuyen a cada terpeno sobre CB1, CB2, TRPV1 y TRPA1 es preclínica.",
+      "cannabinoids": [{ "cannabinoid": "CBD", "weight": 0.60 }, { "cannabinoid": "THC", "weight": 0.40 }],
+      "terpenes": [
+        { "terpene": "CAMPHENE", "share": 0.24 },
+        { "terpene": "ALPHA_PINENE", "share": 0.22 },
+        { "terpene": "MYRCENE", "share": 0.20 },
+        { "terpene": "OCIMENE", "share": 0.18 },
+        { "terpene": "LIMONENE", "share": 0.16 }
+      ],
+      "note_es": "El reparto de cannabinoids es el de referencia del catálogo y no describe una proporción concreta de un material. El objetivo de esta ficha es la fracción terpénica; la evidencia de los terpenos es preclínica y ninguna de estas proporciones es una indicación terapéutica."
+    },
+    {
+      "key": "PROPORCION_CBD_DOMINANTE",
+      "label_es": "Proporción CBD dominante",
+      "description_es": "Un perfil donde el CBD es el cannabinoid mayoritario y el THC queda por debajo. En esta ficha el eje es la relación entre cannabinoides, no la fracción terpénica, y el material de referencia es cáñamo.",
+      "evidence_es": "Bien documentado como hecho de composición: las proporciones CBD:THC del cáñamo y del Cannabis no medicinal se miden por cromatografía y son el dato más repetido de la literatura de composición. Lo que esa proporción produce en una persona no está establecido.",
+      "cannabinoids": [{ "cannabinoid": "CBD", "weight": 0.70 }, { "cannabinoid": "THC", "weight": 0.25 }, { "cannabinoid": "CBN", "weight": 0.05 }],
+      "terpenes": [
+        { "terpene": "MYRCENE", "share": 0.28 },
+        { "terpene": "LIMONENE", "share": 0.24 },
+        { "terpene": "LINALOOL", "share": 0.18 },
+        { "terpene": "ALPHA_PINENE", "share": 0.16 },
+        { "terpene": "OCIMENE", "share": 0.14 }
+      ],
+      "note_es": "El CBN aparece como componente de degradación del THC y su presencia depende de cuánto tiempo lleva el material almacenado, así que una ficha que lo fija como parte de la proporción está describiendo un estado de almacenamiento concreto. La proporción CBD:THC está medida en materiales de cáñamo; el efecto de cada relación en personas no está establecido."
+    },
+    {
+      "key": "PROPORCION_EQUILIBRADA",
+      "label_es": "Proporción equilibrada",
+      "description_es": "Un perfil con CBD y THC en la misma proporción. Es la relación más frecuente en el material de Cannabis no medicinal y la que más se ha descrito en la literatura de composición.",
+      "evidence_es": "Bien documentado como hecho de composición: la relación 1:1 entre CBD y THC es la más frecuente en el material de Cannabis no medicinal y aparece de forma repetida en los análisis de composición. No dice nada por sí sola sobre qué se va a sentir.",
+      "cannabinoids": [{ "cannabinoid": "CBD", "weight": 0.50 }, { "cannabinoid": "THC", "weight": 0.50 }],
+      "terpenes": [
+        { "terpene": "MYRCENE", "share": 0.25 },
+        { "terpene": "LIMONENE", "share": 0.25 },
+        { "terpene": "OCIMENE", "share": 0.20 },
+        { "terpene": "LINALOOL", "share": 0.16 },
+        { "terpene": "ALPHA_PINENE", "share": 0.14 }
+      ],
+      "note_es": "Que dos cannabinoids estén en la misma proporción no dice nada sobre qué se va a sentir: la proporción es un hecho de composición y el efecto depende de la dosis, de la vía y de la persona. Esta ficha mide composición."
+    },
+    {
+      "key": "PROPORCION_THC_DOMINANTE",
+      "label_es": "Proporción THC dominante",
+      "description_es": "Un perfil donde el THC es el cannabinoid mayoritario y el CBD queda por debajo. Es la composición dominante en el material de Cannabis no médico de alta potencia.",
+      "evidence_es": "Bien documentado como hecho de composición: el contenido relativo de THC frente a CBD está medido en el material no medicinal de alta potencia. La concentración total no se deduce de la proporción y este módulo no guarda ninguna.",
+      "cannabinoids": [{ "cannabinoid": "THC", "weight": 0.70 }, { "cannabinoid": "CBD", "weight": 0.30 }],
+      "terpenes": [
+        { "terpene": "LIMONENE", "share": 0.28 },
+        { "terpene": "OCIMENE", "share": 0.24 },
+        { "terpene": "MYRCENE", "share": 0.20 },
+        { "terpene": "ALPHA_PINENE", "share": 0.16 },
+        { "terpene": "LINALOOL", "share": 0.12 }
+      ],
+      "note_es": "El contenido total de THC de un material no se deduce de esta proporción: es una relación interna, no una concentración. El módulo no guarda concentraciones y esta ficha no afirma ninguna."
     }
   ],
   "vaporisation": [
@@ -265,6 +527,125 @@
       "handlingEvidence": "BIEN_DOCUMENTADO",
       "handling_basis_es": "Que las tres rutas difieren en lo que le ocurre a la fracción volátil está bien documentado en la literatura de procesado de productos vegetales, y las notas de procesado del limoneno, el ocimeno, el mirceno y el alfa-pineno dicen lo mismo que se afirma aquí. Lo que no está fijado es cuánto de cada compuesto sobrevive a una ruta concreta: no hay comparación controlada con el mismo material de partida y el mismo perfil medido, ni un análisis del lote que fije su composición antes de procesarlo. Por eso este caso no lleva ninguna cantidad, ninguna temperatura y ningún tiempo.",
       "explanation_es": "El caso no pide más material ni más efecto: pide que la fracción volátil salga del proceso siendo el mismo compuesto que era en la planta. La resina en vivo es la ruta que menos la expulsa, porque no tiene ninguna etapa de evaporación posterior. La extracción con disolvente recupera más material total y, a cambio, se lleva buena parte de esa fracción durante la separación. La descarboxilación queda fuera porque su efecto sobre el perfil terpénico es el efecto secundario del calor que la acompaña: los compuestos volátiles son los primeros en irse y lo que se queda ya no es el compuesto de la planta. Ninguna de las tres rutas viene acompañada de una cantidad, porque las cifras dependen del material de partida, del equipo y del proceso."
+    },
+    {
+      "id": "cbd_dominante_cartera_estable",
+      "title_es": "Composición CBD dominante dentro de un margen estrecho",
+      "brief_es": "Un lote con CBD claramente mayoritario y una fracción terpénica monoterpénica ancha. El objetivo del caso es la proporción interna de cannabinoids: el material ya está analizado y lo que se busca es que la mezcla conserve esa relación sin inclinarse hacia el lado que domina.",
+      "mode": "pharmacological",
+      "goalProfile": "PROPORCION_CBD_DOMINANTE",
+      "forbiddenCannabinoids": [],
+      "maxCannabinoidShare": {"THC": 0.35},
+      "sideEffectCeilings": {
+        "ANSIEDAD": 0.55, "TACHYCARDIA": 0.80, "SEDACION": 0.90, "IMPAIRMENT_COGNITIVO": 0.80
+      },
+      "explanation_es": "El caso mide composición, no efecto. La ficha CBD dominante del catálogo pesa CBD 0,70 y THC 0,25, así que un aporte de THC por encima del 35 % ya no pertenece a la proporción que se busca. El resto de la fracción terpénica del perfil es la que la enciclopedia da como acompañante habitual de una relación CBD alta: mirceno, limoneno, linalool y pinenos."
+    },
+    {
+      "id": "dominance_mirceno_umbral_minimo",
+      "title_es": "Que el mirceno llegue a su umbral y no se quede en trazo",
+      "brief_es": "El material tiene mirceno, pero repartido entre demasiados compuestos: ninguno llega al 40 % que la ficha de dominancia le pide. El caso premia concentrar ese mismo compuesto en lugar de añadir más compuestos distintos.",
+      "mode": "pharmacological",
+      "goalProfile": "DOMINANCIA_MIRCENO",
+      "forbiddenCannabinoids": [],
+      "maxCannabinoidShare": {},
+      "sideEffectCeilings": {
+        "ANSIEDAD": 0.75, "TACHYCARDIA": 0.90, "SEDACION": 1.00, "IMPAIRMENT_COGNITIVO": 0.90
+      },
+      "explanation_es": "Aquí la pregunta no es qué terpeno se añade sino cuánto de uno se concentra. Repartir el mismo mirceno entre ocho compuestos da una coincidencia baja aunque todos estén presentes, porque el perfil compara proporciones y no presencia. El mirceno pesa 0,40 en su ficha, así que necesita la parte mayor del presupuesto."
+    },
+    {
+      "id": "eje_sesquiterpenico_para_analisis",
+      "title_es": "Un eje sesquiterpénico que se pueda medir después",
+      "brief_es": "Un lote cuyo análisis de laboratorio separa la fracción terpénica en dos grupos y solo ha resuelto el sesquiterpénico. El objetivo es llevar el perfil hacia el eje sesquiterpénico, sabiendo que ese eje lo sostienen dos compuestos y ninguno domina.",
+      "mode": "pharmacological",
+      "goalProfile": "EJE_SESQUITERPENICO",
+      "forbiddenCannabinoids": [],
+      "maxCannabinoidShare": {},
+      "sideEffectCeilings": {
+        "ANSIEDAD": 0.70, "TACHYCARDIA": 0.85, "SEDACION": 0.95, "IMPAIRMENT_COGNITIVO": 0.85
+      },
+      "explanation_es": "El eje sesquiterpénico del catálogo son dos compuestos, cariofileno beta 0,50 y humuleno 0,25. Ninguno de los dos es un monoterpeno, así que no se pueden cubrir con los terpenos que ya están en el lote: hay que cambiar la fracción, no ajustar la que hay. El resto del peso se reparte entre mirceno, ocimeno y limoneno porque el perfil los pide como fondo."
+    },
+    {
+      "id": "cariofileno_sin_aceptar_el_heat",
+      "title_es": "Cariofileno beta sin subir la temperatura",
+      "brief_es": "El lote tiene cariofileno beta y el procesado se hizo a temperatura de monoterpeno. La ficha de dominancia del cariofileno pide que sea el compuesto principal, y el módulo advierte que es el único de los diez que necesita calor que ningún otro terpeno de la lista soporta.",
+      "mode": "pharmacological",
+      "goalProfile": "DOMINANCIA_CARIOFILENO",
+      "forbiddenCannabinoids": [],
+      "maxCannabinoidShare": {},
+      "sideEffectCeilings": {
+        "ANSIEDAD": 0.70, "TACHYCARDIA": 0.85, "SEDACION": 0.95, "IMPAIRMENT_COGNITIVO": 0.85
+      },
+      "explanation_es": "El caso está sobre el perfil, no sobre el procesado: el objetivo es la composición que se quiere, y la temperatura con la que se conserva el cariofileno beta la describe el bloque de procesado del módulo. Mezclar más monoterpenos no acerca la coincidencia porque el perfil de dominancia del cariofileno no los contiene. El humuleno es el segundo peso y también es sesquiterpeno."
+    },
+    {
+      "id": "equilibrio_cbd_thc_marco_de_composicion",
+      "title_es": "Proporción equilibrada, sin convertirla en una promesa",
+      "brief_es": "Un lote con CBD y THC en la misma proporción. La ficha de la proporción equilibrada existe para que la relación se pueda comparar con un perfil, no para sugerir que una relación concreta produce un efecto concreto.",
+      "mode": "pharmacological",
+      "goalProfile": "PROPORCION_EQUILIBRADA",
+      "forbiddenCannabinoids": [],
+      "maxCannabinoidShare": {"THC": 0.55},
+      "sideEffectCeilings": {
+        "ANSIEDAD": 0.60, "TACHYCARDIA": 0.70, "SEDACION": 0.95, "IMPAIRMENT_COGNITIVO": 0.75
+      },
+      "explanation_es": "La respuesta es CBD y THC a partes iguales, con el reparto terpénico que acompaña a esa relación en el catálogo: mirceno y limoneno en la fracción volátil con ocimeno y linalool detrás. El límite del 55 % de THC existe porque un aporte por encima de eso ya no es una proporción equilibrada por mucho que la fracción terpénica cuadre."
+    },
+    {
+      "id": "secado_lento_perfil_sesquiterpenico",
+      "title_es": "Secado lento para un perfil sesquiterpénico",
+      "brief_es": "Un lote con cariofileno beta y humuleno como compuestos principales, secado con calor forzado. La decisión pendiente no es qué hacer con la planta ni cuánto material usar: es qué ruta deja esos dos sesquiterpenos siendo los mismos compuestos que eran en la planta.",
+      "mode": "handling",
+      "goalProfile": "",
+      "forbiddenCannabinoids": [],
+      "maxCannabinoidShare": {},
+      "sideEffectCeilings": {},
+      "handlingGoal": "WHOLE_PROFILE",
+      "handlingCompounds": [
+        "BETA_CARYOPHYLLENE", "HUMULENE", "MYRCENE", "LINALOOL"
+      ],
+      "handlingForbiddenRoutes": ["DECARBOXYLATION"],
+      "handlingEvidence": "BIEN_DOCUMENTADO",
+      "handling_basis_es": "Que los sesquiterpenos resisten temperatura alta y que el mirceno y el linalool no está bien documentado, y el bloque de procesado del módulo dice lo mismo para el cariofileno beta, el humuleno, el mirceno y el linalool. Lo que no está fijado es cuánto sobrevive de cada uno a una ruta concreta con el mismo material de partida, así que este caso no lleva cantidades, temperaturas ni tiempos.",
+      "explanation_es": "El objetivo es conservar el perfil entero. La resina en vivo es la ruta que no añade ninguna etapa de calor ni de separación, y por eso es la que menos expulsa a los dos sesquiterpenos. La descarboxilación queda fuera porque su efecto sobre el perfil terpénico es el efecto secundario del calor que la acompaña: lo que se queda de la fracción volátil ya no es el compuesto de la planta. Ninguna ruta viene con una cifra, porque las cifras dependen del material de partida y del equipo."
+    },
+    {
+      "id": "almacenamiento_prolongado_camfeno",
+      "title_es": "Almacenamiento prolongado con camfeno en la fracción",
+      "brief_es": "Un lote con camfeno, pineno alfa, ocimeno y terpinoleno, destinado a un almacenamiento largo antes de procesarse. La decisión es qué ruta conviene cuando cuatro de los compuestos presentes son de los que primero se van.",
+      "mode": "handling",
+      "goalProfile": "",
+      "forbiddenCannabinoids": [],
+      "maxCannabinoidShare": {},
+      "sideEffectCeilings": {},
+      "handlingGoal": "VOLATILE_FRACTION",
+      "handlingCompounds": [
+        "CAMPHENE", "ALPHA_PINENE", "OCIMENE", "TERPINOLENE"
+      ],
+      "handlingForbiddenRoutes": [],
+      "handlingEvidence": "MIXTO",
+      "handling_basis_es": "Que el camfeno es el de punto de ebullición más bajo de los diez que documenta el módulo, y que por tanto es el primero en irse de una fracción que se calienta, está bien documentado en la literatura de procesado de productos vegetales. Lo que no está fijado es cuánto sobrevive de cada compuesto a una ruta concreta, ni cuánta fracción volátil conserva un lote tras un almacenamiento largo: no hay un análisis del lote antes y después.",
+      "explanation_es": "Los cuatro compuestos del caso son de la fracción volátil y tres de ellos están en el extremo bajo del intervalo de ebullición del módulo. La resina en vivo no añade evaporación posterior, así que es la que menos se lleva esa fracción. La pregunta de almacenamiento es real pero el caso no la responde con una cantidad: responde con qué ruta pierde menos de lo que ya se está perdiendo por el tiempo."
+    },
+    {
+      "id": "extraccion_fraccion_pesada_humuleno",
+      "title_es": "Extracción para conservar el par sesquiterpénico",
+      "brief_es": "Un lote con humuleno y cariofileno beta, más monoterpenos de fondo. La decisión es si conviene una ruta de extracción o una vía sin separación cuando lo que se quiere conservar son los dos compuestos de punto de ebullición alto.",
+      "mode": "handling",
+      "goalProfile": "",
+      "forbiddenCannabinoids": [],
+      "maxCannabinoidShare": {},
+      "sideEffectCeilings": {},
+      "handlingGoal": "WHOLE_PROFILE",
+      "handlingCompounds": [
+        "HUMULENE", "BETA_CARYOPHYLLENE", "OCIMENE", "LIMONENE"
+      ],
+      "handlingForbiddenRoutes": [],
+      "handlingEvidence": "BIEN_DOCUMENTADO",
+      "handling_basis_es": "Que una ruta con disolvente recupera más material total y arrastra buena parte de la fracción volátil durante la separación está bien documentado, y el bloque de procesado del módulo dice lo mismo para el humuleno y el cariofileno beta. Lo que no está fijado es la proporción de material recuperado para una ruta concreta con el mismo material de partida.",
+      "explanation_es": "El perfil sesquiterpénico pesa humuleno 0,25 y cariofileno beta 0,50, así que el objetivo necesita que los dos sobrevivan, no que se recupere más volumen. La ruta en vivo conserva el material entero. La extracción recupera más masa total, pero a cambio se lleva la fracción volátil en la separación, y con ella parte de los monoterpenos que el perfil todavía pide como fondo. La descarboxilación no está aquí porque no se está comparando rutas de calor, sino si conviene separar."
     }
   ],
   "quiz": [

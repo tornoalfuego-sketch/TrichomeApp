@@ -1485,6 +1485,86 @@ class TerpenesViewModel(container: AppContainer) : ViewModel() {
     private companion object {
         val badgeGrantLock = Mutex()
     }
+
+    /* ── F11: the Master Blender's progression ─────────────────────────── */
+
+    /**
+     * F11: the player's total XP, summed from the `achievements` table.
+     *
+     * Read from the same rows the app sums its own total from, so the level the
+     * blender panel shows and the level the profile screen shows cannot differ.
+     * A blender-local counter would be exactly the second source of truth
+     * [EntourageAchievement]'s KDoc refuses to create, one layer away.
+     */
+    var blenderTotalXp by mutableIntStateOf(0)
+        private set
+
+    /**
+     * F11: every name in the `achievements` table, for the history readout.
+     *
+     * The history is read off the rows rather than from a stored list, so the
+     * levels on screen cannot disagree with the table holding them.
+     */
+    var blenderAwardedNames by mutableStateOf<Set<String>>(emptySet())
+        private set
+
+    /**
+     * F11: persists the rows a blender run earned.
+     *
+     * Deliberately **not** called from a recomposition or a slider callback: the
+     * dialog hands over the rows on a deliberate press, because paying for a
+     * comparison the player was still adjusting would make every drag a purchase.
+     *
+     * Shares [badgeGrantLock] with the two Séquito grants. The claim being made
+     * is narrow — "two coroutines cannot both read `not granted` and both write"
+     * — and it is a claim about the table, not about this class, so a lock
+     * narrower than the table would be the wrong width.
+     *
+     * The identity guarantee is still the DAO's `WHERE NOT EXISTS`; the read
+     * below is a courtesy that saves a pointless insert.
+     */
+    fun recordBlend(rewards: List<EntourageReward>) {
+        if (rewards.isEmpty()) return
+        viewModelScope.launch {
+            badgeGrantLock.withLock {
+                val persisted = runCatching {
+                    badgeAchievements.getAllAchievements().first()
+                }.getOrDefault(emptyList())
+
+                val names = blenderAwardedNames + persisted.map { it.name }
+                val fresh = BlenderProgress.pending(rewards, names)
+                if (fresh.isEmpty()) return@withLock
+
+                fresh.forEach { badgeAchievements.insertAchievement(it.toAchievementRow()) }
+
+                // Re-read rather than assume: `insertAchievement` returns -1 when
+                // the row was already there, so "we inserted it" is not a fact this
+                // coroutine gets to assert. The table is.
+                val after = runCatching {
+                    badgeAchievements.getAllAchievements().first()
+                }.getOrDefault(persisted)
+                blenderAwardedNames = after.map { it.name }.toSet()
+                blenderTotalXp = after.sumOf { it.xpReward }
+            }
+        }
+    }
+
+    /**
+     * F11: loads the XP total and the badge names the panel renders.
+     *
+     * Called once when the ViewModel is created rather than on every open of the
+     * dialog, because a total that only refreshes when a player looks at it is a
+     * total the profile screen would contradict.
+     */
+    fun loadBlenderProgress() {
+        viewModelScope.launch {
+            val rows = runCatching {
+                badgeAchievements.getAllAchievements().first()
+            }.getOrDefault(emptyList())
+            blenderAwardedNames = rows.map { it.name }.toSet()
+            blenderTotalXp = rows.sumOf { it.xpReward }
+        }
+    }
 }
 
 /* ─────────────────────────── Entourage (Séquito) ────────────────────────── */

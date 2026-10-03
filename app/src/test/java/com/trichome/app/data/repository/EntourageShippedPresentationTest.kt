@@ -529,7 +529,19 @@ class EntourageShippedPresentationTest {
     @Test
     fun theShippedDisclaimersAndProfilesAreNotEmptyPlaceholders() {
         val shipped = content()
-        assertEquals(4, com.trichome.app.model.PharmacologicalProfile.entries.size)
+        // F11 replaced the hardcoded 4. The assertion is now the one that was
+        // always true underneath it — the enum and the file agree — plus a floor
+        // on the breadth, so a build that dropped the seventeen F11 cards down to
+        // the original four would fail here rather than pass quietly.
+        assertEquals(
+            "every enum member has to ship a card and vice versa",
+            PharmacologicalProfile.entries.size,
+            shipped.profiles.size
+        )
+        assertTrue(
+            "the profile library must be broad enough to be worth a filter",
+            shipped.profiles.size >= 20
+        )
         shipped.profiles.forEach { profile ->
             assertTrue("${profile.key} has no description", profile.descriptionEs.isNotBlank())
             assertTrue("${profile.key} has no note", profile.noteEs.isNotBlank())

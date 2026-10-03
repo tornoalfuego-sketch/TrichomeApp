@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,11 +26,17 @@ import com.trichome.app.data.repository.DiagnosisCondition
 import com.trichome.app.domain.vision.PhotoAnalyzer
 import com.trichome.app.data.repository.DiagnosisResult
 import com.trichome.app.data.repository.DiagnosisSymptom
+import com.trichome.app.model.DiagnosisCategory
+import com.trichome.app.model.DiagnosisIcons
+import com.trichome.app.model.DiagnosisSearch
+import com.trichome.app.model.DiagnosisSearchEntry
 import com.trichome.app.ui.components.accentButtonColors
 import com.trichome.app.ui.components.accentLabelOn
 import com.trichome.app.ui.components.AppTopBar
+import com.trichome.app.ui.components.DiagnosisGlyphIcon
 import com.trichome.app.ui.components.MainBottomBar
 import com.trichome.app.ui.components.SolidPanel
+import com.trichome.app.ui.theme.LocalTertiaryText
 import com.trichome.app.ui.theme.TrichomeThemeState
 import com.trichome.app.viewmodel.DiagnosisViewModel
 import com.trichome.app.viewmodel.appViewModel
@@ -57,6 +64,14 @@ fun DiagnosisScreen(
     val plants by vm.plants.collectAsState()
 
     var symptoms by remember { mutableStateOf<List<DiagnosisSymptom>>(emptyList()) }
+    var conditions by remember { mutableStateOf<List<DiagnosisCondition>>(emptyList()) }
+    // F11: the picker holds one text query and one bucket. Both are plain state
+    // on the screen rather than in the ViewModel, because they are view state:
+    // nothing about a diagnosis changes because the grower typed a letter, and
+    // putting them in the VM would survive a rotation the screen never wanted to
+    // carry them through.
+    var searchQuery by remember { mutableStateOf("") }
+    var selectedBucket by remember { mutableStateOf<DiagnosisCategory?>(null) }
     var selectedPlantId by remember { mutableStateOf<Long?>(null) }
     var registerError by remember { mutableStateOf(false) }
     var registered by remember { mutableStateOf(false) }
@@ -68,6 +83,28 @@ var currentImageError by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
         symptoms = container.diagnosisContentRepository.getSymptoms()
+        conditions = container.diagnosisContentRepository.getConditions()
+    }
+
+    // The index is built once per content load rather than per keystroke: folding
+    // 49 conditions' prose into 116 haystacks on every character typed is the
+    // kind of work that has no business being in a keystroke handler.
+    val searchIndex = remember(symptoms, conditions) {
+        DiagnosisSearch.index(symptoms, conditions)
+    }
+    val visibleEntries = remember(searchIndex, searchQuery, selectedBucket) {
+        DiagnosisSearch.filter(
+            DiagnosisSearch.inBucket(searchIndex, selectedBucket),
+            searchQuery
+        )
+    }
+    // Symptom ids the glyph table does not cover. Reported on screen rather than
+    // silently rendered as somebody else's figure.
+    val unmappedGlyphs = remember(searchIndex) {
+        searchIndex.filter { it.glyphIsFallback }.map { it.symptom.id }
+    }
+    val unmappedCategories = remember(conditions) {
+        DiagnosisCategory.unmappedKeys(conditions.map { it.category })
     }
 
     LaunchedEffect(vm.result?.condition) {
@@ -243,19 +280,113 @@ var currentImageError by remember { mutableStateOf<String?>(null) }
             SolidPanel {
                 Column(modifier = Modifier.padding(14.dp)) {
                     Text("Selecciona los síntomas visibles", style = MaterialTheme.typography.titleMedium)
+
                     Spacer(Modifier.height(10.dp))
+
+                    // Live search. Folds accents and case on the model side, so a
+                    // grower typing "acaro" finds "Ácaro".
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        label = { Text(DiagnosisSearch.FIELD_LABEL_ES) },
+                        placeholder = { Text(DiagnosisSearch.FIELD_HINT_ES) },
+                        singleLine = true,
+                        trailingIcon = {
+                            if (searchQuery.isNotEmpty()) {
+                                IconButton(onClick = { searchQuery = "" }) {
+                                    Icon(
+                                        Icons.Filled.Close,
+                                        contentDescription = DiagnosisSearch.CLEAR_LABEL_ES
+                                    )
+                                }
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        DiagnosisSearch.countEs(visibleEntries.size, searchIndex.size),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = LocalTertiaryText.current
+                    )
+
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        DiagnosisSearch.FILTER_LABEL_ES,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = LocalTertiaryText.current
+                    )
+                    Spacer(Modifier.height(4.dp))
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        symptoms.forEach { s ->
+                        FilterChip(
+                            selected = selectedBucket == null,
+                            onClick = { selectedBucket = null },
+                            label = { Text(DiagnosisSearch.ALL_BUCKETS_ES) }
+                        )
+                        DiagnosisCategory.entries.forEach { category ->
                             FilterChip(
-                                selected = vm.selectedSymptoms.contains(s.id),
-                                onClick = { vm.toggleSymptom(s.id) },
-                                label = { Text("${s.icon} ${s.labelEs}") }
+                                selected = selectedBucket == category,
+                                onClick = {
+                                    selectedBucket =
+                                        if (selectedBucket == category) null else category
+                                },
+                                label = { Text(category.labelEs) }
                             )
                         }
                     }
+
+                    Spacer(Modifier.height(10.dp))
+
+                    if (visibleEntries.isEmpty()) {
+                        Text(
+                            DiagnosisSearch.NO_RESULTS_ES,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = LocalTertiaryText.current
+                        )
+                    } else {
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            visibleEntries.forEach { entry ->
+                                FilterChip(
+                                    selected = vm.selectedSymptoms.contains(entry.symptom.id),
+                                    onClick = { vm.toggleSymptom(entry.symptom.id) },
+                                    label = {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            DiagnosisGlyphIcon(
+                                                glyph = entry.glyph,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                            Spacer(Modifier.width(6.dp))
+                                            Text(entry.symptom.labelEs)
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    // F11: the integrity half. A symptom with no figure and a
+                    // condition category with no bucket are both facts the
+                    // catalog shipped and this build cannot show; the notice says
+                    // so instead of the screen looking complete.
+                    if (unmappedGlyphs.isNotEmpty() || unmappedCategories.isNotEmpty()) {
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            DiagnosisSearch.incompleteEs(
+                                unmappedGlyphs.size,
+                                unmappedCategories.size
+                            ),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+
                     Spacer(Modifier.height(10.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Button(

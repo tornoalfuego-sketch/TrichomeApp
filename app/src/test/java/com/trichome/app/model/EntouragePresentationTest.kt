@@ -60,7 +60,8 @@ class EntouragePresentationTest {
         descriptionEs = "Perfil de sueño.",
         cannabinoidWeights = weights,
         terpeneShares = shares,
-        noteEs = "No es una indicación médica."
+        noteEs = "Perfil de prueba, no una indicación médica.",
+        evidence = ProfileEvidence.MIXTO
     )
 
     private fun vapour(terpene: EntourageTerpene, boiling: Int, min: Int, max: Int) =

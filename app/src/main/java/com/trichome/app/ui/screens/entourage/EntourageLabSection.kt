@@ -2,6 +2,8 @@ package com.trichome.app.ui.screens.entourage
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -67,6 +69,10 @@ fun EntourageLabSection(
     onRoute: (ProcessingMethod?) -> Unit,
     result: LabResult?,
     onEvaluate: (EntourageCase, EntourageSelection) -> Unit,
+    caseQuery: String = "",
+    onCaseQuery: (String) -> Unit = {},
+    caseMode: LabMode? = null,
+    onCaseMode: (LabMode?) -> Unit = {},
     themeState: TrichomeThemeState
 ) {
     val scheme = themeState.colorScheme()
@@ -83,8 +89,31 @@ fun EntourageLabSection(
 
     // Clamped rather than wrapped: a stale index after the asset changed would
     // otherwise show one case's title above another's dials.
-    val safeIndex = caseIndex.coerceIn(library.cases.indices)
-    val case = library.cases[safeIndex]
+    val requestedCase = library.cases[caseIndex.coerceIn(library.cases.indices)]
+
+    // F11: the catalogue filter. The index is built once per library and the
+    // filter runs over its folded haystacks, so a keystroke is a substring test
+    // rather than twelve briefs being re-normalised.
+    val caseIndexList = remember(library.cases, library.profiles) {
+        EntourageCaseSearch.index(library.cases, library.profiles)
+    }
+    val visibleCases = remember(caseIndexList, caseQuery, caseMode) {
+        EntourageCaseSearch.filter(
+            EntourageCaseSearch.inMode(caseIndexList, caseMode),
+            caseQuery
+        )
+    }
+    // The list everything below works in. Narrowing here rather than inside the
+    // `Column` is what makes "the selected case" unable to refer to a row the
+    // filter hid: there is only one list, and the chip row is built from it.
+    val playableCases = visibleCases.map { it.case }
+    // `takeIf { it >= 0 }` rather than `indexOfFirst` alone: a case the filter
+    // removed is not at index -1, it is absent, and the fallback pins the panel
+    // to the first surviving case instead of throwing on an empty list.
+    val safeIndex = playableCases.indexOfFirst { it.id == requestedCase.id }
+        .takeIf { it >= 0 } ?: 0
+    val case = playableCases.getOrNull(safeIndex) ?: requestedCase
+
     val goalProfile = remember(case.goal, library.profiles) {
         library.profiles.firstOrNull { it.key == case.goal }
     }
@@ -111,12 +140,63 @@ fun EntourageLabSection(
     ) {
         EntourageSectionHeading(EntourageLabCopy.CASES_ES, themeState)
 
-        EntourageChipFlow(
-            options = library.cases.indices.toList(),
-            selected = setOf(safeIndex),
-            labelOf = { EntourageLabCopy.caseChipEs(it + 1, library.cases[it].titleEs) },
-            onToggle = onCaseIndex
+        OutlinedTextField(
+            value = caseQuery,
+            onValueChange = onCaseQuery,
+            label = { Text(EntourageCaseSearch.FIELD_LABEL_ES) },
+            placeholder = { Text(EntourageCaseSearch.FIELD_HINT_ES) },
+            singleLine = true,
+            trailingIcon = {
+                if (caseQuery.isNotEmpty()) {
+                    IconButton(onClick = { onCaseQuery("") }) {
+                        Icon(
+                            Icons.Filled.Close,
+                            contentDescription = EntourageCaseSearch.CLEAR_LABEL_ES
+                        )
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
         )
+
+        Spacer(Modifier.height(6.dp))
+        Text(
+            EntourageCaseSearch.countEs(visibleCases.size, library.cases.size),
+            style = MaterialTheme.typography.labelSmall,
+            color = tertiary
+        )
+
+        Spacer(Modifier.height(8.dp))
+        Text(
+            EntourageCaseSearch.MODE_FILTER_ES,
+            style = MaterialTheme.typography.labelMedium,
+            color = tertiary
+        )
+        Spacer(Modifier.height(4.dp))
+        EntourageChipFlow(
+            options = listOf<LabMode?>(null) + EntourageCaseSearch.modes,
+            selected = setOf(caseMode),
+            labelOf = { it?.labelEs ?: EntourageCaseSearch.ALL_MODES_ES },
+            onToggle = { onCaseMode(it) }
+        )
+
+        Spacer(Modifier.height(8.dp))
+        if (playableCases.isEmpty()) {
+            Text(
+                EntourageCaseSearch.NO_RESULTS_ES,
+                style = MaterialTheme.typography.bodyMedium,
+                color = tertiary
+            )
+        } else {
+            EntourageChipFlow(
+                options = playableCases.indices.toList(),
+                selected = setOf(safeIndex),
+                labelOf = { EntourageLabCopy.caseChipEs(it + 1, playableCases[it].titleEs) },
+                onToggle = onCaseIndex
+            )
+        }
+
+        Spacer(Modifier.height(12.dp))
 
         SolidPanel(contentColor = scheme.onSurface) {
             Column(Modifier.padding(16.dp)) {

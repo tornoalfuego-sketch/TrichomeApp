@@ -73,6 +73,12 @@ fun TerpenesScreen(
     var showBadges by remember { mutableStateOf(false) }
     var showBlender by remember { mutableStateOf(false) }
 
+    // F11: the XP total and badge names the blender's level history read. Loaded
+    // once here rather than when the dialog opens, because a total that only
+    // refreshes when a player looks at it is a total the progression card above
+    // would contradict.
+    LaunchedEffect(Unit) { vm.loadBlenderProgress() }
+
     // The header, the progression card and the filter rows are siblings of the
     // list, not items in it, so scrolling the LazyColumn never moves them. The
     // trigger is derived from the list's own scroll position instead.
@@ -308,6 +314,12 @@ fun TerpenesScreen(
             MasterBlenderDialog(
                 catalog = vm.terpenes,
                 themeState = themeState,
+                // F11: read from the same `achievements` rows the app sums its
+                // own total from, so the level the blender shows and the level
+                // the progression card above shows are one number.
+                totalXp = vm.blenderTotalXp,
+                awardedNames = vm.blenderAwardedNames,
+                onRecord = vm::recordBlend,
                 onDismiss = { showBlender = false }
             )
         }

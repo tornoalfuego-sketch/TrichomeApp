@@ -26,10 +26,12 @@ import com.trichome.app.model.ClimateCardCopy
 import com.trichome.app.model.ClimateCardCopyFormatter
 import com.trichome.app.model.LunarCardCopy
 import com.trichome.app.model.LunarEngine
+import com.trichome.app.model.LunarTimeline
 import com.trichome.app.ui.components.accentButtonColors
 import com.trichome.app.ui.components.accentContentOn
 import com.trichome.app.ui.components.AppTopBar
 import com.trichome.app.ui.components.EstimatedClimateCard
+import com.trichome.app.ui.components.LunarDatePanel
 import com.trichome.app.ui.components.LunarPhaseBar
 import com.trichome.app.ui.components.MainBottomBar
 import com.trichome.app.ui.components.SelectableChip
@@ -87,6 +89,9 @@ fun CalendarScreen(
         }
     }
     var lunarExpanded by remember { mutableStateOf(false) }
+    // F11: the date selector. Off by default and outside the top bar's column so
+    // opening it cannot reflow the month grid underneath.
+    var showLunarDatePanel by remember { mutableStateOf(false) }
     val lunarContent = remember(nowMillis, lunarExpanded) {
         LunarCardCopy.contentOf(
             snapshot = LunarEngine.snapshot(nowMillis),
@@ -165,6 +170,14 @@ fun CalendarScreen(
                     expanded = lunarExpanded,
                     onToggle = { lunarExpanded = !lunarExpanded }
                 )
+                // The date selector is a dialog rather than an inline panel
+                // because this top bar's column must not scroll (see the comment
+                // above) and the screen's body already owns the one vertical
+                // axis. A stepper, a phase card, a tip and a drift paragraph do
+                // not fit above the month grid without a second scroll owner.
+                TextButton(onClick = { showLunarDatePanel = true }) {
+                    Text(LunarTimeline.OPEN_ES)
+                }
             }
         },
         floatingActionButton = {
@@ -305,6 +318,17 @@ if (showAddSheet) {
                 }
             }
         }
+    }
+
+    // F11: outside the `Scaffold`, so it is a sibling of the scrolling body
+    // rather than a child of it. A dialog composed inside a `verticalScroll` is
+    // measured against an infinite maximum height, which is the same defect
+    // `ScrollOwnershipTest` guards.
+    if (showLunarDatePanel) {
+        LunarDatePanel(
+            referenceMillis = nowMillis,
+            onDismiss = { showLunarDatePanel = false }
+        )
     }
 }
 
