@@ -136,6 +136,28 @@ interface ProtocolDao {
     suspend fun deleteProtocol(protocol: Protocol)
 }
 
+/**
+ * Rows of `protocol_stages`.
+ *
+ * ## There is deliberately no "delete them all" query
+ *
+ * This interface used to carry `clearStages(protocolId)`, and
+ * `ProtocolRepository.replaceStages` called it on every protocol save before
+ * re-inserting the list. With `protocol_stages.vpdTarget` written by nothing, that was
+ * invisible; the moment a grower could set a band, saving the protocol's *name* would
+ * have erased it, and every stage's primary key would have been regenerated on every
+ * edit. The query is gone rather than left unused: a bulk delete that no caller needs is
+ * one call away from being the next save, and `StageSavePlan` is what decides which
+ * rows change instead.
+ *
+ * ## The band has its own one-column write
+ *
+ * [updateStageVpdTarget] exists so the schedule save and the band save cannot be
+ * confused. A schedule save reads a stage's name and duration; it has no opinion about
+ * the band, and a `@Update` of the whole row would express "no opinion" as a `null` and
+ * erase the grower's target. One column, addressed by id, is the only write that can
+ * change it.
+ */
 @Dao
 interface ProtocolStageDao {
     @Query("SELECT * FROM protocol_stages WHERE protocolId = :protocolId ORDER BY sortOrder ASC")
@@ -153,8 +175,21 @@ interface ProtocolStageDao {
     @Delete
     suspend fun deleteStage(stage: ProtocolStage)
 
-    @Query("DELETE FROM protocol_stages WHERE protocolId = :protocolId")
-    suspend fun clearStages(protocolId: Long)
+    /**
+     * Writes one stage's VPD target band and nothing else.
+     *
+     * Takes the encoded TEXT form rather than a `GrowRange` so no type converter has to
+     * be resolved for a bind parameter: the encoding is [GrowRange.encode]'s job and it
+     * is already covered by `GrowRangeTest` on both directions.
+     *
+     * `protocolId` is part of the `WHERE` on purpose. The stage belongs to a protocol,
+     * and a write addressed by id alone would let a stale screen overwrite a row of a
+     * different protocol.
+     *
+     * @param band the encoded band, or null to declare that the stage has no target.
+     */
+    @Query("UPDATE protocol_stages SET vpdTarget = :band WHERE id = :stageId AND protocolId = :protocolId")
+    suspend fun updateStageVpdTarget(protocolId: Long, stageId: Long, band: String?)
 }
 
 @Dao

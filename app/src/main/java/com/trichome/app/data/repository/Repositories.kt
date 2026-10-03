@@ -2,6 +2,9 @@ package com.trichome.app.data.repository
 
 import com.trichome.app.data.dao.*
 import com.trichome.app.data.entity.*
+import com.trichome.app.data.model.GrowRange
+import com.trichome.app.model.StageSavePlan
+import com.trichome.app.model.reconcileStages
 import kotlinx.coroutines.flow.Flow
 
 class PlantRepository(private val dao: PlantDao) {
@@ -106,6 +109,16 @@ class ProtocolRepository(
     fun getProtocolsByPlant(plantId: Long): Flow<List<Protocol>> = dao.getProtocolsByPlant(plantId)
     suspend fun getProtocolById(id: Long): Protocol? = dao.getProtocolById(id)
     suspend fun getActiveProtocols(): List<Protocol> = dao.getActiveProtocols()
+
+    /**
+     * Writes a protocol row and returns its id.
+     *
+     * `insertProtocol` is a REPLACE on the primary key, so a caller that `copy`s the row
+     * it read writes every column it holds and no column it does not. That is why the
+     * protocol editor builds its save from `editingProtocol?.copy(...)`: editing a name
+     * carries the fourteen declared targets along untouched, and no list of them has to
+     * be re-entered at every call site to achieve that.
+     */
     suspend fun insertProtocol(protocol: Protocol): Long = dao.insertProtocol(protocol)
     suspend fun updateProtocol(protocol: Protocol) = dao.updateProtocol(protocol)
     suspend fun deleteProtocol(protocol: Protocol) = dao.deleteProtocol(protocol)
@@ -115,11 +128,64 @@ class ProtocolRepository(
     suspend fun insertStage(stage: ProtocolStage): Long = stageDao.insertStage(stage)
     suspend fun updateStage(stage: ProtocolStage) = stageDao.updateStage(stage)
     suspend fun deleteStage(stage: ProtocolStage) = stageDao.deleteStage(stage)
-    suspend fun replaceStages(protocolId: Long, blocks: List<ProtocolStage>) {
-        stageDao.clearStages(protocolId)
-        blocks.sortedBy { it.sortOrder }.forEachIndexed { index, block ->
-            stageDao.insertStage(block.copy(protocolId = protocolId, sortOrder = index))
-        }
+
+    /**
+     * Saves a protocol's schedule without destroying its stages.
+     *
+     * ## Why this is not `clearStages` followed by re-inserts
+     *
+     * It used to be exactly that, and it was harmless only because nothing wrote
+     * `protocol_stages.vpdTarget`: there was no per-stage data to lose. The moment there
+     * was, every protocol save would have erased the band the grower had just set — the
+     * data-loss budget in `AGENTS.md` §11 is zero, so the destructive shape is gone
+     * rather than narrowed.
+     *
+     * ## The identity rule
+     *
+     * [reconcileStages] decides which rows change and this method only executes it. A
+     * draft that names a persisted id is an **edit** of that row and is updated in place,
+     * keeping its id and its band; a persisted row that no draft mentions is a
+     * **removal** and is the only row this ever deletes; a draft with no id is an
+     * **addition**. Nothing is matched on the stage's name or on its position, because a
+     * rename would then read as a removal and a reorder would shift identities onto
+     * neighbouring rows.
+     *
+     * @return the plan that was executed, so a caller — or a test — can see which rows
+     *   were updated, inserted and deleted.
+     */
+    suspend fun saveStages(
+        protocolId: Long,
+        drafts: List<ProtocolStage>
+    ): StageSavePlan {
+        val persisted = stageDao.getStagesByProtocol(protocolId)
+        val plan = reconcileStages(protocolId, persisted, drafts)
+        // Updates first, then inserts, then the removals: the plan is a pure function of
+        // the two lists, so the order here cannot change what is written, only the
+        // sequence of statements.
+        plan.updated.forEach { stageDao.updateStage(it) }
+        plan.inserted.forEach { stageDao.insertStage(it) }
+        plan.deleted.forEach { stageDao.deleteStage(it) }
+        return plan
+    }
+
+    /**
+     * Writes one stage's VPD target band, and nothing else.
+     *
+     * The single-column counterpart of [saveStages], and the only path in the app that
+     * can change a stage's band. Keeping it separate is what makes "the grower cleared
+     * this band" unambiguous: a `null` written here is a decision, whereas a `null` in a
+     * draft handed to [saveStages] would be a caller that simply never read the column —
+     * and [saveStages] therefore never writes it.
+     *
+     * @param band the band to declare, or null for "this stage has no target". `null` is
+     *   a real answer here: it is what the three stages written before schema v6 hold.
+     */
+    suspend fun setStageVpdTarget(
+        protocolId: Long,
+        stageId: Long,
+        band: GrowRange?
+    ) {
+        stageDao.updateStageVpdTarget(protocolId, stageId, GrowRange.encode(band))
     }
 }
 

@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.trichome.app.data.entity.*
+import com.trichome.app.data.model.GrowRange
 import com.trichome.app.data.repository.*
 import com.trichome.app.di.AppContainer
 import com.trichome.app.domain.vision.PhotoAnalyzer
@@ -544,10 +545,47 @@ class ProtocolViewModel(container: AppContainer) : ViewModel() {
         }
     }
 
+    /**
+     * Saves a protocol's declared targets.
+     *
+     * The write path the fourteen v4 columns did not have. [protocol] is the row the
+     * write surface was opened on with the grower's edits already applied, so every
+     * column that surface does not own — the name, the photoperiod, `plantId`,
+     * `cycleStartAt`, the other two groups of targets — travels through the `copy`
+     * untouched. A targets surface that rebuilt a `Protocol` from its defaults would
+     * quietly zero the fourteen columns it never mentioned.
+     */
     suspend fun saveProtocol(protocol: Protocol): Long = protocolRepo.insertProtocol(protocol)
 
-    suspend fun replaceStages(protocolId: Long, blocks: List<ProtocolStage>) =
-        protocolRepo.replaceStages(protocolId, blocks)
+    /**
+     * Saves a protocol's stage schedule without touching each stage's band.
+     *
+     * [ProtocolRepository.saveStages] reconciles by stage id, so an edit updates its row
+     * and only a stage the grower removed is deleted. Re-reads the rows afterwards for
+     * the reason [loadProtocols] cannot do it: a `protocol_stages` write does not change
+     * the `protocols` row, so the flow that refreshes [blocks] would not re-emit and the
+     * card would keep printing the schedule and the bands that were just replaced. A
+     * write that does not reach the screen is the read-only defect again.
+     */
+    suspend fun saveStages(protocolId: Long, drafts: List<ProtocolStage>) {
+        protocolRepo.saveStages(protocolId, drafts)
+        refreshStages(protocolId)
+    }
+
+    /**
+     * Declares one stage's VPD target band.
+     *
+     * The only write that may touch `vpdTarget`. `null` clears it, and clearing it is a
+     * legitimate answer: a stage has no opinion until the grower gives it one.
+     */
+    suspend fun saveStageTarget(protocolId: Long, stage: ProtocolStage, band: GrowRange?) {
+        protocolRepo.setStageVpdTarget(protocolId, stage.id, band)
+        refreshStages(protocolId)
+    }
+
+    private suspend fun refreshStages(protocolId: Long) {
+        blocks = blocks + (protocolId to protocolRepo.getStages(protocolId))
+    }
 
     suspend fun deleteProtocol(protocol: Protocol) = protocolRepo.deleteProtocol(protocol)
 

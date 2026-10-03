@@ -76,6 +76,28 @@ the same `GrowRangeConverters` the header uses. **One band type, one encoding, o
   `stageName`, `durationDays`, `recurrenceIntervalDays` and `sortOrder` byte for byte, and
   `vpdTarget` NULL, which the card renders as "Sin definir" and the export writes as `null`.
 
+## How a protocol's stages are written, and what that must never cost
+
+`ProtocolRepository.saveStages` updates, inserts and deletes individual `protocol_stages` rows. It
+used to `DELETE FROM protocol_stages WHERE protocolId = :id` and re-insert the whole list, which
+was survivable only while nothing wrote `vpdTarget`: the moment a band could be set, saving the
+protocol's *name* would have erased it, and every stage's primary key would have been regenerated
+on every save. The data-loss budget is zero, so the bulk delete is gone from the DAO rather than
+left unused.
+
+- **An edit is an id.** A draft carrying a persisted `id` updates that row in place. A persisted row
+  no draft mentions is a removal, and it is the only row ever deleted. A draft with `id == 0` is an
+  addition. Identity is deliberately not matched on the stage's name (a rename would read as a
+  removal plus two additions) or on its position (a removal from the middle would shift every later
+  stage's identity onto its neighbour), which is why the protocol editor seeds from the persisted
+  rows and hands them back rather than from a rebuilt name/duration list.
+- **The schedule save never writes the band.** `vpdTarget` is copied from the persisted row on every
+  update, because a caller that never read the column and a caller that means to clear it are
+  indistinguishable in a draft. `ProtocolRepository.setStageVpdTarget` is the only path that writes
+  it, and it writes one column of one row addressed by both `id` and `protocolId`.
+- **The card is re-read after every stage write.** `protocol_stages` writes do not touch the
+  `protocols` row, so the flow the protocol screen observes would not re-emit.
+
 ## Supporting data
 
 - **DataStore** (`data/prefs`):

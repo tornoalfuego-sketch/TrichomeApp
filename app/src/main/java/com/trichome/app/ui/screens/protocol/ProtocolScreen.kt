@@ -1,9 +1,9 @@
 package com.trichome.app.ui.screens.protocol
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -30,6 +30,7 @@ import com.trichome.app.ui.theme.TrichomeThemeState
 import com.trichome.app.viewmodel.ProtocolViewModel
 import com.trichome.app.viewmodel.appViewModel
 import kotlinx.coroutines.launch
+import com.trichome.app.model.ProtocolTargetEditor
 import com.trichome.app.ui.theme.LocalTertiaryText
 import com.trichome.app.ui.theme.LocalMetricValue
 
@@ -37,6 +38,21 @@ import com.trichome.app.ui.theme.LocalMetricValue
  * Protocol block editor. Each protocol is a header (name, photoperiod) plus an
  * ordered list of stage blocks ([ProtocolStage]). All data flows through
  * [ProtocolViewModel] — no component builds a database on its own.
+ *
+ * ## The two surfaces this screen mounts
+ *
+ * The card prints fifteen declared targets and, until this phase, offered no way to
+ * write any of them: fourteen grow-wide columns on `protocols` and one per-stage column
+ * on `protocol_stages`, all rendered, all exported, none writable. They are edited on
+ * their own pages now — `ProtocolTargetsScreen` for the grow-wide groups and
+ * `ProtocolStageTargetScreen` for a stage's band — and they are separate pages rather
+ * than more fields on `ProtocolEditorDialog` because they belong to different entities
+ * and because that dialog was already measured filling most of a 2000-pixel-tall screen.
+ *
+ * Both are mounted here **in place of** the list, never inside it: a page that scrolled
+ * inside the screen's `LazyColumn` would be the second owner on the vertical axis that
+ * `ScrollOwnershipTest` exists for, so the branches are mutually exclusive and the bar
+ * and the FAB are hidden while one is open.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,6 +68,12 @@ fun ProtocolScreen(
     var showEditor by remember { mutableStateOf(false) }
     var editingProtocol by remember { mutableStateOf<Protocol?>(null) }
 
+    // The two target write surfaces, held as session state rather than as a boolean each:
+    // every one of them is opened with the row it edits, and a flag plus a second piece
+    // of state is two things that can disagree.
+    var targetsSession by remember { mutableStateOf<ProtocolTargetSession?>(null) }
+    var editingStage by remember { mutableStateOf<ProtocolStage?>(null) }
+
     // A tap only arms the dialog; the row is deleted inside the repository call
     // the user confirms.
     val deleteConfirmation = rememberDestructiveConfirmation<Protocol>(
@@ -66,64 +88,115 @@ fun ProtocolScreen(
 
     LaunchedEffect(plantId) { vm.loadProtocols(plantId) }
 
+    val onTargetsSurface = targetsSession != null || editingStage != null
+
     Scaffold(
         topBar = {
-            AppTopBar(
-                title = "📋 Protocolos de Cultivo",
-                onNavigateBack = { navController.popBackStack() }
-            )
+            // One bar for the screen at a time: the write surfaces bring their own, and
+            // two bars over one title is a header the grower reads twice.
+            if (!onTargetsSurface) {
+                AppTopBar(
+                    title = "📋 Protocolos de Cultivo",
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { editingProtocol = null; showEditor = true },
-                containerColor = accent,
-                contentColor = accentContentOn(accent)
-            ) {
-                Icon(Icons.Default.Add, "Añadir Protocolo")
+            if (!onTargetsSurface) {
+                FloatingActionButton(
+                    onClick = { editingProtocol = null; showEditor = true },
+                    containerColor = accent,
+                    contentColor = accentContentOn(accent)
+                ) {
+                    Icon(Icons.Default.Add, "Añadir Protocolo")
+                }
             }
         }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp)
-        ) {
-            Text("Editor por bloques", style = MaterialTheme.typography.titleMedium)
-            Text(
-                "Cada protocolo define etapas ordenadas; su progreso se aplica a la planta.",
-                style = MaterialTheme.typography.bodySmall,
-                color = LocalTertiaryText.current
-            )
-            Spacer(Modifier.height(14.dp))
-
-            if (vm.protocols.isEmpty()) {
-                SolidPanel {
-                    Column(
-                        modifier = Modifier.padding(32.dp).fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text("No hay protocolos registrados", style = MaterialTheme.typography.bodyLarge)
-                        Text(
-                            "Toca + para crear tu primer protocolo por bloques",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
+        val session = targetsSession
+        val stage = editingStage
+        when {
+            session != null -> ProtocolTargetsScreen(
+                session = session,
+                onClose = { targetsSession = null },
+                onSave = { resolved ->
+                    // Dismissed before the write runs: the surface is still on screen for
+                    // the frame between the tap and the recomposition, and a double tap
+                    // there writes the same row twice.
+                    targetsSession = null
+                    scope.launch { vm.saveProtocol(resolved) }
                 }
-            } else {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(vm.protocols, key = { it.id }) { protocol ->
-                        ProtocolCard(
-                            protocol = protocol,
-                            blocks = vm.blocks[protocol.id].orEmpty(),
-                            onEdit = { editingProtocol = protocol; showEditor = true },
-                            onDelete = { deleteConfirmation.request(protocol) },
-                            onLogStage = { stageName ->
-                                scope.launch {
-                                    vm.logStageTransition(plantId, protocol.id, stageName)
+            )
+
+            stage != null -> {
+                val owner = vm.protocols.firstOrNull { p ->
+                    vm.blocks[p.id]?.any { it.id == stage.id } == true
+                }
+                if (owner == null) {
+                    // The protocol was deleted underneath this row. The band write is
+                    // addressed by protocol as well as by stage, so there is nothing to
+                    // write to; closing is the honest outcome, and it happens in an effect
+                    // rather than by writing state while composing.
+                    LaunchedEffect(stage.id) { editingStage = null }
+                } else {
+                    ProtocolStageTargetScreen(
+                        protocol = owner,
+                        stage = stage,
+                        onClose = { editingStage = null },
+                        onSave = { band ->
+                            editingStage = null
+                            scope.launch { vm.saveStageTarget(owner.id, stage, band) }
+                        }
+                    )
+                }
+            }
+
+            else -> Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(16.dp)
+            ) {
+                Text("Editor por bloques", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "Cada protocolo define etapas ordenadas; su progreso se aplica a la planta.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = LocalTertiaryText.current
+                )
+                Spacer(Modifier.height(14.dp))
+
+                if (vm.protocols.isEmpty()) {
+                    SolidPanel {
+                        Column(
+                            modifier = Modifier.padding(32.dp).fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text("No hay protocolos registrados", style = MaterialTheme.typography.bodyLarge)
+                            Text(
+                                "Toca + para crear tu primer protocolo por bloques",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                } else {
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(vm.protocols, key = { it.id }) { protocol ->
+                            ProtocolCard(
+                                protocol = protocol,
+                                blocks = vm.blocks[protocol.id].orEmpty(),
+                                onEdit = { editingProtocol = protocol; showEditor = true },
+                                onDelete = { deleteConfirmation.request(protocol) },
+                                onEditTargets = { group ->
+                                    targetsSession = ProtocolTargetSession(protocol, group)
+                                },
+                                onEditStageTarget = { editingStage = it },
+                                onLogStage = { stageName ->
+                                    scope.launch {
+                                        vm.logStageTransition(plantId, protocol.id, stageName)
+                                    }
                                 }
-                            }
-                        )
+                            )
+                        }
                     }
                 }
             }
@@ -164,17 +237,10 @@ fun ProtocolScreen(
                         vm.saveProtocol(protocol)
                         protocol.id
                     }
-                    vm.replaceStages(
-                        savedId,
-                        blocks.mapIndexed { index, (stageName, duration) ->
-                            com.trichome.app.data.entity.ProtocolStage(
-                                protocolId = savedId,
-                                stageName = stageName,
-                                durationDays = duration,
-                                sortOrder = index
-                            )
-                        }
-                    )
+                    // The drafts carry each stage's own id, so this updates those rows in
+                    // place and deletes only a stage the grower removed. It does not write
+                    // `vpdTarget`: see `ProtocolRepository.saveStages`.
+                    vm.saveStages(savedId, blocks)
                     showEditor = false
                     editingProtocol = null
                 }
@@ -189,6 +255,8 @@ private fun ProtocolCard(
     blocks: List<com.trichome.app.data.entity.ProtocolStage>,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
+    onEditTargets: (com.trichome.app.model.ProtocolTargetGroup) -> Unit,
+    onEditStageTarget: (com.trichome.app.data.entity.ProtocolStage) -> Unit,
     onLogStage: (String) -> Unit
 ) {
     SolidPanel {
@@ -246,8 +314,19 @@ private fun ProtocolCard(
             // Extended agronomic fields, then the per-stage targets. Labels, units and
             // the empty state come from model/ProtocolExtendedFields, so a field the
             // grower has not filled in reads "Sin definir" and never a fabricated number.
-            extendedFieldBlocks(protocol).forEach { group -> FieldGroupBlock(group) }
-            stageTargetBlocks(blocks).forEach { group -> FieldGroupBlock(group) }
+            //
+            // Each group opens its own write surface: these targets were readable and
+            // unwritable until this phase, so a group that cannot be tapped is a group
+            // that keeps being a fact sheet.
+            extendedFieldBlocks(protocol).forEach { group ->
+                FieldGroupBlock(
+                    group = group,
+                    onEdit = targetGroupFor(group.titleEs)?.let { group -> { onEditTargets(group) } }
+                )
+            }
+            stageTargetBlocks(blocks).forEach { group ->
+                StageTargetBlock(group = group, stages = blocks, onEdit = onEditStageTarget)
+            }
         }
     }
 }
@@ -262,54 +341,166 @@ private fun ProtocolCard(
  *
  * No scrollable of its own: the card is a row inside the screen's `LazyColumn`, and a
  * second scroll owner on the same axis is the layout defect `ScrollOwnershipTest` names.
+ *
+ * @param onEdit null for a group that has no write surface. Every grow-wide group has
+ *   one; the null is what makes the affordance conditional rather than a control that
+ *   leads nowhere.
  */
 @Composable
-private fun FieldGroupBlock(group: ProtocolFieldGroup) {
-    Text(
-        group.titleEs,
-        style = MaterialTheme.typography.titleSmall,
-        color = LocalTertiaryText.current
-    )
-    group.noteEs?.let { note ->
-        Text(note, style = MaterialTheme.typography.bodySmall, color = LocalTertiaryText.current)
-    }
-    Spacer(Modifier.height(2.dp))
-    group.rows.forEach { row ->
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+private fun FieldGroupBlock(
+    group: ProtocolFieldGroup,
+    onEdit: (() -> Unit)? = null
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (onEdit != null) Modifier.clickable(onClick = onEdit) else Modifier)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                row.labelEs,
-                style = MaterialTheme.typography.bodyMedium,
+                group.titleEs,
+                style = MaterialTheme.typography.titleSmall,
+                color = LocalTertiaryText.current,
                 modifier = Modifier.weight(1f)
             )
-            // The number takes the metric register; the unit and the grower's own words
-            // stay in the prose face. Absent when there is no number, which is what
-            // "Sin definir" means.
-            row.metricEs?.let { metric ->
-                Text(metric, style = LocalMetricValue.current)
-                Spacer(Modifier.width(6.dp))
+            if (onEdit != null) {
+                TargetEditGlyph()
             }
+        }
+        group.noteEs?.let { note ->
+            Text(note, style = MaterialTheme.typography.bodySmall, color = LocalTertiaryText.current)
+        }
+        if (onEdit != null) {
             Text(
-                row.detailEs,
+                ProtocolTargetEditor.EDIT_HINT_ES,
                 style = MaterialTheme.typography.bodySmall,
                 color = LocalTertiaryText.current
             )
+            // Said only while the group is empty. A card of fourteen "Sin definir" rows
+            // reads as a fact sheet about a grow nobody has measured; this says it is
+            // still yours to fill in.
+            if (isGroupUnset(group)) {
+                Text(
+                    ProtocolTargetEditor.UNSET_HINT_ES,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = LocalTertiaryText.current
+                )
+            }
         }
+        Spacer(Modifier.height(2.dp))
+        group.rows.forEach { row ->
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    row.labelEs,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                // The number takes the metric register; the unit and the grower's own words
+                // stay in the prose face. Absent when there is no number, which is what
+                // "Sin definir" means.
+                row.metricEs?.let { metric ->
+                    Text(metric, style = LocalMetricValue.current)
+                    Spacer(Modifier.width(6.dp))
+                }
+                Text(
+                    row.detailEs,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = LocalTertiaryText.current
+                )
+            }
+        }
+        Spacer(Modifier.height(6.dp))
     }
-    Spacer(Modifier.height(6.dp))
+}
+
+/**
+ * The per-stage block, with each row opening the band editor for that stage.
+ *
+ * Drawn from the [ProtocolStage] objects rather than from the group's pre-resolved rows,
+ * because the row is now a control: the object behind the tap has to be the stage the
+ * grower is looking at, and an index back into a sorted query result is exactly the kind
+ * of mapping that reads wrong the day a stage is reordered. The text is still the model's
+ * — [stageTargetRow] — so the write surface and this one cannot describe a stage
+ * differently.
+ *
+ * Separate from [FieldGroupBlock] for the same reason the write surfaces are: a band
+ * belongs to a stage, and rendering it as another grow-wide group would put it on the
+ * protocol's row, where the storage is not.
+ */
+@Composable
+private fun StageTargetBlock(
+    group: ProtocolFieldGroup,
+    stages: List<ProtocolStage>,
+    onEdit: (ProtocolStage) -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            group.titleEs,
+            style = MaterialTheme.typography.titleSmall,
+            color = LocalTertiaryText.current
+        )
+        group.noteEs?.let { note ->
+            Text(note, style = MaterialTheme.typography.bodySmall, color = LocalTertiaryText.current)
+        }
+        Text(
+            ProtocolTargetEditor.EDIT_HINT_ES,
+            style = MaterialTheme.typography.bodySmall,
+            color = LocalTertiaryText.current
+        )
+        Spacer(Modifier.height(2.dp))
+        orderedStages(stages).forEach { stage ->
+            val row = stageTargetRow(stage)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onEdit(stage) }
+                    .padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    row.labelEs,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                row.metricEs?.let { metric ->
+                    Text(metric, style = LocalMetricValue.current)
+                    Spacer(Modifier.width(6.dp))
+                }
+                Text(
+                    row.detailEs,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = LocalTertiaryText.current
+                )
+                TargetEditGlyph()
+            }
+        }
+        Spacer(Modifier.height(6.dp))
+    }
 }
 
 /**
  * Dialog to create/edit a protocol and its ordered stage blocks.
  *
+ * Carries the name, the photoperiod and the schedule — and nothing else. The fifteen
+ * declared targets are written on their own pages (`ProtocolTargetEditors.kt`), because
+ * this dialog was already measured filling most of a 2000-pixel-tall screen on a real
+ * device and fifteen more inputs cannot go in here.
+ *
+ * The blocks are [ProtocolStage] rows rather than name/duration pairs, and that is the
+ * whole difference between a schedule save that preserves each stage's identity and one
+ * that does not: `ProtocolRepository.saveStages` tells an edit from a removal by the
+ * stage's id, so a pair list — which carries no id — could only ever look like a list of
+ * additions.
+ *
  * `FlowRow` rather than `Row` because the four photoperiod chips do not fit on one
- * line: "18/6", "12/12" and "24/0" are four characters each and "CUSTOM" is six, so
- * the last chip absorbed the overflow and wrapped one letter per line — verified on a
- * device at 1080x2340, where it read vertically as "CU ST O M". This is the same
- * unweighted-`Row` defect that once clipped "Bitácora" on the plant screen; a chip
- * that cannot say which preset it is has stopped being a control.
+ * line: "18/6", "12/12" and "24/0" are four characters each and "CUSTOM" is six, so the
+ * last chip absorbed the overflow and wrapped one letter per line — verified on a device
+ * at 1080x2340, where it read vertically as "CU ST O M". This is the same unweighted-`Row`
+ * defect that once clipped "Bitácora" on the plant screen; a chip that cannot say which
+ * preset it is has stopped being a control.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -319,7 +510,7 @@ private fun ProtocolEditorDialog(
     plantId: Long,
     accent: Color,
     onDismiss: () -> Unit,
-    onSave: (name: String, lightHours: Int, darkHours: Int, presetType: String, blocks: List<Pair<String, Int>>) -> Unit
+    onSave: (name: String, lightHours: Int, darkHours: Int, presetType: String, blocks: List<ProtocolStage>) -> Unit
 ) {
     // The dialog is reused across protocols, so every field seeded from the
     // protocol is keyed on its id: without the key Compose would keep the first
@@ -329,7 +520,7 @@ private fun ProtocolEditorDialog(
     var lightHours by remember(seedKey) { mutableStateOf(protocol?.lightHours ?: 18) }
     var darkHours by remember(seedKey) { mutableStateOf(protocol?.darkHours ?: 6) }
     var presetType by remember(seedKey) { mutableStateOf(protocol?.presetType ?: "18/6") }
-    var blocks by remember(seedKey) { mutableStateOf(initialBlocks(protocol, stages)) }
+    var blocks by remember(seedKey) { mutableStateOf(initialStageDrafts(protocol, stages)) }
     var nameError by remember { mutableStateOf(false) }
 
     // Local editable blocks
@@ -405,17 +596,17 @@ private fun ProtocolEditorDialog(
                 HorizontalDivider()
 
                 Text("Bloques de etapa", style = MaterialTheme.typography.titleSmall)
-                blocks.forEachIndexed { index, (stageName, duration) ->
+                blocks.forEachIndexed { index, stage ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            "$index. $stageName — $duration día(s)",
+                            "$index. ${stage.stageName} — ${stage.durationDays} día(s)",
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.weight(1f)
                         )
                         IconButton(
                             onClick = {
-                                blockName = stageName
-                                blockDays = duration.toString()
+                                blockName = stage.stageName
+                                blockDays = stage.durationDays.toString()
                                 editingIndex = index
                             }
                         ) { Icon(Icons.Default.Edit, "Editar bloque") }
@@ -458,11 +649,25 @@ private fun ProtocolEditorDialog(
                         if (blockName.isBlank() || days == null || days <= 0) {
                             blockError = true
                         } else {
+                            // Edited in place, so the draft keeps its id — and with it the
+                            // row it stands for. A new block is a draft with no id, which is
+                            // how `saveStages` tells an addition from an edit.
                             val next = blocks.toMutableList()
-                            if (editingIndex != null) {
-                                next[editingIndex!!] = blockName.trim() to days
+                            val index = editingIndex
+                            if (index != null && next.indices.contains(index)) {
+                                next[index] = next[index].copy(
+                                    stageName = blockName.trim(),
+                                    durationDays = days
+                                )
                             } else {
-                                next.add(blockName.trim() to days)
+                                next.add(
+                                    ProtocolStage(
+                                        protocolId = protocol?.id ?: 0L,
+                                        stageName = blockName.trim(),
+                                        durationDays = days,
+                                        sortOrder = next.size
+                                    )
+                                )
                             }
                             blocks = next
                             blockName = ""

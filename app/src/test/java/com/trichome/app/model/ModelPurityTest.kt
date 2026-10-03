@@ -41,7 +41,13 @@ class ModelPurityTest {
         // Compose type; `DiagnosisIcons.kt` holds only the assignment table.
         "DiagnosisIcons.kt",
         "DiagnosisSearch.kt",
-        "BlenderProgress.kt"
+        "BlenderProgress.kt",
+        // F13: the write path for the fifteen declared targets. Both are in `model/` for
+        // the reason the rest are -- a band that commits as half a value, and a schedule
+        // save that deletes rows instead of updating them, are exactly the two decisions
+        // no JVM test can reach once they live in a composable or a repository.
+        "ProtocolTargetEditor.kt",
+        "ProtocolStageReconciliation.kt"
     )
 
     private fun codeOf(name: String): String {

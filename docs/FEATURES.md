@@ -37,6 +37,16 @@ V1.1.0 — menu completo de funcionalidades, agrupado por fase de desarrollo.
   Una etapa sin objetivo lee **"Sin definir"** en la tarjeta y sale como `null` en la
   exportación, nunca como `0,00 – 0,00`. La banda general del protocolo sigue en
   `protocols.vpdBand`: una es el rango del cultivo entero y la otra, la fase.
+- **Los quince objetivos ya se pueden rellenar.** Hasta ahora se dibujaban, se exportaban y no se
+  escribían: quince columnas de almacenamiento sin ninguna forma de llenarlas. Ahora cada grupo
+  de la tarjeta (Ambiente · Intensidad de luz · Instalación y manejo) se toca y abre su propia
+  pantalla, y cada fila de "Objetivo por etapa" abre la banda de esa etapa. Son dos superficies
+  distintas porque son dos entidades distintas: la banda se pone en la etapa, no en el protocolo.
+  Una banda son **dos casillas y un valor**: no se guarda hasta que las dos se rellenan y el mínimo
+  no supera al máximo; una caja vacía se guarda como `null`, o sea "Sin definir", nunca como un `0`
+  inventado en la misma tipografía métrica que un valor elegido. Y guardar el calendario de un
+  protocolo **ya no destruye sus etapas**: la edición se reconoce por el id de la etapa, no por su
+  nombre ni por su posición, así que solo desaparece la etapa que el cultivador borró de verdad.
 
 ## Fase 4 — Motor SuperCycle
 
